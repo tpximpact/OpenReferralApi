@@ -1,0 +1,6 @@
+@OpenReferralApi_HostAddress = http://localhost:5127
+
+GET {{OpenReferralApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
