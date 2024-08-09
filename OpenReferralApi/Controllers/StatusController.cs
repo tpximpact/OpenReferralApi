@@ -3,7 +3,6 @@ using OpenReferralApi.Models;
 
 namespace OpenReferralApi.Controllers;
 
-
 [ApiController]
 [Route("api/[Controller]")]
 public class StatusController : ControllerBase
