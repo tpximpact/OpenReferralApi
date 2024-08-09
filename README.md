@@ -18,11 +18,11 @@ heroku container:login
 docker build -t oruk-api -f OpenReferralApi/Dockerfile .
 
 # Tag the image to push to Heroku’s Container registry
-# docker tag {{IMAGE_NAME}}:{{IMAGE_TAG}} registry.heroku.com/{{HEROKU_APP_NAME}}/web:{{TAG_NAME}}
+# docker tag {{IMAGE_NAME}}:{{IMAGE_TAG}} registry.heroku.com/{{HEROKU_APP_NAME}}/web
 docker tag oruk-api:latest registry.heroku.com/oruk-api/web
 
 # Push the image to Heroku’s Container Registry
-# docker push registry.heroku.com/{{HEROKU_APP_NAME}}/web:{{TAG_NAME}}
+# docker push registry.heroku.com/{{HEROKU_APP_NAME}}/web
 docker push registry.heroku.com/oruk-api/web
 
 # Release the image to Heroku to be deployed
