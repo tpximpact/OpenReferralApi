@@ -1,0 +1,139 @@
+{
+  "isUp": true,
+  "isServiceFound": true,
+  "hasDetailPage": true,
+  "hasPagination": true,
+  "missingPaginationMetaData": [],
+  "hasPaginationMetaData": true,
+  "level1Pass": true,
+  "level2Pass": true,
+  "level2TestsRun": 2,
+  "level2Results": [
+    {
+      "test": {
+        "name": "Text Test",
+        "parameters": "?text=Holy+Trinity+Church+of+England+(Aided)+School",
+        "serviceID": "1502"
+      },
+      "noTestName": null,
+      "testName": "Text Test",
+      "success": true,
+      "errorMessage": null
+    },
+    {
+      "test": {
+        "name": "Time Search Test",
+        "parameters": "?start_time=08%3a00&end_time=18%3a00",
+        "serviceID": "1073"
+      },
+      "noTestName": null,
+      "testName": "Time Search Test",
+      "success": true,
+      "errorMessage": null
+    }
+  ],
+  "hasInvalidTotalPages": false,
+  "error": null,
+  "missingRequiredFields": [],
+  "invalidUniqueFields": [
+    "service_at_location.id",
+    "location.id",
+    "regular_schedule.id"
+  ],
+  "invalidFormats": [
+    "service.id should be in uuid format",
+    "service.url should be in url format",
+    "location.id should be in uuid format"
+  ],
+  "invalidDataTypes": [],
+  "invalidValues": [],
+  "apiIssuesLevel1": [],
+  "apiIssuesLevel2": [],
+  "warnings": [
+    "The 'Access-Control-Allow-Origin: *' response header is missing this limits how the API can be read."
+  ],
+  "randomServiceIdentifier": "13082",
+  "apiIssues": [],
+  "resourceCounts": [
+    {
+      "name": "organization",
+      "count": 0
+    },
+    {
+      "name": "service",
+      "count": 500
+    },
+    {
+      "name": "service_taxonomy",
+      "count": 0
+    },
+    {
+      "name": "service_at_location",
+      "count": 499
+    },
+    {
+      "name": "location",
+      "count": 499
+    },
+    {
+      "name": "phone",
+      "count": 0
+    },
+    {
+      "name": "contact",
+      "count": 682
+    },
+    {
+      "name": "physical_address",
+      "count": 0
+    },
+    {
+      "name": "postal_address",
+      "count": 0
+    },
+    {
+      "name": "regular_schedule",
+      "count": 1628
+    },
+    {
+      "name": "holiday_schedule",
+      "count": 0
+    },
+    {
+      "name": "funding",
+      "count": 0
+    },
+    {
+      "name": "eligibility",
+      "count": 0
+    },
+    {
+      "name": "service_area",
+      "count": 0
+    },
+    {
+      "name": "language",
+      "count": 0
+    },
+    {
+      "name": "accessibility_for_disabilities",
+      "count": 0
+    },
+    {
+      "name": "taxonomy",
+      "count": 0
+    },
+    {
+      "name": "cost_option",
+      "count": 637
+    },
+    {
+      "name": "review",
+      "count": 0
+    },
+    {
+      "name": "link_taxonomy",
+      "count": 0
+    }
+  ]
+}
