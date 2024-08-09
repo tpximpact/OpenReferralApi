@@ -8,14 +8,20 @@ namespace OpenReferralApi.Controllers;
 [Route("api/[Controller]")]
 public class MockController : ControllerBase
 {
-    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the V1 `/validate` response 
+    /// </summary>
+    /// <param name="serviceUrl"></param>
     [HttpPost]
     [Route("validate")]
-    public async Task<IActionResult> GetValidatorMock([FromQuery]string? serviceBaseUrl = null)
+    public async Task<IActionResult> GetValidatorMock([FromQuery]string? serviceUrl = null)
     {
         return await ReadJsonFile("Mocks/V1_ValidateResponse.json");
     }
     
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the V1 `/dashboard` response
+    /// </summary>
     [HttpGet]
     [Route("dashboard")]
     public async Task<IActionResult> GetDashboardMock()

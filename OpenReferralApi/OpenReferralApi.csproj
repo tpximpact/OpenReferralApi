@@ -7,6 +7,11 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);1591</NoWarn>
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="Json.Net" Version="1.0.33" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.7" />
