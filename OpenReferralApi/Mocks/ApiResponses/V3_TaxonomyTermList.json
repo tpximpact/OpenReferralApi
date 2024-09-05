@@ -1,0 +1,18 @@
+{
+  "total_items": 10,
+  "total_pages": 10,
+  "page_number": 1,
+  "size": 1,
+  "first_page": true,
+  "last_page": false,
+  "empty": false,
+  "contents": [
+    {
+      "id": "3f7b145d-84af-42d7-8fae-eaca714b02b2",
+      "parent_id": "0bc248fa-dc27-4650-9ba4-8f1a24ef16a2",
+      "taxonomy": "taxonomy",
+      "term_uri": "http://example.com",
+      "term": "name"
+    }
+  ]
+}

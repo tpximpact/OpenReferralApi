@@ -1,0 +1,59 @@
+{
+  "profile": "HSDS-3.0-UK",
+  "testCases": [
+    {
+      "name": "API meta info - API & schema validation",
+      "description": "Does the base endpoint return meta information about the API, and does it adhere to the schema",
+      "endpoint": "/",
+      "schema": "ApiDetails.json"
+    },
+    {
+      "name": "Services list - schema validation",
+      "description": "Does the services list endpoint return a paginated list of services in the correct schema",
+      "endpoint": "/services",
+      "schema": "ServiceList.json"
+    },
+    {
+      "name": "Service by id - schema validation",
+      "description": "Does the service by id endpoint return a fully nested service in the correct schema",
+      "endpoint": "/services/{id}",
+      "schema": "Service.json"
+    },
+    {
+      "name": "Taxonomies list - schema validation",
+      "description": "Does the taxonomies list endpoint return a paginated list of taxonomies in the correct schema",
+      "endpoint": "/taxonomies",
+      "schema": "TaxonomyList.json"
+    },
+    {
+      "name": "Taxonomy by id - schema validation",
+      "description": "Does the taxonomy by id endpoint return the full information of a taxonomy in the correct schema",
+      "endpoint": "/taxonomies/{id}",
+      "schema": "Taxonomy.json"
+    },
+    {
+      "name": "Taxonomy terms list - schema validation",
+      "description": "Does the taxonomy terms list endpoint return a paginated list of taxonomy terms in the correct schema",
+      "endpoint": "/taxonomy_terms",
+      "schema": "TaxonomyTermList.json"
+    },
+    {
+      "name": "Taxonomy terms list - schema validation",
+      "description": "Does the taxonomy term by id endpoint return the full information of a taxonomy term in the correct schema",
+      "endpoint": "/taxonomy_terms/{id}",
+      "schema": "TaxonomyTerm.json"
+    },
+    {
+      "name": "Service at location list - schema validation",
+      "description": "Does the service at location list endpoint return a paginated list of services at locations in the correct schema",
+      "endpoint": "/service_at_locations",
+      "schema": "ServiceAtLocationList.json"
+    },
+    {
+      "name": "Service at location by id - schema validation",
+      "description": "Does the service at location by id endpoint return the full information of a service at location in the correct schema",
+      "endpoint": "/service_at_locations/{id}",
+      "schema": "ServiceAtLocation.json"
+    }
+  ]
+}
