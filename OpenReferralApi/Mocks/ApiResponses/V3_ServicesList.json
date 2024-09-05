@@ -1,0 +1,37 @@
+{
+  "total_items": 10,
+  "total_pages": 10,
+  "page_number": 1,
+  "size": 1,
+  "first_page": true,
+  "last_page": false,
+  "empty": false,
+  "contents": [
+    {
+      "id": "ac148810-d857-441c-9679-408f346de14b",
+      "name": "Community Counselling",
+      "description": "Counselling Services provided by trained professionals. Suitable for people with mental health conditions such as anxiety, depression, or eating disorders as well as people experiencing difficult life events and circumstances. ",
+      "url": "http://example.com/counselling",
+      "email": "email@example.com",
+      "status": "active",
+      "fees": "fees_description",
+      "accreditations": "All of our practitioners are accredited by the BASC, UKCP, and the Professional Standards Body",
+      "minimum_age": 12,
+      "maximum_age": 100,
+      "assured_date": "2005-01-01",
+      "assurer_email": "email@example.com",
+      "alert": "Following COVID-19 we have moved most of our counselling sessions online. Please contact the reception if you require further information.",
+      "last_modified": "2023-03-15T10:30:45.123Z",
+      "organization": {
+        "id": "d9d5e0f5-d3ce-4f73-9a2f-4dd0ecc6c610",
+        "name": "Example Organization Inc.",
+        "description": "Example Org is a non-profit organization dedicated to providing services to qualified beneficiaries",
+        "email": "email@example.com",
+        "website": "http://example.com",
+        "logo": "https://openreferral.org/wp-content/uploads/2018/02/OpenReferral_Logo_Green-4-1.png",
+        "uri": "http://example.com",
+        "parent_organization_id": "cd09a387-91f4-4555-94ec-e799c35344cd"
+      }
+    }
+  ]
+}
