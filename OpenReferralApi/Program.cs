@@ -1,4 +1,6 @@
 using System.Reflection;
+using OpenReferralApi.Services;
+using OpenReferralApi.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +13,11 @@ builder.Services.AddSwaggerGen(options =>
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
 
+builder.Services.AddHttpClient();
 builder.Services.AddControllers();
+builder.Services.AddScoped<IValidatorService, ValidatorService>();
+// builder.Services.AddScoped<IRequestService, RequestService>();
+builder.Services.AddScoped<IRequestService, RequestServiceMock>();
 
 var app = builder.Build();
 
