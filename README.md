@@ -43,3 +43,10 @@ heroku login
 heroku logs --app=oruk-api --tail 
 ```
 
+To run the API container locally
+
+``` powershell
+
+docker run -p 8080:8080 --name oruk-api oruk-api:latest
+
+```
