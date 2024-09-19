@@ -2,11 +2,22 @@ namespace OpenReferralApi.Models;
 
 public class ValidationResponse
 {
-    public string ServiceUrl { get; set; } = null!;
-    public bool BasicTestsPassed { get; set; }
-    public bool AllTestsPassed { get; set; }
-    public string TestsProfile { get; set; } = null!;
-    public List<Test> Tests { get; set; } = null!;
+    public ServiceDetails Service { get; set; }
+    public List<MetaData> Metadata { get; set; }
+    public List<TestGroup> TestSuites { get; set; } = null!;
+}
+
+public class MetaData
+{
+    public string Label { get; set; } = null!;
+    public string Value { get; set; } = null!;
+}
+
+public class ServiceDetails
+{
+    public string Url { get; set; } = null!;
+    public bool IsValid { get; set; }
+    public string Profile { get; set; } = null!;
 }
 
 public class Test
@@ -15,8 +26,6 @@ public class Test
     public string Endpoint { get; set; } = null!;
     public string Description { get; set; } = null!;
     public bool Success { get; set; }
-    public int TestLevel { get; set; }
-    public List<Issue> Warnings { get; set; } = null!;
     public List<Issue> Issues { get; set; } = null!;
 }
 
@@ -32,6 +41,8 @@ public class TestGroup
 {
     public string Name { get; set; } = null!;
     public string Description { get; set; } = null!;
-    public string Message { get; set; } = null!;
+    public string IssueLevel { get; set; } = null!;
+    public bool Required { get; set; }
     public bool Success { get; set; }
+    public List<Test> Tests { get; set; } = null!;
 }
