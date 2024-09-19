@@ -1,72 +1,7 @@
 {
-  "name": "taxonomy",
-  "path": "taxonomies.csv",
-  "description": "The taxonomies from which taxonomy terms are taken.",
-  "datapackage_metadata": {
-    "format": "csv",
-    "mediatype": "text/csv",
-    "profile": "tabular-data-resource",
-    "order": 21
-  },
-  "type": "object",
   "properties": {
-    "id": {
-      "name": "id",
-      "type": "string",
-      "title": "Identifier",
-      "description": "The identifier of the taxonomy. Each entry must have a unique identifier",
-      "format": "uuid",
-      "constraints": {
-        "unique": true
-      },
-      "example": "5c4d79d7-cc55-470e-9f1f-8cad074e4892"
-    },
-    "name": {
-      "name": "name",
-      "type": "string",
-      "title": "Name",
-      "description": "The name of the taxonomy from which terms are sourced.",
-      "constraints": {
-        "unique": false
-      },
-      "example": "name"
-    },
-    "description": {
-      "name": "description",
-      "type": "string",
-      "title": "Description",
-      "description": "A free text description of the taxonomy.",
-      "constraints": {
-        "unique": false
-      },
-      "example": "description"
-    },
-    "uri": {
-      "name": "uri",
-      "type": "string",
-      "title": "URI",
-      "description": "The URI of the taxonomy.",
-      "format": "uri",
-      "constraints": {
-        "unique": false
-      },
-      "example": "http://example.com"
-    },
-    "version": {
-      "name": "version",
-      "type": "string",
-      "title": "Version",
-      "description": "The version of the taxonomy.",
-      "constraints": {
-        "unique": false
-      },
-      "example": "version"
-    },
-    "taxonomy_terms": {
-      "name": "taxonomy_terms",
+    "contents": {
       "type": "array",
-      "title": "Taxonomy Terms",
-      "description": "A link between a taxonomy and one or more taxonomy terms.",
       "items": {
         "name": "taxonomy_term",
         "path": "taxonomy_terms.csv",
@@ -90,6 +25,27 @@
             },
             "example": "3f7b145d-84af-42d7-8fae-eaca714b02b2",
             "core": "Y"
+          },
+          "name": {
+            "name": "name",
+            "type": "string",
+            "title": "Name",
+            "description": "The taxonomy term itself.",
+            "constraints": {
+              "unique": false
+            },
+            "example": "name",
+            "core": "Y"
+          },
+          "description": {
+            "name": "description",
+            "type": "string",
+            "title": "Description",
+            "description": "A free text description of the term.",
+            "constraints": {
+              "unique": false
+            },
+            "example": "description"
           },
           "parent_id": {
             "name": "parent_id",
@@ -152,5 +108,41 @@
       }
     }
   },
-  "required": ["id", "name", "description"]
+  "allOf": [
+    {
+      "Page": {
+        "type": "object",
+        "properties": {
+          "total_items": {
+            "type": "integer",
+            "description": "Count of total results."
+          },
+          "total_pages": {
+            "type": "integer",
+            "description": "Count of total pages."
+          },
+          "page_number": {
+            "type": "integer",
+            "description": "Current page number."
+          },
+          "size": {
+            "type": "integer",
+            "description": "Size of current page."
+          },
+          "first_page": {
+            "type": "boolean",
+            "description": "Is this page the first page."
+          },
+          "last_page": {
+            "type": "boolean",
+            "description": "Is this page the last page."
+          },
+          "empty": {
+            "type": "boolean",
+            "description": "Is this page empty."
+          }
+        }
+      }
+    }
+  ]
 }

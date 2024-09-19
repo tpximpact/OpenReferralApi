@@ -46,6 +46,7 @@
       "id": "e94c9f38-1e8f-4564-91d4-d53501ab1765",
       "location": {
         "id": "3a19ff88-4620-4d17-9830-ac1d859eb5d5",
+        "location_type": "physical",
         "name": "MyCity Civic Center",
         "description": "MyCity Civic Center is located on Main Street and contains facilities for a number of civic and community services available.",
         "latitude": 100,
@@ -129,6 +130,8 @@
       "link_type": "link_type",
       "taxonomy_term": {
         "id": "3f7b145d-84af-42d7-8fae-eaca714b02b2",
+        "name": "name",
+        "description": "description",
         "parent_id": "0bc248fa-dc27-4650-9ba4-8f1a24ef16a2",
         "taxonomy": "taxonomy",
         "term_uri": "http://example.com",

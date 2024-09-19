@@ -8,24 +8,40 @@ public class RequestServiceMock : IRequestService
 {
     public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint)
     {
+        if (url.ToLower().Contains("issues"))
+        {
+            return endpoint switch
+            {
+                "/services" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_list.json"),
+                "/services/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_full.json"),
+                "/taxonomies" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_list.json"),
+                "/taxonomies/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy.json"),
+                "/taxonomy_terms" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_term_list.json"),
+                "/taxonomy_terms/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_term.json"),
+                "/service_at_locations" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_at_location_list.json"),
+                "/service_at_locations/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_at_location_full.json"),
+                _ => await ReadJsonFile("Mocks/V3.0-UK-Default/api_details.json")
+            };
+        }
+        
         return endpoint switch
         {
-            "/services" => await ReadJsonFile("Mocks/ApiResponses/V3_ServicesList.json"),
-            "/services/{id}" => await ReadJsonFile("Mocks/ApiResponses/V3_Service.json"),
-            "/taxonomies" => await ReadJsonFile("Mocks/ApiResponses/V3_TaxonomyList.json"),
-            "/taxonomies/{id}" => await ReadJsonFile("Mocks/ApiResponses/V3_Taxonomy.json"),
-            "/taxonomy_terms" => await ReadJsonFile("Mocks/ApiResponses/V3_TaxonomyTermList.json"),
-            "/taxonomy_terms/{id}" => await ReadJsonFile("Mocks/ApiResponses/V3_TaxonomyTerm.json"),
-            "/service_at_locations" => await ReadJsonFile("Mocks/ApiResponses/V3_ServiceAtLocationList.json"),
-            "/service_at_locations/{id}" => await ReadJsonFile("Mocks/ApiResponses/V3_ServiceAtLocation.json"),
-            _ => await ReadJsonFile("Mocks/ApiResponses/V3_ApiDetails.json")
+            "/services" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_list.json"),
+            "/services/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_full.json"),
+            "/taxonomies" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_list.json"),
+            "/taxonomies/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy.json"),
+            "/taxonomy_terms" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_term_list.json"),
+            "/taxonomy_terms/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_term.json"),
+            "/service_at_locations" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_at_location_list.json"),
+            "/service_at_locations/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_at_location_full.json"),
+            _ => await ReadJsonFile("Mocks/V3.0-UK-Default/api_details.json")
         };
     }
 
     public async Task<Result<JsonNode>> GetApiDetails(string url)
     {
-        return await ReadJsonFile("Mocks/ApiResponses/V3_ApiDetails.json");
-        // return await ReadJsonFile("Mocks/ApiResponses/V3_ApiDetails_ISSUES.json");
+        return await ReadJsonFile("Mocks/V3.0-UK-Default/V3_ApiDetails.json");
+        // return await ReadJsonFile("Mocks/V3.0-UK-Default/V3_ApiDetails_ISSUES.json");
     }
     
     private async Task<Result<JsonNode>> ReadJsonFile(string filePath)

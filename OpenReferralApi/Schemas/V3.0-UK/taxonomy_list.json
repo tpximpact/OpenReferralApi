@@ -95,6 +95,27 @@
                   "example": "3f7b145d-84af-42d7-8fae-eaca714b02b2",
                   "core": "Y"
                 },
+                "name": {
+                  "name": "name",
+                  "type": "string",
+                  "title": "Name",
+                  "description": "The taxonomy term itself.",
+                  "constraints": {
+                    "unique": false
+                  },
+                  "example": "name",
+                  "core": "Y"
+                },
+                "description": {
+                  "name": "description",
+                  "type": "string",
+                  "title": "Description",
+                  "description": "A free text description of the term.",
+                  "constraints": {
+                    "unique": false
+                  },
+                  "example": "description"
+                },
                 "parent_id": {
                   "name": "parent_id",
                   "type": "string",

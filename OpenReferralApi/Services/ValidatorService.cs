@@ -9,7 +9,7 @@ namespace OpenReferralApi.Services;
 
 public class ValidatorService : IValidatorService
 {
-    private const string Profile = "HSDS-3.0-UK";
+    private const string Profile = "HSDS-3.0-UK-2";
     private readonly IRequestService _requestService; 
 
     public ValidatorService(IRequestService requestService)
@@ -26,7 +26,8 @@ public class ValidatorService : IValidatorService
             ServiceUrl = serviceUrl,
             TestsProfile = Profile,
             Tests = new List<Test>(),
-            AllTestsPassed = true
+            AllTestsPassed = true,
+            BasicTestsPassed = true
         };
 
         foreach (var testCase in testProfile.Value.TestCases)
@@ -38,6 +39,9 @@ public class ValidatorService : IValidatorService
             validationResponse.Tests.Add(testResult.Value);
             if (!testResult.Value.Success)
                 validationResponse.AllTestsPassed = false;
+
+            if (testCase.TestLevel == 1 && !validationResponse.AllTestsPassed)
+                validationResponse.BasicTestsPassed = false;
         }
 
         return validationResponse;
@@ -76,7 +80,9 @@ public class ValidatorService : IValidatorService
             Description = testCase.Description,
             Endpoint = testCase.Endpoint,
             Success = issues.IsSuccess && issues.Value.Count == 0,
-            Issues = issues.Value
+            TestLevel = testCase.TestLevel,
+            Issues = testCase.TestLevel == 1 ? issues.Value : new List<Issue>(),
+            Warnings = testCase.TestLevel > 1 ? issues.Value : new List<Issue>()
         };
         
     }
