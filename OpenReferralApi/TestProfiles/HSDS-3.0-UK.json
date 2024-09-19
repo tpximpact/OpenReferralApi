@@ -18,7 +18,7 @@
           "description": "Does the services list endpoint return a paginated list of services in the correct schema",
           "endpoint": "/services",
           "schema": "V3.0-UK/service_list.json",
-          "pagination": false
+          "pagination": true
         },
         {
           "name": "Service by id - API & schema validation",
@@ -40,7 +40,7 @@
           "description": "Does the taxonomies list endpoint return a paginated list of taxonomies in the correct schema",
           "endpoint": "/taxonomies",
           "schema": "V3.0-UK/taxonomy_list.json",
-          "pagination": false,
+          "pagination": true,
           "testLevel": 2
         },
         {
@@ -55,7 +55,7 @@
           "description": "Does the taxonomy terms list endpoint return a paginated list of taxonomy terms in the correct schema",
           "endpoint": "/taxonomy_terms",
           "schema": "V3.0-UK/taxonomy_term_list.json",
-          "pagination": false,
+          "pagination": true,
           "testLevel": 2
         },
         {
@@ -70,7 +70,7 @@
           "description": "Does the service at location list endpoint return a paginated list of services at locations in the correct schema",
           "endpoint": "/service_at_locations",
           "schema": "V3.0-UK/service_at_location_list.json",
-          "pagination": false,
+          "pagination": true,
           "testLevel": 2
         },
         {

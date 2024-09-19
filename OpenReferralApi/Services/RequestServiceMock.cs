@@ -8,33 +8,26 @@ public class RequestServiceMock : IRequestService
 {
     public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint)
     {
-        if (url.ToLower().Contains("issues"))
-        {
-            return endpoint switch
-            {
-                "/services" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_list.json"),
-                "/services/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_full.json"),
-                "/taxonomies" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_list.json"),
-                "/taxonomies/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy.json"),
-                "/taxonomy_terms" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_term_list.json"),
-                "/taxonomy_terms/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_term.json"),
-                "/service_at_locations" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_at_location_list.json"),
-                "/service_at_locations/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_at_location_full.json"),
-                _ => await ReadJsonFile("Mocks/V3.0-UK-Default/api_details.json")
-            };
-        }
+        var mockPath = "Mocks/V3.0-UK-";
+
+        if (url.ToLower().Contains("fail"))
+            mockPath += "Fail";
+        else if (url.ToLower().Contains("warn"))
+            mockPath += "Warn";
+        else
+            mockPath += "Default";
         
         return endpoint switch
         {
-            "/services" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_list.json"),
-            "/services/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_full.json"),
-            "/taxonomies" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_list.json"),
-            "/taxonomies/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy.json"),
-            "/taxonomy_terms" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_term_list.json"),
-            "/taxonomy_terms/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/taxonomy_term.json"),
-            "/service_at_locations" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_at_location_list.json"),
-            "/service_at_locations/{id}" => await ReadJsonFile("Mocks/V3.0-UK-Default/service_at_location_full.json"),
-            _ => await ReadJsonFile("Mocks/V3.0-UK-Default/api_details.json")
+            "/services" => await ReadJsonFile($"{mockPath}/service_list.json"),
+            "/services/{id}" => await ReadJsonFile($"{mockPath}/service_full.json"),
+            "/taxonomies" => await ReadJsonFile($"{mockPath}/taxonomy_list.json"),
+            "/taxonomies/{id}" => await ReadJsonFile($"{mockPath}/taxonomy.json"),
+            "/taxonomy_terms" => await ReadJsonFile($"{mockPath}/taxonomy_term_list.json"),
+            "/taxonomy_terms/{id}" => await ReadJsonFile($"{mockPath}/taxonomy_term.json"),
+            "/service_at_locations" => await ReadJsonFile($"{mockPath}/service_at_location_list.json"),
+            "/service_at_locations/{id}" => await ReadJsonFile($"{mockPath}/service_at_location_full.json"),
+            _ => await ReadJsonFile($"{mockPath}/api_details.json")
         };
     }
 
