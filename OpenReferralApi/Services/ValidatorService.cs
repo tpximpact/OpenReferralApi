@@ -10,7 +10,7 @@ namespace OpenReferralApi.Services;
 
 public class ValidatorService : IValidatorService
 {
-    private const string Profile = "HSDS-3.0-UK-2";
+    private const string Profile = "HSDS-3.0-UK";
     private readonly IRequestService _requestService; 
 
     public ValidatorService(IRequestService requestService)
@@ -24,25 +24,50 @@ public class ValidatorService : IValidatorService
         
         var validationResponse = new ValidationResponse
         {
-            ServiceUrl = serviceUrl,
-            TestsProfile = Profile,
-            Tests = new List<Test>(),
-            AllTestsPassed = true,
-            BasicTestsPassed = true
+            Service = new ServiceDetails
+            {
+                Url = serviceUrl,
+                IsValid = true,
+                Profile = Profile
+            },
+            TestSuites = new List<TestGroup>(),
+            Metadata = new List<MetaData>
+            {
+                new() {Label = "Service provider", Value = "Fooshire County Council"},
+                new() {Label = "Email", Value = "service@fooshire.gov"},
+                new() {Label = "Telephone", Value = "+44 123 456 7890"},
+                new() {Label = "Region", Value = "South West"}
+            }
         };
 
-        foreach (var testCase in testProfile.Value.TestCases)
+        foreach (var testGroup in testProfile.Value.TestGroups)
         {
-            var testResult = await ValidateTestCase(testCase, serviceUrl);
-            if (testResult.IsFailed)
-                return Result.Fail(testResult.Errors);
+            var testGroupResult = new TestGroup
+            {
+                Name = testGroup.Name,
+                Description = testGroup.Description,
+                Required = testGroup.Required,
+                MessageLevel = testGroup.MessageLevel,
+                Success = true,
+                Tests = new List<Test>()
+            };
+            
+            foreach (var testCase in testGroup.Tests)
+            {
+                var testResult = await ValidateTestCase(testCase, serviceUrl);
+                if (testResult.IsFailed)
+                    return Result.Fail(testResult.Errors);
 
-            validationResponse.Tests.Add(testResult.Value);
-            if (!testResult.Value.Success)
-                validationResponse.AllTestsPassed = false;
+                testGroupResult.Tests.Add(testResult.Value);
 
-            if (testCase.TestLevel == 1 && !validationResponse.AllTestsPassed)
-                validationResponse.BasicTestsPassed = false;
+                if (!testResult.Value.Success)
+                    testGroupResult.Success = false;
+            }
+            
+            validationResponse.TestSuites.Add(testGroupResult);
+            
+            if (testGroup.Required && !testGroupResult.Success)
+                validationResponse.Service.IsValid = false;
         }
 
         return validationResponse;
@@ -62,7 +87,7 @@ public class ValidatorService : IValidatorService
                 "Does the base endpoint return meta information about the API, and does it adhere to the schema",
             Endpoint = "/",
             Success = issues.IsSuccess && issues.Value.Count == 0,
-            Issues = issues.Value
+            Messages = issues.Value
         };
     }
 
@@ -87,9 +112,7 @@ public class ValidatorService : IValidatorService
             Description = testCase.Description,
             Endpoint = testCase.Endpoint,
             Success = issues.IsSuccess && issues.Value.Count == 0,
-            TestLevel = testCase.TestLevel,
-            Issues = testCase.TestLevel == 1 ? issues.Value : new List<Issue>(),
-            Warnings = testCase.TestLevel > 1 ? issues.Value : new List<Issue>()
+            Messages = issues.Value
         };
         
     }
