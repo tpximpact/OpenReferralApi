@@ -26,7 +26,7 @@ public class Test
     public string Endpoint { get; set; } = null!;
     public string Description { get; set; } = null!;
     public bool Success { get; set; }
-    public List<Issue> Issues { get; set; } = null!;
+    public List<Issue> Messages { get; set; } = null!;
 }
 
 public class Issue
@@ -41,7 +41,7 @@ public class TestGroup
 {
     public string Name { get; set; } = null!;
     public string Description { get; set; } = null!;
-    public string IssueLevel { get; set; } = null!;
+    public string MessageLevel { get; set; } = null!;
     public bool Required { get; set; }
     public bool Success { get; set; }
     public List<Test> Tests { get; set; } = null!;

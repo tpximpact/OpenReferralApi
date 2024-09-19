@@ -4,7 +4,7 @@
     {
       "name": "Level 1 Compliance - Basic checks",
       "description": "Will validate the required basic endpoints. Validation will fail if it does not pass all these checks.",
-      "issueLevel": "error",
+      "messageLevel": "error",
       "required": true,
       "tests":[
         {
@@ -32,7 +32,7 @@
     {
       "name": "Level 2 Compliance - Extended checks",
       "description": "Will validate all other endpoints. Validation will not fail if it does not pass all these checks.",
-      "issueLevel": "warning",
+      "messageLevel": "warning",
       "required": false,
       "tests":[
         {

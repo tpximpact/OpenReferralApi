@@ -47,7 +47,7 @@ public class ValidatorService : IValidatorService
                 Name = testGroup.Name,
                 Description = testGroup.Description,
                 Required = testGroup.Required,
-                IssueLevel = testGroup.IssueLevel,
+                MessageLevel = testGroup.MessageLevel,
                 Success = true,
                 Tests = new List<Test>()
             };
@@ -87,7 +87,7 @@ public class ValidatorService : IValidatorService
                 "Does the base endpoint return meta information about the API, and does it adhere to the schema",
             Endpoint = "/",
             Success = issues.IsSuccess && issues.Value.Count == 0,
-            Issues = issues.Value
+            Messages = issues.Value
         };
     }
 
@@ -112,7 +112,7 @@ public class ValidatorService : IValidatorService
             Description = testCase.Description,
             Endpoint = testCase.Endpoint,
             Success = issues.IsSuccess && issues.Value.Count == 0,
-            Issues = issues.Value
+            Messages = issues.Value
         };
         
     }
