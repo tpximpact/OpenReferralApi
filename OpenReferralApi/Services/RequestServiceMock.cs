@@ -8,6 +8,22 @@ public class RequestServiceMock : IRequestService
 {
     public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint)
     {
+        if (url.ToLower().Contains("issues"))
+        {
+            return endpoint switch
+            {
+                "/services" => await ReadJsonFile("Mocks/ApiResponses/V3_ServicesList.json"),
+                "/services/{id}" => await ReadJsonFile("Mocks/ApiResponses/V3_Service.json"),
+                "/taxonomies" => await ReadJsonFile("Mocks/ApiResponses/V3_TaxonomyList.json"),
+                "/taxonomies/{id}" => await ReadJsonFile("Mocks/ApiResponses/V3_Taxonomy.json"),
+                "/taxonomy_terms" => await ReadJsonFile("Mocks/ApiResponses/V3_TaxonomyTermList.json"),
+                "/taxonomy_terms/{id}" => await ReadJsonFile("Mocks/ApiResponses/V3_TaxonomyTerm.json"),
+                "/service_at_locations" => await ReadJsonFile("Mocks/ApiResponses/V3_ServiceAtLocationList.json"),
+                "/service_at_locations/{id}" => await ReadJsonFile("Mocks/ApiResponses/V3_ServiceAtLocation.json"),
+                _ => await ReadJsonFile("Mocks/ApiResponses/V3_ApiDetails_ISSUES.json")
+            };
+        }
+        
         return endpoint switch
         {
             "/services" => await ReadJsonFile("Mocks/ApiResponses/V3_ServicesList.json"),
@@ -20,6 +36,11 @@ public class RequestServiceMock : IRequestService
             "/service_at_locations/{id}" => await ReadJsonFile("Mocks/ApiResponses/V3_ServiceAtLocation.json"),
             _ => await ReadJsonFile("Mocks/ApiResponses/V3_ApiDetails.json")
         };
+    }
+
+    public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint, int perPage, int page)
+    {
+        return await GetApiResponse(url, endpoint);
     }
 
     public async Task<Result<JsonNode>> GetApiDetails(string url)
