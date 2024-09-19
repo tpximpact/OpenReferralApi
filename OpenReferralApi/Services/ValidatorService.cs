@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using FluentResults;
 using Json.Schema;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
 
@@ -73,6 +74,12 @@ public class ValidatorService : IValidatorService
         var schema = JsonSchema.FromFile(schemaPath);
 
         var issues = ValidateResponseSchema(apiResponse.Value, schema);
+        
+        if (testCase.Pagination)
+        {
+            var paginationValidationResponse = await ValidatePagination(testCase, serviceUrl, apiResponse.Value);
+            issues.Value.AddRange(paginationValidationResponse.Value);
+        }
 
         return new Test
         {
@@ -85,6 +92,87 @@ public class ValidatorService : IValidatorService
             Warnings = testCase.TestLevel > 1 ? issues.Value : new List<Issue>()
         };
         
+    }
+
+    private async Task<Result<List<Issue>>> ValidatePagination(TestCase testCase, string serviceUrl, JsonNode apiResponse)
+    {
+        var serializerSettings = new JsonSerializerSettings
+        {
+            ContractResolver = new DefaultContractResolver { NamingStrategy = new SnakeCaseNamingStrategy() }
+        };
+        var firstPage = JsonConvert.DeserializeObject<Page>(apiResponse.ToJsonString(), serializerSettings);
+        var perPage = 20;
+        const int totalPages = 3;
+        if (firstPage!.TotalItems < 60)
+        {
+            perPage = (firstPage.TotalItems + (totalPages - 1)) / totalPages;
+        }
+
+        var issues = new List<Issue>();
+        
+        // Request several pages and check the pagination meta data 
+        for (var page = 1; page <= totalPages; page++)
+        {
+            var response = await _requestService.GetApiResponse(serviceUrl, testCase.Endpoint, perPage, page);
+            var currentPage = JsonConvert.DeserializeObject<Page>(response.Value.ToJsonString(), serializerSettings);
+            // Is the total number of items correct
+            if (currentPage!.TotalItems != firstPage.TotalItems)
+            {
+                issues.Add(new Issue()
+                {
+                    Name = "Total items",
+                    Description = "Is the total number of items correct",
+                    Message = $"The value of 'total_items' has changed from {firstPage.TotalItems} to {currentPage.TotalItems} whilst requesting page {page} of the data",
+                    Parameters = $"?per_page={perPage}&page={page}"
+                });
+            }
+            // Is the number of items returned per page correct
+            if (page < totalPages && currentPage.Size != perPage)
+            {
+                issues.Add(new Issue()
+                {
+                    Name = "Items per page",
+                    Description = "Is the number of items returned per page correct",
+                    Message = $"The value of 'size' is {currentPage.Size} when {perPage} item(s) were requested in the 'per_page' parameter",
+                    Parameters = $"?per_page={perPage}&page={page}"
+                });
+            }
+            // Does the number of items returned match the 'size' value in the response
+            if (currentPage.Size != currentPage.Contents.Count)
+            {
+                issues.Add(new Issue()
+                {
+                    Name = "Item count",
+                    Description = "Does the number of items returned match the 'size' value in the response",
+                    Message = $"The value of 'size' is {currentPage.Size} when {currentPage.Contents.Count} item(s) were returned in the response content",
+                    Parameters = $"?per_page={perPage}&page={page}"
+                });
+            }
+            // Is the 'first_page' flag returned correctly
+            if ((page == 1 && !currentPage.FirstPage) || (page != 1 && currentPage.FirstPage))
+            {
+                issues.Add(new Issue()
+                {
+                    Name = "First page flag",
+                    Description = "Is the 'first_page' flag returned correctly",
+                    Message = $"The value of 'first_page' is {currentPage.FirstPage} when the page number is {page}",
+                    Parameters = $"?per_page={perPage}&page={page}"
+                });
+            }
+            // Is the 'last_page' flag returned correctly
+            if ((page == firstPage.TotalPages && !currentPage.LastPage) || (page != firstPage.TotalPages && currentPage.LastPage))
+            {
+                issues.Add(new Issue()
+                {
+                    Name = "Last page flag",
+                    Description = "Is the 'last_page' flag returned correctly",
+                    Message = $"The value of 'last_page' is {currentPage.LastPage} when the page number is {page} of {firstPage.TotalPages}",
+                    Parameters = $"?per_page={perPage}&page={page}"
+                });
+            }
+        }
+        
+        return Result.Ok(issues);
     }
 
     private Result<List<Issue>> ValidateResponseSchema(JsonNode response, JsonSchema schema)

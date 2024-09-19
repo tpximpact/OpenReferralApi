@@ -19,6 +19,11 @@ public class RequestService : IRequestService
         throw new NotImplementedException();
     }
 
+    public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint, int perPage, int page)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<Result<JsonNode>> GetApiDetails(string url)
     {
         return await MakeRequest(url);

@@ -38,6 +38,11 @@ public class RequestServiceMock : IRequestService
         };
     }
 
+    public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint, int perPage, int page)
+    {
+        return await GetApiResponse(url, endpoint);
+    }
+
     public async Task<Result<JsonNode>> GetApiDetails(string url)
     {
         return await ReadJsonFile("Mocks/V3.0-UK-Default/V3_ApiDetails.json");
