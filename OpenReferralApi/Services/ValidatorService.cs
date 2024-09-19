@@ -125,7 +125,7 @@ public class ValidatorService : IValidatorService
         };
         var firstPage = JsonConvert.DeserializeObject<Page>(apiResponse.ToJsonString(), serializerSettings);
         var perPage = 20;
-        const int totalPages = 3;
+        var totalPages = firstPage!.TotalPages < 3 ? firstPage!.TotalPages : 3;
         if (firstPage!.TotalItems < 60)
         {
             perPage = (firstPage.TotalItems + (totalPages - 1)) / totalPages;

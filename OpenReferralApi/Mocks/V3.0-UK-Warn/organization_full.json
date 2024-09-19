@@ -1,0 +1,144 @@
+{
+  "id": "d9d5e0f5-d3ce-4f73-9a2f-4dd0ecc6c610",
+  "name": "Example Organization Inc.",
+  "description": "Example Org is a non-profit organization dedicated to providing services to qualified beneficiaries",
+  "email": "email@example.com",
+  "website": "http://example.com",
+  "logo": "https://openreferral.org/wp-content/uploads/2018/02/OpenReferral_Logo_Green-4-1.png",
+  "uri": "http://example.com",
+  "parent_organization_id": "cd09a387-91f4-4555-94ec-e799c35344cd",
+  "organization_identifiers": [
+    {
+      "id": "d4dbcebc-0802-47cb-8651-b937ac4f2f3e",
+      "identifier_scheme": "GB-COH",
+      "identifier_type": "Company number",
+      "identifier": "1234567"
+    }
+  ],
+  "services": [
+    {
+      "id": "ac148810-d857-441c-9679-408f346de14b",
+      "name": "Community Counselling",
+      "description": "Counselling Services provided by trained professionals. Suitable for people with mental health conditions such as anxiety, depression, or eating disorders as well as people experiencing difficult life events and circumstances. ",
+      "url": "http://example.com/counselling",
+      "email": "email@example.com",
+      "status": "active",
+      "fees": "fees_description",
+      "accreditations": "All of our practitioners are accredited by the BASC, UKCP, and the Professional Standards Body",
+      "minimum_age": 12,
+      "maximum_age": 100,
+      "assured_date": "2005-01-01",
+      "assurer_email": "email@example.com",
+      "alert": "Following COVID-19 we have moved most of our counselling sessions online. Please contact the reception if you require further information.",
+      "last_modified": "2023-03-15T10:30:45.123Z",
+      "schedules": [
+        {
+          "id": "48102e86-bb50-41c4-8f1e-e269368c41d1",
+          "valid_from": "2005-01-01",
+          "valid_to": "2005-01-01",
+          "dtstart": "2005-01-01",
+          "freq": "WEEKLY",
+          "interval": 1,
+          "byday": "TH,FR",
+          "bymonthday": "2,3,4",
+          "description": "The service is available from 10 am to 6pm weekdays. The service is not available on public holidays.",
+          "opens_at": "10:00:00",
+          "closes_at": "18:00:00",
+          "schedule_link": "http://example.com",
+          "attending_type": "You can attend this service in-person or remotely via video conferencing",
+          "notes": "Some of our staff will be unavailable during their lunch break which may be any 30 minute period between 1200 and 1400"
+        }
+      ],
+      "service_areas": [
+        {
+          "id": "381c64f1-a724-4884-9c21-ac96c21cca3e",
+          "name": "The service is available to all residents of the MyCity area. We provide the service in our offices or via video conferencing to any who can provide evidence of their residency.",
+          "extent": "extent",
+          "extent_type": "geojson",
+          "uri": "http://example.com",
+          "service_area": "The service is available to all residents of the MyCity area. We provide the service in our offices or via video conferencing to any who can provide evidence of their residency."
+        }
+      ],
+      "service_at_locations": [
+        {
+          "id": "e94c9f38-1e8f-4564-91d4-d53501ab1765",
+          "location": {
+            "id": "3a19ff88-4620-4d17-9830-ac1d859eb5d5",
+            "location_type": "physical",
+            "name": "MyCity Civic Center",
+            "description": "MyCity Civic Center is located on Main Street and contains facilities for a number of civic and community services available.",
+            "latitude": 100,
+            "longitude": 101,
+            "external_identifier": "10092008082",
+            "external_identifier_type": "UPRN",
+            "addresses": [
+              {
+                "id": "74706e55-df26-4b84-80fe-ecc30b5befb4",
+                "attention": "A. Persona",
+                "address_1": "1-30 Main Street",
+                "city": "MyCity",
+                "region": "MyRegion",
+                "state_province": "MyState",
+                "postal_code": "ABC 1234",
+                "country": "US",
+                "address_type": "postal"
+              }
+            ],
+            "accessibility": [
+              {
+                "id": "afcf296e-1cb2-4139-9c88-33d587d1a50b",
+                "description": "The building is equipped with induction loops for hearing aids. Wheelchair access is possible on all levels.",
+                "details": "Switch hearing aid to T-coil to access the induction loop facility.",
+                "url": "http://example.com",
+                "accessibility": "The building is equipped with induction loops for hearing aids. Wheelchair access is possible on all levels."
+              }
+            ]
+          }
+        }
+      ],
+      "languages": [
+        {
+          "id": "2989d3ed-c547-48f8-8f9d-432d81c7892e"
+        }
+      ],
+      "funding": [
+        {
+          "id": "1f2df32c-bf08-4b8e-bd6f-e834014b19bc",
+          "source": "This service is funded partially by the MyCity local government and via grants made by charity funding bodies. We also operate a for-profit department which is used to partially cover the expense of the public service"
+        }
+      ],
+      "cost_options": [
+        {
+          "id": "1fdf4d39-3d80-484d-9f92-a8ffa08621e7",
+          "valid_from": "2020-01-01",
+          "valid_to": "2022-12-31",
+          "option": "Under 18s and Over 60s",
+          "amount": 35,
+          "amount_description": "per 1 hour session"
+        }
+      ],
+      "contacts": [
+        {
+          "id": "1e7efce3-639b-4880-940c-b95cd30cdb50",
+          "name": "Ann Persona",
+          "title": "Reception Manager"
+        }
+      ],
+      "attributes": [
+        {
+          "id": "ae58cc39-8b70-4ab1-8aea-786882e5ac8e",
+          "link_type": "link_type",
+          "taxonomy_term": {
+            "id": "3f7b145d-84af-42d7-8fae-eaca714b02b2",
+            "name": "name",
+            "description": "description",
+            "parent_id": "0bc248fa-dc27-4650-9ba4-8f1a24ef16a2",
+            "taxonomy": "taxonomy",
+            "term_uri": "http://example.com",
+            "term": "name"
+          }
+        }
+      ]
+    }
+  ]
+}
