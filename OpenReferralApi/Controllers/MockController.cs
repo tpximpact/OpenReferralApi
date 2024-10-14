@@ -16,7 +16,7 @@ public class MockController : ControllerBase
     [Route("validate")]
     public async Task<IActionResult> GetValidatorMock([FromQuery]string? serviceUrl = null)
     {
-        return await ReadJsonFile("Mocks/V1_ValidateResponse.json");
+        return await ReadJsonFile("Mocks/V1.0-UK-Default/V1_ValidateResponse.json");
     }
     
     /// <summary>
@@ -26,7 +26,7 @@ public class MockController : ControllerBase
     [Route("dashboard")]
     public async Task<IActionResult> GetDashboardMock()
     {
-        return await ReadJsonFile("Mocks/V1_DashboardResponse.json");
+        return await ReadJsonFile("Mocks/V1.0-UK-Default/V1_DashboardResponse.json");
     }
 
     private async Task<IActionResult> ReadJsonFile(string filePath)
