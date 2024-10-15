@@ -14,6 +14,8 @@ public class RequestServiceMock : IRequestService
             mockPath += "Fail";
         else if (url.ToLower().Contains("warn"))
             mockPath += "Warn";
+        else if (url.ToLower().Contains("test"))
+            mockPath += "Test";
         else
             mockPath += "Default";
         
