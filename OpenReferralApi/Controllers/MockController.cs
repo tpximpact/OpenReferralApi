@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
-using static System.IO.File;
 
 namespace OpenReferralApi.Controllers;
 
@@ -8,13 +7,105 @@ namespace OpenReferralApi.Controllers;
 [Route("api/[Controller]")]
 public class MockController : ControllerBase
 {
+    private const string MockPath = "Mocks/V3.0-UK-Default";
+    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// </summary>
+    [HttpGet]
+    [Route("")]
+    public async Task<IActionResult> GetServiceMetadata()
+    {
+        return await ReadJsonFile($"{MockPath}/api_details.json");
+    }
+    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// </summary>
+    [HttpGet]
+    [Route("services")]
+    public async Task<IActionResult> GetServices()
+    {
+        return await ReadJsonFile($"{MockPath}/service_list.json");
+    }
+    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// </summary>
+    [HttpGet]
+    [Route("services/{id}")]
+    public async Task<IActionResult> GetServicesById()
+    {
+        return await ReadJsonFile($"{MockPath}/service_full.json");
+    }
+    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// </summary>
+    [HttpGet]
+    [Route("taxonomies")]
+    public async Task<IActionResult> GetTaxonomies()
+    {
+        return await ReadJsonFile($"{MockPath}/taxonomy_list.json");
+    }
+    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// </summary>
+    [HttpGet]
+    [Route("taxonomies/{id}")]
+    public async Task<IActionResult> GetTaxonomiesById()
+    {
+        return await ReadJsonFile($"{MockPath}/taxonomy.json");
+    }
+    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// </summary>
+    [HttpGet]
+    [Route("taxonomy_terms")]
+    public async Task<IActionResult> GetTaxonomyTerms()
+    {
+        return await ReadJsonFile($"{MockPath}/taxonomy_term_list.json");
+    }
+    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// </summary>
+    [HttpGet]
+    [Route("taxonomy_terms/{id}")]
+    public async Task<IActionResult> GetTaxonomyTermsById()
+    {
+        return await ReadJsonFile($"{MockPath}/taxonomy_term.json");
+    }
+    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// </summary>
+    [HttpGet]
+    [Route("service_at_locations")]
+    public async Task<IActionResult> GetServiceAtLocations()
+    {
+        return await ReadJsonFile($"{MockPath}/service_at_location_list.json");
+    }
+    
+    /// <summary>
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// </summary>
+    [HttpGet]
+    [Route("service_at_locations/{id}")]
+    public async Task<IActionResult> GetServiceAtLocationsById()
+    {
+        return await ReadJsonFile($"{MockPath}/service_at_location_full.json");
+    }
+    
     /// <summary>
     /// A MOCK endpoint that returns an example of the V1 `/validate` response 
     /// </summary>
     /// <param name="serviceUrl"></param>
     [HttpPost]
-    [Route("validate")]
-    public async Task<IActionResult> GetValidatorMock([FromQuery]string? serviceUrl = null)
+    [Route("v1/validate")]
+    public async Task<IActionResult> GetV1ValidatorMock([FromQuery]string? serviceUrl = null)
     {
         return await ReadJsonFile("Mocks/V1.0-UK-Default/V1_ValidateResponse.json");
     }
@@ -23,6 +114,7 @@ public class MockController : ControllerBase
     /// A MOCK endpoint that returns an example of the V1 `/dashboard` response
     /// </summary>
     [HttpGet]
+    [Route("v1/dashboard")]
     [Route("dashboard")]
     public async Task<IActionResult> GetDashboardMock()
     {
