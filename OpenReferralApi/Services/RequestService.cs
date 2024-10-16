@@ -16,12 +16,21 @@ public class RequestService : IRequestService
 
     public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint)
     {
-        throw new NotImplementedException();
+        var requestUrl = url + endpoint;
+
+        return await MakeRequest(requestUrl);
     }
 
     public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint, int perPage, int page)
     {
-        throw new NotImplementedException();
+        var requestUrl = url + endpoint;
+        var parameters = new Dictionary<string, string>
+        {
+            { "perPage", perPage.ToString() },
+            { "page", page.ToString() }
+        };
+
+        return await MakeRequest(requestUrl, parameters);
     }
 
     public async Task<Result<JsonNode>> GetApiDetails(string url)
