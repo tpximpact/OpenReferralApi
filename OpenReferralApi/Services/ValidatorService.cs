@@ -20,6 +20,14 @@ public class ValidatorService : IValidatorService
 
     public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl)
     {
+        serviceUrl = serviceUrl.TrimEnd('/');
+
+        var isUrlValid = Uri.TryCreate(serviceUrl, UriKind.Absolute, out var uriResult) 
+                         && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        
+        if (!isUrlValid)
+            return Result.Fail("Invalid URL provided");
+
         var testProfile = await ReadTestProfileFromFile($"TestProfiles/{Profile}.json");
         
         var validationResponse = new ValidationResponse

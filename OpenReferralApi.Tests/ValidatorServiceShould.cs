@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Moq;
 using OpenReferralApi.Services;
 using OpenReferralApi.Services.Interfaces;
 
@@ -13,6 +12,42 @@ public class ValidatorServiceShould
     public void Setup()
     {
         
+    }
+
+    [Test]
+    [TestCase("https://pass.org", "https://pass.org")]
+    [TestCase("https://pass.org/", "https://pass.org")]
+    [TestCase("https://pass.org///", "https://pass.org")]
+    [TestCase("http://pass.org/", "http://pass.org")]
+    public async Task Remove_trailing_slashes_from_urls(string inputUrl, string expectedUrl)
+    {
+        // Arrange
+        var validatorService = new ValidatorService(_requestServiceMock);
+        
+        // Act
+        var result = await validatorService.ValidateService(inputUrl);
+
+        // Assert
+        result.Value.Service.IsValid.Should().BeTrue();
+        result.Value.Service.Url.Should().Be(expectedUrl);
+    }
+
+    [Test]
+    [TestCase("htt/pass.org")]
+    [TestCase("pass-org//")]
+    [TestCase(@"C:\Users\User1\Documents\")]
+    public async Task Reject_invalid_urls(string inputUrl)
+    {
+        // Arrange
+        var validatorService = new ValidatorService(_requestServiceMock);
+        
+        // Act
+        var result = await validatorService.ValidateService(inputUrl);
+
+        // Assert
+        result.IsFailed.Should().BeTrue();
+        result.Errors.Count.Should().Be(1);
+        result.Errors[0].Message.Should().Be("Invalid URL provided");
     }
 
     [Test]
