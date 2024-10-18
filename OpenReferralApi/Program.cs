@@ -16,8 +16,8 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 builder.Services.AddScoped<IValidatorService, ValidatorService>();
-// builder.Services.AddScoped<IRequestService, RequestService>();
-builder.Services.AddScoped<IRequestService, RequestServiceMock>();
+builder.Services.AddScoped<IRequestService, RequestService>();
+// builder.Services.AddScoped<IRequestService, RequestServiceMock>();
 
 var app = builder.Build();
 

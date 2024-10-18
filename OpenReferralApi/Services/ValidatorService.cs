@@ -20,6 +20,14 @@ public class ValidatorService : IValidatorService
 
     public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl)
     {
+        serviceUrl = serviceUrl.TrimEnd('/');
+
+        var isUrlValid = Uri.TryCreate(serviceUrl, UriKind.Absolute, out var uriResult) 
+                         && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        
+        if (!isUrlValid)
+            return Result.Fail("Invalid URL provided");
+
         var testProfile = await ReadTestProfileFromFile($"TestProfiles/{Profile}.json");
         
         var validationResponse = new ValidationResponse
@@ -126,7 +134,7 @@ public class ValidatorService : IValidatorService
         var firstPage = JsonConvert.DeserializeObject<Page>(apiResponse.ToJsonString(), serializerSettings);
         var perPage = 20;
         var totalPages = firstPage!.TotalPages < 3 ? firstPage!.TotalPages : 3;
-        if (firstPage!.TotalItems < 60)
+        if (firstPage!.TotalItems < 60 && totalPages > 0)
         {
             perPage = (firstPage.TotalItems + (totalPages - 1)) / totalPages;
         }
