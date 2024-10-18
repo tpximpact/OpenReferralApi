@@ -10,7 +10,7 @@ public class MockController : ControllerBase
     private const string MockPath = "Mocks/V3.0-UK-";
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 API details GET / endpoint  
     /// </summary>
     [HttpGet]
     [Route("")]
@@ -20,14 +20,14 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}fail/api_details.json");
+            return await ReadJsonFile($"{MockPath}Fail/api_details.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}warn/api_details.json");
-        return await ReadJsonFile($"{MockPath}default/api_details.json");
+            return await ReadJsonFile($"{MockPath}Warn/api_details.json");
+        return await ReadJsonFile($"{MockPath}Default/api_details.json");
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services endpoint  
     /// </summary>
     [HttpGet]
     [Route("services")]
@@ -37,14 +37,15 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}fail/service_list.json");
+            return await ReadJsonFile($"{MockPath}Fail/service_list.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}warn/service_list.json");
-        return await ReadJsonFile($"{MockPath}default/service_list.json");
+            return await ReadJsonFile($"{MockPath}Warn/service_list.json");
+        return await ReadJsonFile($"{MockPath}Default/service_list.json");
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint
+    /// As this is a mock the {id} value does not need to be valid 
     /// </summary>
     [HttpGet]
     [Route("services/{id}")]
@@ -54,14 +55,14 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}fail/service_full.json");
+            return await ReadJsonFile($"{MockPath}Fail/service_full.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}warn/service_full.json");
-        return await ReadJsonFile($"{MockPath}default/service_full.json");
+            return await ReadJsonFile($"{MockPath}Warn/service_full.json");
+        return await ReadJsonFile($"{MockPath}Default/service_full.json");
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /taxonomies endpoint  
     /// </summary>
     [HttpGet]
     [Route("taxonomies")]
@@ -71,14 +72,15 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}fail/taxonomy_list.json");
+            return await ReadJsonFile($"{MockPath}Fail/taxonomy_list.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}warn/taxonomy_list.json");
-        return await ReadJsonFile($"{MockPath}default/taxonomy_list.json");
+            return await ReadJsonFile($"{MockPath}Warn/taxonomy_list.json");
+        return await ReadJsonFile($"{MockPath}Default/taxonomy_list.json");
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /taxonomies/{id} endpoint 
+    /// As this is a mock the {id} value does not need to be valid
     /// </summary>
     [HttpGet]
     [Route("taxonomies/{id}")]
@@ -88,14 +90,14 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}fail/taxonomy.json");
+            return await ReadJsonFile($"{MockPath}Fail/taxonomy.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}warn/taxonomy.json");
-        return await ReadJsonFile($"{MockPath}default/taxonomy.json");
+            return await ReadJsonFile($"{MockPath}Warn/taxonomy.json");
+        return await ReadJsonFile($"{MockPath}Default/taxonomy.json");
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /taxonomy_terms endpoint
     /// </summary>
     [HttpGet]
     [Route("taxonomy_terms")]
@@ -105,14 +107,15 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}fail/taxonomy_term_list.json");
+            return await ReadJsonFile($"{MockPath}Fail/taxonomy_term_list.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}warn/taxonomy_term_list.json");
-        return await ReadJsonFile($"{MockPath}default/taxonomy_term_list.json");
+            return await ReadJsonFile($"{MockPath}Warn/taxonomy_term_list.json");
+        return await ReadJsonFile($"{MockPath}Default/taxonomy_term_list.json");
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /taxonomy_terms/{id} endpoint  
+    /// As this is a mock the {id} value does not need to be valid
     /// </summary>
     [HttpGet]
     [Route("taxonomy_terms/{id}")]
@@ -122,14 +125,14 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}fail/taxonomy_term.json");
+            return await ReadJsonFile($"{MockPath}Fail/taxonomy_term.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}warn/taxonomy_term.json");
-        return await ReadJsonFile($"{MockPath}default/taxonomy_term.json");
+            return await ReadJsonFile($"{MockPath}Warn/taxonomy_term.json");
+        return await ReadJsonFile($"{MockPath}Default/taxonomy_term.json");
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /service_at_locations endpoint
     /// </summary>
     [HttpGet]
     [Route("service_at_locations")]
@@ -139,14 +142,15 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}fail/service_at_location_list.json");
+            return await ReadJsonFile($"{MockPath}Fail/service_at_location_list.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}warn/service_at_location_list.json");
-        return await ReadJsonFile($"{MockPath}default/service_at_location_list.json");
+            return await ReadJsonFile($"{MockPath}Warn/service_at_location_list.json");
+        return await ReadJsonFile($"{MockPath}Default/service_at_location_list.json");
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /service_at_locations/{id} endpoint  
+    /// As this is a mock the {id} value does not need to be valid
     /// </summary>
     [HttpGet]
     [Route("service_at_locations/{id}")]
@@ -156,10 +160,10 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}fail/service_at_location_full.json");
+            return await ReadJsonFile($"{MockPath}Fail/service_at_location_full.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}warn/service_at_location_full.json");
-        return await ReadJsonFile($"{MockPath}default/service_at_location_full.json");
+            return await ReadJsonFile($"{MockPath}Warn/service_at_location_full.json");
+        return await ReadJsonFile($"{MockPath}Default/service_at_location_full.json");
     }
     
     /// <summary>
