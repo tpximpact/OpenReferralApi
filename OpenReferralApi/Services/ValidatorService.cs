@@ -11,7 +11,7 @@ namespace OpenReferralApi.Services;
 public class ValidatorService : IValidatorService
 {
     private const string V3Profile = "HSDS-3.0-UK";
-    private const string V1Profile = "HSDS-3.0-UK";
+    private const string V1Profile = "HSDS-1.0-UK";
     private readonly IRequestService _requestService; 
 
     public ValidatorService(IRequestService requestService)

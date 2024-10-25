@@ -1,0 +1,20 @@
+{
+  "profile": "HSDS-1.0-UK",
+  "testGroups": [
+    {
+      "name": "Level 1 Compliance - Basic checks",
+      "description": "Will validate the required basic endpoints. Validation will fail if it does not pass all these checks.",
+      "messageLevel": "error",
+      "required": true,
+      "tests":[
+        {
+          "name": "Services list - API & schema validation",
+          "description": "Does the services list endpoint return a paginated list of services in the correct schema",
+          "endpoint": "/services",
+          "schema": "V1.0-UK/service_list.json",
+          "pagination": true
+        }
+      ]
+    }
+  ]
+}
