@@ -44,7 +44,7 @@ public class MockController : ControllerBase
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /services/{id} endpoint.
     /// As this is a mock the {id} value does not need to be valid 
     /// </summary>
     [HttpGet]
@@ -79,7 +79,7 @@ public class MockController : ControllerBase
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /taxonomies/{id} endpoint 
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /taxonomies/{id} endpoint. 
     /// As this is a mock the {id} value does not need to be valid
     /// </summary>
     [HttpGet]
@@ -114,7 +114,7 @@ public class MockController : ControllerBase
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /taxonomy_terms/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /taxonomy_terms/{id} endpoint.  
     /// As this is a mock the {id} value does not need to be valid
     /// </summary>
     [HttpGet]
@@ -149,7 +149,7 @@ public class MockController : ControllerBase
     }
     
     /// <summary>
-    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /service_at_locations/{id} endpoint  
+    /// A MOCK endpoint that returns an example of the expected response from the V3 GET /service_at_locations/{id} endpoint.  
     /// As this is a mock the {id} value does not need to be valid
     /// </summary>
     [HttpGet]
