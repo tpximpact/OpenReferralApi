@@ -1,5 +1,5 @@
 {
-  "profile": "HSDS-3.0-UK-2",
+  "profile": "HSDS-3.0-UK",
   "testGroups": [
     {
       "name": "Level 1 Compliance - Basic checks",
