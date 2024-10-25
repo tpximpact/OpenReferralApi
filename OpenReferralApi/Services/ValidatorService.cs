@@ -10,7 +10,8 @@ namespace OpenReferralApi.Services;
 
 public class ValidatorService : IValidatorService
 {
-    private const string Profile = "HSDS-3.0-UK";
+    private const string V3Profile = "HSDS-3.0-UK";
+    private const string V1Profile = "HSDS-3.0-UK";
     private readonly IRequestService _requestService; 
 
     public ValidatorService(IRequestService requestService)
@@ -18,7 +19,7 @@ public class ValidatorService : IValidatorService
         _requestService = requestService;
     }
 
-    public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl)
+    public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl, string profileInput)
     {
         serviceUrl = serviceUrl.TrimEnd('/');
 
@@ -27,8 +28,14 @@ public class ValidatorService : IValidatorService
         
         if (!isUrlValid)
             return Result.Fail("Invalid URL provided");
+        
+        var profile = profileInput switch
+        {
+            "V1-UK" => V1Profile,
+            _ => V3Profile
+        };
 
-        var testProfile = await ReadTestProfileFromFile($"TestProfiles/{Profile}.json");
+        var testProfile = await ReadTestProfileFromFile($"TestProfiles/{profile}.json");
         
         var validationResponse = new ValidationResponse
         {
@@ -36,7 +43,7 @@ public class ValidatorService : IValidatorService
             {
                 Url = serviceUrl,
                 IsValid = true,
-                Profile = Profile
+                Profile = profile
             },
             TestSuites = new List<TestGroup>(),
             Metadata = new List<MetaData>
@@ -79,24 +86,6 @@ public class ValidatorService : IValidatorService
         }
 
         return validationResponse;
-    }
-
-    private async Task<Result<Test>> ValidateBaseEndpoint(string serviceUrl)
-    {
-        var response = await _requestService.GetApiDetails(serviceUrl);
-        var schema = JsonSchema.FromFile("Schemas/ApiDetails.json");
-
-        var issues = ValidateResponseSchema(response.Value, schema);
-
-        return new Test
-        {
-            Name = "API meta info - API & schema validation",
-            Description =
-                "Does the base endpoint return meta information about the API, and does it adhere to the schema",
-            Endpoint = "/",
-            Success = issues.IsSuccess && issues.Value.Count == 0,
-            Messages = issues.Value
-        };
     }
 
     private async Task<Result<Test>> ValidateTestCase(TestCase testCase, string serviceUrl)
