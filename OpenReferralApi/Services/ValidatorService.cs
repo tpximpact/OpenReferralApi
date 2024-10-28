@@ -17,7 +17,6 @@ public class ValidatorService : IValidatorService
     public ValidatorService(IRequestService requestService)
     {
         _requestService = requestService;
-        Cause build error
     }
 
     public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl, string profileInput)
