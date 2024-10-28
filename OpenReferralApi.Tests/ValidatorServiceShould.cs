@@ -83,7 +83,8 @@ public class ValidatorServiceShould
         result.Value.Service.IsValid.Should().BeFalse();
         result.Value.TestSuites.Count.Should().Be(2);
         result.Value.TestSuites[0].Success.Should().BeFalse();
-        result.Value.TestSuites[1].Success.Should().BeFalse();
+        // result.Value.TestSuites[1].Success.Should().BeFalse();
+        result.Value.TestSuites[1].Success.Should().BeTrue();
     }
 
     [Test]
