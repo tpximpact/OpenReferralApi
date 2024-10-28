@@ -25,7 +25,7 @@ public class ValidatorServiceShould
         var validatorService = new ValidatorService(_requestServiceMock);
         
         // Act
-        var result = await validatorService.ValidateService(inputUrl);
+        var result = await validatorService.ValidateService(inputUrl, "V3-UK");
 
         // Assert
         result.Value.Service.IsValid.Should().BeTrue();
@@ -42,7 +42,7 @@ public class ValidatorServiceShould
         var validatorService = new ValidatorService(_requestServiceMock);
         
         // Act
-        var result = await validatorService.ValidateService(inputUrl);
+        var result = await validatorService.ValidateService(inputUrl, "V3-UK");
 
         // Assert
         result.IsFailed.Should().BeTrue();
@@ -58,7 +58,7 @@ public class ValidatorServiceShould
         var validatorService = new ValidatorService(_requestServiceMock);
         
         // Act
-        var result = await validatorService.ValidateService(url);
+        var result = await validatorService.ValidateService(url, "V3-UK");
 
         // Assert
         result.Value.Service.Url.Should().Be(url);
@@ -76,7 +76,7 @@ public class ValidatorServiceShould
         var validatorService = new ValidatorService(_requestServiceMock);
         
         // Act
-        var result = await validatorService.ValidateService(url);
+        var result = await validatorService.ValidateService(url, "V3-UK");
 
         // Assert
         result.Value.Service.Url.Should().Be(url);
@@ -94,7 +94,7 @@ public class ValidatorServiceShould
         var validatorService = new ValidatorService(_requestServiceMock);
         
         // Act
-        var result = await validatorService.ValidateService(url);
+        var result = await validatorService.ValidateService(url, "V3-UK");
 
         // Assert
         result.Value.Service.Url.Should().Be(url);

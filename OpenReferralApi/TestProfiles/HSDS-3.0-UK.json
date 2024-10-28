@@ -1,5 +1,5 @@
 {
-  "profile": "HSDS-3.0-UK-2",
+  "profile": "HSDS-3.0-UK",
   "testGroups": [
     {
       "name": "Level 1 Compliance - Basic checks",
@@ -24,8 +24,7 @@
           "name": "Service by id - API & schema validation",
           "description": "Does the service by id endpoint return a fully nested service in the correct schema",
           "endpoint": "/services/{id}",
-          "schema": "V3.0-UK/service.json",
-          "testLevel": 1
+          "schema": "V3.0-UK/service.json"
         }
       ]
     },
@@ -40,45 +39,39 @@
           "description": "Does the taxonomies list endpoint return a paginated list of taxonomies in the correct schema",
           "endpoint": "/taxonomies",
           "schema": "V3.0-UK/taxonomy_list.json",
-          "pagination": true,
-          "testLevel": 2
+          "pagination": true
         },
         {
           "name": "Taxonomy by id - API & schema validation",
           "description": "Does the taxonomy by id endpoint return the full information of a taxonomy in the correct schema",
           "endpoint": "/taxonomies/{id}",
-          "schema": "V3.0-UK/taxonomy.json",
-          "testLevel": 2
+          "schema": "V3.0-UK/taxonomy.json"
         },
         {
           "name": "Taxonomy terms list - API & schema validation",
           "description": "Does the taxonomy terms list endpoint return a paginated list of taxonomy terms in the correct schema",
           "endpoint": "/taxonomy_terms",
           "schema": "V3.0-UK/taxonomy_term_list.json",
-          "pagination": true,
-          "testLevel": 2
+          "pagination": true
         },
         {
           "name": "Taxonomy terms list - API & schema validation",
           "description": "Does the taxonomy term by id endpoint return the full information of a taxonomy term in the correct schema",
           "endpoint": "/taxonomy_terms/{id}",
-          "schema": "V3.0-UK/taxonomy_term.json",
-          "testLevel": 2
+          "schema": "V3.0-UK/taxonomy_term.json"
         },
         {
           "name": "Service at location list - API & schema validation",
           "description": "Does the service at location list endpoint return a paginated list of services at locations in the correct schema",
           "endpoint": "/service_at_locations",
           "schema": "V3.0-UK/service_at_location_list.json",
-          "pagination": true,
-          "testLevel": 2
+          "pagination": true
         },
         {
           "name": "Service at location by id - API & schema validation",
           "description": "Does the service at location by id endpoint return the full information of a service at location in the correct schema",
           "endpoint": "/service_at_locations/{id}",
-          "schema": "V3.0-UK/service_at_location.json",
-          "testLevel": 2
+          "schema": "V3.0-UK/service_at_location.json"
         }
       ]
     }
