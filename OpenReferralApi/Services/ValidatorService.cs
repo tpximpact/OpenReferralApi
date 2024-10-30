@@ -90,7 +90,24 @@ public class ValidatorService : IValidatorService
 
     private async Task<Result<Test>> ValidateTestCase(TestCase testCase, string serviceUrl)
     {
+        var test = new Test
+        {
+            Name = testCase.Name,
+            Description = testCase.Description,
+            Endpoint = testCase.Endpoint,
+            Success = true,
+            Messages = new List<Issue>()
+        };
+        
         var apiResponse = await _requestService.GetApiResponse(serviceUrl, testCase.Endpoint);
+        if (apiResponse.IsFailed)
+        {
+            test.Success = false;
+            test.Messages.Add(new Issue 
+                { Name = "API response issue", Message = apiResponse.Errors.First().Message }
+            );
+            return test;
+        }
 
         var schemaPath = "Schemas/" + testCase.Schema;
         var schema = JsonSchema.FromFile(schemaPath);
@@ -103,15 +120,10 @@ public class ValidatorService : IValidatorService
             issues.Value.AddRange(paginationValidationResponse.Value);
         }
 
-        return new Test
-        {
-            Name = testCase.Name,
-            Description = testCase.Description,
-            Endpoint = testCase.Endpoint,
-            Success = issues.IsSuccess && issues.Value.Count == 0,
-            Messages = issues.Value
-        };
-        
+        test.Success = issues.IsSuccess && issues.Value.Count == 0;
+        test.Messages.AddRange(issues.Value);
+        return test;
+
     }
 
     private async Task<Result<List<Issue>>> ValidatePagination(TestCase testCase, string serviceUrl, JsonNode apiResponse)

@@ -44,15 +44,9 @@ public class RequestService : IRequestService
 
         var resultString = await result.Content.ReadAsStringAsync();
 
-        if (!result.IsSuccessStatusCode)
-        {
-            var error = new Error(result.ReasonPhrase, new Error(resultString));
-            return Result.Fail(error);
-        }
-
-        var response = JsonNode.Parse(resultString);
-        
-        return Result.Ok(response)!;
+        return result.IsSuccessStatusCode 
+            ? Result.Fail(new Error(result.ReasonPhrase, new Error(resultString))) 
+            : Result.Try(() => JsonNode.Parse(resultString)!);
     }
 
     private async Task<Result<JsonNode>> MakeRequest(string endpoint, IDictionary<string, string> parameters)
@@ -63,14 +57,8 @@ public class RequestService : IRequestService
 
         var resultString = await result.Content.ReadAsStringAsync();
 
-        if (!result.IsSuccessStatusCode)
-        {
-            var error = new Error(result.ReasonPhrase, new Error(resultString));
-            return Result.Fail(error);
-        }
-
-        var response = JsonNode.Parse(resultString);
-        
-        return Result.Ok(response)!;
+        return result.IsSuccessStatusCode 
+            ? Result.Fail(new Error(result.ReasonPhrase, new Error(resultString))) 
+            : Result.Try(() => JsonNode.Parse(resultString)!);
     }
 }
