@@ -40,25 +40,41 @@ public class RequestService : IRequestService
 
     private async Task<Result<JsonNode>> MakeRequest(string endpoint)
     {
-        var result = await _httpClient.GetAsync(endpoint);
-
-        var resultString = await result.Content.ReadAsStringAsync();
-
-        return result.IsSuccessStatusCode 
-            ? Result.Fail(new Error(result.ReasonPhrase, new Error(resultString))) 
-            : Result.Try(() => JsonNode.Parse(resultString)!);
+        try
+        {
+            var result = await _httpClient.GetAsync(endpoint);
+        
+            var resultString = await result.Content.ReadAsStringAsync();
+        
+            return result.IsSuccessStatusCode 
+                ? JsonNode.Parse(resultString)!
+                : Result.Fail(new Error(result.ReasonPhrase, new Error(resultString)));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return Result.Fail(e.Message);
+        }
     }
 
     private async Task<Result<JsonNode>> MakeRequest(string endpoint, IDictionary<string, string> parameters)
     {
-        var url = QueryHelpers.AddQueryString(endpoint, parameters!);
+        try
+        {
+            var url = QueryHelpers.AddQueryString(endpoint, parameters!);
 
-        var result = await _httpClient.GetAsync(url);
+            var result = await _httpClient.GetAsync(url);
 
-        var resultString = await result.Content.ReadAsStringAsync();
+            var resultString = await result.Content.ReadAsStringAsync();
 
-        return result.IsSuccessStatusCode 
-            ? Result.Fail(new Error(result.ReasonPhrase, new Error(resultString))) 
-            : Result.Try(() => JsonNode.Parse(resultString)!);
+            return result.IsSuccessStatusCode
+                ? JsonNode.Parse(resultString)!
+                : Result.Fail(new Error(result.ReasonPhrase, new Error(resultString)));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return Result.Fail(e.Message);
+        }
     }
 }
