@@ -18,7 +18,7 @@ public class RequestService : IRequestService
     {
         var requestUrl = url + endpoint;
 
-        return await MakeRequest(requestUrl);
+        return await MakeRequest(requestUrl, null);
     }
 
     public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint, int perPage, int page)
@@ -35,30 +35,29 @@ public class RequestService : IRequestService
 
     public async Task<Result<JsonNode>> GetApiDetails(string url)
     {
-        return await MakeRequest(url);
+        return await MakeRequest(url, null);
     }
 
-    private async Task<Result<JsonNode>> MakeRequest(string endpoint)
+    private async Task<Result<JsonNode>> MakeRequest(string endpoint, IDictionary<string, string>? parameters)
     {
-        var result = await _httpClient.GetAsync(endpoint);
+        try
+        {
+            var url = parameters == null
+                ? endpoint
+                : QueryHelpers.AddQueryString(endpoint, parameters!);
 
-        var resultString = await result.Content.ReadAsStringAsync();
+            var result = await _httpClient.GetAsync(url);
 
-        return result.IsSuccessStatusCode 
-            ? Result.Fail(new Error(result.ReasonPhrase, new Error(resultString))) 
-            : Result.Try(() => JsonNode.Parse(resultString)!);
-    }
+            var resultString = await result.Content.ReadAsStringAsync();
 
-    private async Task<Result<JsonNode>> MakeRequest(string endpoint, IDictionary<string, string> parameters)
-    {
-        var url = QueryHelpers.AddQueryString(endpoint, parameters!);
-
-        var result = await _httpClient.GetAsync(url);
-
-        var resultString = await result.Content.ReadAsStringAsync();
-
-        return result.IsSuccessStatusCode 
-            ? Result.Fail(new Error(result.ReasonPhrase, new Error(resultString))) 
-            : Result.Try(() => JsonNode.Parse(resultString)!);
+            return result.IsSuccessStatusCode
+                ? JsonNode.Parse(resultString)!
+                : Result.Fail(new Error(result.ReasonPhrase, new Error(resultString)));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return Result.Fail(e.Message);
+        }
     }
 }
