@@ -146,6 +146,17 @@ public class ValidatorService : IValidatorService
         for (var page = 1; page <= totalPages; page++)
         {
             var response = await _requestService.GetApiResponse(serviceUrl, testCase.Endpoint, perPage, page);
+            if (response.IsFailed)
+            {
+                issues.Add(new Issue()
+                {
+                    Name = "API response",
+                    Description = $"An error occurred when making a request to the `{testCase.Endpoint}` endpoint",
+                    Message = response.Errors.First().Message,
+                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
+                });
+                continue;
+            }
             var currentPage = JsonConvert.DeserializeObject<Page>(response.Value.ToJsonString(), serializerSettings);
             // Is the total number of items correct
             if (currentPage!.TotalItems != firstPage.TotalItems)
@@ -155,7 +166,7 @@ public class ValidatorService : IValidatorService
                     Name = "Total items",
                     Description = "Is the total number of items correct",
                     Message = $"The value of 'total_items' has changed from {firstPage.TotalItems} to {currentPage.TotalItems} whilst requesting page {page} of the data",
-                    Parameters = $"?per_page={perPage}&page={page}"
+                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
                 });
             }
             // Is the number of items returned per page correct
@@ -166,7 +177,7 @@ public class ValidatorService : IValidatorService
                     Name = "Items per page",
                     Description = "Is the number of items returned per page correct",
                     Message = $"The value of 'size' is {currentPage.Size} when {perPage} item(s) were requested in the 'per_page' parameter",
-                    Parameters = $"?per_page={perPage}&page={page}"
+                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
                 });
             }
             // Does the number of items returned match the 'size' value in the response
@@ -177,7 +188,7 @@ public class ValidatorService : IValidatorService
                     Name = "Item count",
                     Description = "Does the number of items returned match the 'size' value in the response",
                     Message = $"The value of 'size' is {currentPage.Size} when {currentPage.Contents.Count} item(s) were returned in the response content",
-                    Parameters = $"?per_page={perPage}&page={page}"
+                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
                 });
             }
             // Is the 'first_page' flag returned correctly
@@ -188,7 +199,7 @@ public class ValidatorService : IValidatorService
                     Name = "First page flag",
                     Description = "Is the 'first_page' flag returned correctly",
                     Message = $"The value of 'first_page' is {currentPage.FirstPage} when the page number is {page}",
-                    Parameters = $"?per_page={perPage}&page={page}"
+                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
                 });
             }
             // Is the 'last_page' flag returned correctly
@@ -199,7 +210,7 @@ public class ValidatorService : IValidatorService
                     Name = "Last page flag",
                     Description = "Is the 'last_page' flag returned correctly",
                     Message = $"The value of 'last_page' is {currentPage.LastPage} when the page number is {page} of {firstPage.TotalPages}",
-                    Parameters = $"?per_page={perPage}&page={page}"
+                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
                 });
             }
         }
