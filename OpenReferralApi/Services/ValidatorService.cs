@@ -46,13 +46,7 @@ public class ValidatorService : IValidatorService
                 Profile = profile
             },
             TestSuites = new List<TestGroup>(),
-            Metadata = new List<MetaData>
-            {
-                new() {Label = "Service provider", Value = "Fooshire County Council"},
-                new() {Label = "Email", Value = "service@fooshire.gov"},
-                new() {Label = "Telephone", Value = "+44 123 456 7890"},
-                new() {Label = "Region", Value = "South West"}
-            }
+            Metadata = new List<MetaData>() // TODO Add meta data if available
         };
 
         foreach (var testGroup in testProfile.Value.TestGroups)
