@@ -12,11 +12,21 @@ public class DashboardController : ControllerBase
     /// </summary>
     [HttpGet]
     [Route("")]
-    public async Task<IActionResult> GetDashboard()
+    public async Task<IActionResult> GetDashboardServices()
     {
-        return await ReadJsonFile("Mocks/V3.0-UK-Default/dashboard_response.json");
+        return await ReadJsonFile("Mocks/V3.0-UK-Default/dashboard_services_response.json");
     }
     
+    /// <summary>
+    /// Returns detailed data about a single HSDS-UK service and the details needed for the data to be understood & displayed 
+    /// </summary>
+    [HttpGet]
+    [Route("{id}")]
+    public async Task<IActionResult> GetDashboardServiceDetails([FromRoute]string id)
+    {
+        return await ReadJsonFile("Mocks/V3.0-UK-Default/dashboard_service_details_response.json");
+    }
+     
     private async Task<IActionResult> ReadJsonFile(string filePath)
     {
         try
