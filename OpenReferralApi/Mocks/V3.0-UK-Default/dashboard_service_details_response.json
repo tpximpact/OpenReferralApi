@@ -1,0 +1,62 @@
+{
+  "publisher": {
+      "label": "Published by",
+      "value": "Borsetshire County Council",
+      "datatype": "xsd:string"
+  },
+  "title": {
+      "label": "Title",
+      "value": "Borsetshire Services",
+      "datatype": "xsd:string"
+  },
+  "serviceUrl": {
+      "label": "URL",
+      "value": "http://example.com/lorem/ipsum",
+      "datatype": "xsd:anyURI",
+      "url":  "http://example.com/lorem/ipsum"
+  },
+  "isValid": {
+      "label": "Validation status",
+      "value": "fail",
+      "datatype": "xsd:string"
+  },
+  "lastTested": {
+      "label": "Validation status",
+      "value": "05 Nov 3034 23:00:00 GMT",
+      "datatype": "xsd:dateTime"
+  },
+  "payload": [
+      {
+          "label": "Metadata",
+          "fields": [
+              {
+                  "label": "Developer",
+                  "value": "Acme",
+                  "datatype": "xsd:string",
+                  "url": "https://example.com"
+              },
+              {
+                  "label": "Description",
+                  "value": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean consequat eros eu vulputate luctus. Sed suscipit quam id nisi aliquam scelerisque. Sed commodo congue felis eu laoreet. Aenean auctor lacus mauris, eget interdum quam tincidunt a. Sed feugiat, dui in sodales maximus, neque nisi vulputate leo, eget venenatis mauris magna et ex. Maecenas laoreet est ut congue auctor. Morbi vitae augue vitae sapien congue maximus.",
+                  "datatype": "xsd:string"
+              },
+              {
+                  
+                      "label": "Some date",
+                      "value": "05 Nov 3034 23:00:00 GMT",
+                      "datatype": "xsd:dateTime"
+                  
+              }
+          ]
+      },
+      {
+          "label": "Extra section",
+          "fields": [
+              {
+                  "label": "Some field",
+                  "value": "Some value",
+                  "datatype": "xsd:string"         }
+          ]
+      }
+  ]
+}
