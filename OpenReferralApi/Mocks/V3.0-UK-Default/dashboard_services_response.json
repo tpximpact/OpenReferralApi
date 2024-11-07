@@ -5,43 +5,43 @@
     "columns": {
       "comment": {
         "label": "Description",
-        "datatype": "oruk:datatype.markdown"
+        "dataType": "oruk:dataType.markdown"
       },
       "developer": {
         "label": "Developer",
-        "datatype": "oruk:datatype.string"
+        "dataType": "oruk:dataType.string"
       },
       "name": {
         "label": "Name",
-        "datatype": "oruk:datatype.string"
+        "dataType": "oruk:dataType.string"
       },
       "publisher": {
         "label": "Publisher",
-        "datatype": "oruk:datatype.string"
+        "dataType": "oruk:dataType.string"
       },
       "schemaVersion": {
         "label": "ORUK version",
-        "datatype": "oruk:datatype.numeric"
+        "dataType": "oruk:dataType.numeric"
       },
       "service": {
         "label": "Service",
-        "datatype": "oruk:datatype.string"
+        "dataType": "oruk:dataType.string"
       },
       "statusIsUp": {
         "label": "Available?",
-        "datatype": "oruk:datatype.success"
+        "dataType": "oruk:dataType.success"
       },
       "statusIsValid": {
         "label": "Valid?",
-        "datatype": "oruk:datatype.success"
+        "dataType": "oruk:dataType.success"
       },
       "statusOverall": {
         "label": "Feed passes?",
-        "datatype": "oruk:datatype.success"
+        "dataType": "oruk:dataType.success"
       },
       "testDate": {
         "label": "Last tested",
-        "datatype": "oruk:datatype.dateTime"
+        "dataType": "oruk:dataType.dateTime"
       }
     },
     "views": {
