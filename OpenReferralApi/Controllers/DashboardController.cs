@@ -1,5 +1,7 @@
 using System.Text.Json.Nodes;
+using FluentResults;
 using Microsoft.AspNetCore.Mvc;
+using OpenReferralApi.Services.Interfaces;
 
 namespace OpenReferralApi.Controllers;
 
@@ -7,6 +9,13 @@ namespace OpenReferralApi.Controllers;
 [Route("api/[Controller]")]
 public class DashboardController : ControllerBase
 {
+    private readonly IDashboardService _dashboardService;
+
+    public DashboardController(IDashboardService dashboardService)
+    {
+        _dashboardService = dashboardService;
+    }
+
     /// <summary>
     /// Returns data about the known HSDS-UK services and the details needed for the data to be understood & displayed 
     /// </summary>
@@ -14,7 +23,11 @@ public class DashboardController : ControllerBase
     [Route("")]
     public async Task<IActionResult> GetDashboardServices()
     {
-        return await ReadJsonFile("Mocks/V3.0-UK-Default/dashboard_services_response.json");
+        var result =  await _dashboardService.GetServices();
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : BadRequest(result.Errors);
     }
     
     /// <summary>

@@ -1,4 +1,8 @@
 using System.Reflection;
+using System.Text.Json.Serialization;
+using OpenReferralApi.Models;
+using OpenReferralApi.Repositories;
+using OpenReferralApi.Repositories.Interfaces;
 using OpenReferralApi.Services;
 using OpenReferralApi.Services.Interfaces;
 
@@ -14,10 +18,16 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddHttpClient();
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
+builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("Database")); 
+builder.Services.AddSingleton<IDataRepository, DataRepository>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IValidatorService, ValidatorService>();
 builder.Services.AddScoped<IRequestService, RequestService>();
-// builder.Services.AddScoped<IRequestService, RequestServiceMock>();
+
 
 var app = builder.Build();
 
