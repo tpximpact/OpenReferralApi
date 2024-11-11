@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -13,6 +14,7 @@ public class Service
     [BsonElement("comment")]
     public Field? Comment { get; set; }
     [BsonElement("service")]
+    [JsonPropertyName("service")]
     public Field? ServiceUrl { get; set; }
     [BsonElement("developer")]
     public Field? Developer { get; set; }

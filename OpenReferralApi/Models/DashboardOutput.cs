@@ -32,7 +32,7 @@ public class View
     [JsonPropertyName("sortBy")]
     public List<string> SortBy { get; set; }
     [BsonElement("defaultSortDirection")]
-    [JsonPropertyName("efaultSortDirection")]
+    [JsonPropertyName("defaultSortDirection")]
     public string DefaultSortDirection { get; set; }
     [BsonElement("defaultSortBy")]
     [JsonPropertyName("defaultSortBy")]
