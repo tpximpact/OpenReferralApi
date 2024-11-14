@@ -31,7 +31,7 @@ public class ValidatorService : IValidatorService
         
         var profile = profileInput switch
         {
-            "V1-UK" => V1Profile,
+            "HSDS-UK-1.0" => V1Profile,
             _ => V3Profile
         };
 
