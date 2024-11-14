@@ -17,6 +17,7 @@ public class Service
         StatusIsValid = serviceData.StatusIsValid;
         StatusOverall = serviceData.StatusOverall;
         TestDate = serviceData.TestDate;
+        TestDate.Url += Id;
     }
     
     [JsonPropertyName("id")]

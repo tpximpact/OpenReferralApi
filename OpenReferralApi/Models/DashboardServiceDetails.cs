@@ -8,6 +8,11 @@ public class DashboardServiceDetails
         Publisher = serviceData.Publisher;
         ServiceUrl = serviceData.ServiceUrl;
         IsValid = serviceData.StatusIsValid;
+        if (int.TryParse(IsValid.Value.ToString(), out var isValid))
+        {
+            IsValid.Value = isValid == 1 ? "Pass" : "Fail";
+            IsValid.Datatype = "oruk:dataType.string";
+        }
         LastTested = serviceData.LastTested;
         Payload = new List<DashboardServiceDetailsPayload>
         {
