@@ -19,10 +19,18 @@ public class DataRepository : IDataRepository
             databaseSettings.Value.DatabaseName);
     }
     
-    public async Task<Result<List<Service>>> GetServices()
+    public async Task<Result<List<ServiceData>>> GetServices()
     {
-        var collection = _mongoDatabase.GetCollection<Service>("services");
+        var collection = _mongoDatabase.GetCollection<ServiceData>("services");
         var services = await collection.Find(_ => true).ToListAsync();
+        
+        return services;
+    }
+    
+    public async Task<Result<ServiceData>> GetServiceById(string id)
+    {
+        var collection = _mongoDatabase.GetCollection<ServiceData>("services");
+        var services = await collection.Find(s => s.Id == id).FirstOrDefaultAsync();
         
         return services;
     }

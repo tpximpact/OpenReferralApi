@@ -19,6 +19,8 @@ public class Field
     public object? Value { get; set; }
     [BsonElement("url")]
     public string? Url { get; set; }
+    [BsonElement("description")]
+    public string? Description { get; set; }
     [JsonIgnore]
     [BsonElement("name")]
     public string? Name { get; set; }

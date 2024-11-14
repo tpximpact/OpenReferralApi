@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace OpenReferralApi.Models;
 
 public class DashboardOutput

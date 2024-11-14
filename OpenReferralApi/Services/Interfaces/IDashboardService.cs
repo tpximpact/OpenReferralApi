@@ -6,5 +6,5 @@ namespace OpenReferralApi.Services.Interfaces;
 public interface IDashboardService
 {
     public Task<Result<DashboardOutput>> GetServices();
-    public Task<Result<Service>> GetServiceById(string id);
+    public Task<Result<DashboardServiceDetails>> GetServiceById(string id);
 }

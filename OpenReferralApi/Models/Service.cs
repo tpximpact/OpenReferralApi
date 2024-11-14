@@ -1,33 +1,44 @@
 using System.Text.Json.Serialization;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace OpenReferralApi.Models;
 
 public class Service
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
+    public Service(ServiceData serviceData )
+    {
+        Id = serviceData.Id;
+        Name = serviceData.Name;
+        Comment = serviceData.Comment;
+        ServiceUrl = serviceData.ServiceUrl;
+        Developer = serviceData.Developer;
+        Publisher = serviceData.Publisher;
+        SchemaVersion = serviceData.SchemaVersion;
+        StatusIsUp = serviceData.StatusIsUp;
+        StatusIsValid = serviceData.StatusIsValid;
+        StatusOverall = serviceData.StatusOverall;
+        TestDate = serviceData.TestDate;
+    }
+    
+    [JsonPropertyName("id")]
     public string? Id { get; set; }
-    [BsonElement("name")]
+    [JsonPropertyName("name")]
     public Field? Name { get; set; }
-    [BsonElement("comment")]
+    [JsonPropertyName("comment")]
     public Field? Comment { get; set; }
-    [BsonElement("service")]
     [JsonPropertyName("service")]
     public Field? ServiceUrl { get; set; }
-    [BsonElement("developer")]
+    [JsonPropertyName("developer")]
     public Field? Developer { get; set; }
-    [BsonElement("publisher")]
+    [JsonPropertyName("publisher")]
     public Field? Publisher { get; set; }
-    [BsonElement("schemaVersion")]
+    [JsonPropertyName("schemaVersion")]
     public Field? SchemaVersion { get; set; }
-    [BsonElement("statusIsUp")]
+    [JsonPropertyName("statusIsUp")]
     public Field? StatusIsUp { get; set; }
-    [BsonElement("statusIsValid")]
+    [JsonPropertyName("statusIsValid")]
     public Field? StatusIsValid { get; set; }
-    [BsonElement("statusOverall")]
+    [JsonPropertyName("statusOverall")]
     public Field? StatusOverall { get; set; }
-    [BsonElement("testDate")]
+    [JsonPropertyName("testDate")]
     public Field? TestDate { get; set; }
 }

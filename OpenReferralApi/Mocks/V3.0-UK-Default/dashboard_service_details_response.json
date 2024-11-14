@@ -1,62 +1,61 @@
 {
   "publisher": {
-      "label": "Published by",
-      "value": "Borsetshire County Council",
-      "dataType": "xsd:string"
+    "label": "Published by",
+    "value": "Borsetshire County Council",
+    "dataType": "oruk:dataType:string"
   },
   "title": {
-      "label": "Title",
-      "value": "Borsetshire Services",
-      "dataType": "xsd:string"
+    "label": "Title",
+    "value": "Borsetshire Services",
+    "dataType": "oruk:dataType:string"
   },
   "serviceUrl": {
-      "label": "URL",
-      "value": "http://example.com/lorem/ipsum",
-      "dataType": "xsd:anyURI",
-      "url":  "http://example.com/lorem/ipsum"
+    "label": "URL",
+    "value": "http://example.com/lorem/ipsum",
+    "dataType": "oruk:dataType:anyURI",
+    "url": "http://example.com/lorem/ipsum"
   },
   "isValid": {
-      "label": "Validation status",
-      "value": "fail",
-      "dataType": "xsd:string"
+    "label": "Validation status",
+    "value": "fail",
+    "dataType": "oruk:dataType:string"
   },
   "lastTested": {
-      "label": "Validation status",
-      "value": "05 Nov 3034 23:00:00 GMT",
-      "dataType": "xsd:dateTime"
+    "label": "Validation status",
+    "value": "05 Nov 3034 23:00:00 GMT",
+    "dataType": "oruk:dataType:dateTime"
   },
   "payload": [
-      {
-          "label": "Metadata",
-          "fields": [
-              {
-                  "label": "Developer",
-                  "value": "Acme",
-                  "dataType": "xsd:string",
-                  "url": "https://example.com"
-              },
-              {
-                  "label": "Description",
-                  "value": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean consequat eros eu vulputate luctus. Sed suscipit quam id nisi aliquam scelerisque. Sed commodo congue felis eu laoreet. Aenean auctor lacus mauris, eget interdum quam tincidunt a. Sed feugiat, dui in sodales maximus, neque nisi vulputate leo, eget venenatis mauris magna et ex. Maecenas laoreet est ut congue auctor. Morbi vitae augue vitae sapien congue maximus.",
-                  "dataType": "xsd:string"
-              },
-              {
-                  
-                      "label": "Some date",
-                      "value": "05 Nov 3034 23:00:00 GMT",
-                      "dataType": "xsd:dateTime"
-                  
-              }
-          ]
-      },
-      {
-          "label": "Extra section",
-          "fields": [
-              {
-                  "label": "Some field",
-                  "value": "Some value",
-                  "dataType": "xsd:string"         }
-          ]
-      }
+    {
+      "label": "Metadata",
+      "fields": [
+        {
+          "label": "Developer",
+          "value": "Acme",
+          "dataType": "oruk:dataType:string",
+          "url": "https://example.com"
+        },
+        {
+          "label": "Description",
+          "value": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean consequat eros eu vulputate luctus. Sed suscipit quam id nisi aliquam scelerisque. Sed commodo congue felis eu laoreet. Aenean auctor lacus mauris, eget interdum quam tincidunt a. Sed feugiat, dui in sodales maximus, neque nisi vulputate leo, eget venenatis mauris magna et ex. Maecenas laoreet est ut congue auctor. Morbi vitae augue vitae sapien congue maximus.",
+          "dataType": "oruk:dataType:string"
+        },
+        {
+          "label": "Some date",
+          "value": "05 Nov 3034 23:00:00 GMT",
+          "dataType": "oruk:dataType:dateTime"
+        }
+      ]
+    },
+    {
+      "label": "Extra section",
+      "fields": [
+        {
+          "label": "Some field",
+          "value": "Some value",
+          "dataType": "oruk:dataType:string"
+        }
+      ]
+    }
   ]
 }

@@ -23,21 +23,21 @@ public class DashboardService : IDashboardService
         };
         
         var services = await _dataRepository.GetServices();
-        response.Data = services.Value;
+        response.Data = services.Value.Select(serviceData => new Service(serviceData)).ToList();
 
         var columnData = await _dataRepository.GetColumns();
         response.Definitions.Columns = columnData.Value.ToDictionary(c => c.Name, c => c);
 
         var viewData = await _dataRepository.GetViews();
-        // response.Definitions.Views = viewData.Value;
         response.Definitions.Views = viewData.Value.ToDictionary(v => v.Name, v => v);
 
         return response;
     }
 
-    public async Task<Result<Service>> GetServiceById(string id)
+    public async Task<Result<DashboardServiceDetails>> GetServiceById(string id)
     {
-        throw new NotImplementedException();
+        var serviceDetails = await _dataRepository.GetServiceById(id);
+        return new DashboardServiceDetails(serviceDetails.Value);
     }
     
 }
