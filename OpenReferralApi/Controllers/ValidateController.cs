@@ -20,7 +20,7 @@ public class ValidateController : ControllerBase
     /// <param name="serviceUrl"></param>
     /// <param name="profile"></param>
     [HttpPost]
-    public async Task<IActionResult> ValidateService([FromQuery] string serviceUrl, [FromQuery] string profile = "V3-UK")
+    public async Task<IActionResult> ValidateService([FromQuery] string serviceUrl, [FromQuery] string? profile)
     {
         var response = await _validatorService.ValidateService(serviceUrl, profile);
 
