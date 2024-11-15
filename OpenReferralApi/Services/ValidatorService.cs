@@ -10,8 +10,8 @@ namespace OpenReferralApi.Services;
 
 public class ValidatorService : IValidatorService
 {
-    private const string V3Profile = "HSDS-3.0-UK";
-    private const string V1Profile = "HSDS-1.0-UK";
+    private const string V3Profile = "HSDS-UK-3.0";
+    private const string V1Profile = "HSDS-UK-1.0";
     private readonly IRequestService _requestService; 
 
     public ValidatorService(IRequestService requestService)
@@ -19,7 +19,7 @@ public class ValidatorService : IValidatorService
         _requestService = requestService;
     }
 
-    public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl, string profileInput)
+    public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl, string? profile)
     {
         serviceUrl = serviceUrl.TrimEnd('/');
 
@@ -28,14 +28,9 @@ public class ValidatorService : IValidatorService
         
         if (!isUrlValid)
             return Result.Fail("Invalid URL provided");
-        
-        var profile = profileInput switch
-        {
-            "HSDS-UK-1.0" => V1Profile,
-            _ => V3Profile
-        };
 
-        var testProfile = await ReadTestProfileFromFile($"TestProfiles/{profile}.json");
+        var testSchema = await SelectTestSchema(serviceUrl, profile);
+        var testProfile = await ReadTestProfileFromFile($"TestProfiles/{testSchema}.json");
         
         var validationResponse = new ValidationResponse
         {
@@ -43,7 +38,7 @@ public class ValidatorService : IValidatorService
             {
                 Url = serviceUrl,
                 IsValid = true,
-                Profile = profile
+                Profile = testProfile.Value.Profile
             },
             TestSuites = new List<TestGroup>(),
             Metadata = new List<MetaData>() // TODO Add meta data if available
@@ -80,6 +75,37 @@ public class ValidatorService : IValidatorService
         }
 
         return validationResponse;
+    }
+
+    private async Task<string> SelectTestSchema(string serviceUrl, string? profileInput)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(profileInput))
+            {
+                return profileInput switch
+                {
+                    V1Profile => V1Profile,
+                    _ => V3Profile
+                };
+            }
+
+            var apiResult = await _requestService.GetApiResponse(serviceUrl, "/");
+            if (apiResult.IsFailed) 
+                return V1Profile;
+            
+            return apiResult.Value["version"]!.ToString() switch
+            {
+                V1Profile => V1Profile,
+                _ => V3Profile
+            };
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+
+        return V3Profile;
     }
 
     private async Task<Result<Test>> ValidateTestCase(TestCase testCase, string serviceUrl)

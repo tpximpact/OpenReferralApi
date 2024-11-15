@@ -6,5 +6,5 @@ namespace OpenReferralApi.Services.Interfaces;
 
 public interface IValidatorService
 {
-    public Task<Result<ValidationResponse>> ValidateService (string serviceUrl, string profile);
+    public Task<Result<ValidationResponse>> ValidateService (string serviceUrl, string? profile);
 }
