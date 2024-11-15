@@ -19,7 +19,7 @@ public class ValidatorService : IValidatorService
         _requestService = requestService;
     }
 
-    public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl, string profileInput)
+    public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl, string? profile)
     {
         serviceUrl = serviceUrl.TrimEnd('/');
 
@@ -29,7 +29,8 @@ public class ValidatorService : IValidatorService
         if (!isUrlValid)
             return Result.Fail("Invalid URL provided");
 
-        var testProfile = await SelectTestSchema(serviceUrl, profileInput);
+        var testSchema = await SelectTestSchema(serviceUrl, profile);
+        var testProfile = await ReadTestProfileFromFile($"TestProfiles/{testSchema}.json");
         
         var validationResponse = new ValidationResponse
         {
@@ -76,15 +77,35 @@ public class ValidatorService : IValidatorService
         return validationResponse;
     }
 
-    private async Task<Result<TestProfile>> SelectTestSchema(string serviceUrl, string profileInput)
+    private async Task<string> SelectTestSchema(string serviceUrl, string? profileInput)
     {
-        var profile = profileInput switch
+        try
         {
-            "HSDS-UK-1.0" => V1Profile,
-            _ => V3Profile
-        };
-        
-        return await ReadTestProfileFromFile($"TestProfiles/{profile}.json");
+            if (!string.IsNullOrEmpty(profileInput))
+            {
+                return profileInput switch
+                {
+                    V1Profile => V1Profile,
+                    _ => V3Profile
+                };
+            }
+
+            var apiResult = await _requestService.GetApiResponse(serviceUrl, "/");
+            if (apiResult.IsFailed) 
+                return V1Profile;
+            
+            return apiResult.Value["version"]!.ToString() switch
+            {
+                V1Profile => V1Profile,
+                _ => V3Profile
+            };
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+
+        return V3Profile;
     }
 
     private async Task<Result<Test>> ValidateTestCase(TestCase testCase, string serviceUrl)
