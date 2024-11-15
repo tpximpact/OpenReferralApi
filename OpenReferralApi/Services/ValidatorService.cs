@@ -28,14 +28,8 @@ public class ValidatorService : IValidatorService
         
         if (!isUrlValid)
             return Result.Fail("Invalid URL provided");
-        
-        var profile = profileInput switch
-        {
-            "HSDS-UK-1.0" => V1Profile,
-            _ => V3Profile
-        };
 
-        var testProfile = await ReadTestProfileFromFile($"TestProfiles/{profile}.json");
+        var testProfile = await SelectTestSchema(serviceUrl, profileInput);
         
         var validationResponse = new ValidationResponse
         {
@@ -43,7 +37,7 @@ public class ValidatorService : IValidatorService
             {
                 Url = serviceUrl,
                 IsValid = true,
-                Profile = profile
+                Profile = testProfile.Value.Profile
             },
             TestSuites = new List<TestGroup>(),
             Metadata = new List<MetaData>() // TODO Add meta data if available
@@ -80,6 +74,17 @@ public class ValidatorService : IValidatorService
         }
 
         return validationResponse;
+    }
+
+    private async Task<Result<TestProfile>> SelectTestSchema(string serviceUrl, string profileInput)
+    {
+        var profile = profileInput switch
+        {
+            "HSDS-UK-1.0" => V1Profile,
+            _ => V3Profile
+        };
+        
+        return await ReadTestProfileFromFile($"TestProfiles/{profile}.json");
     }
 
     private async Task<Result<Test>> ValidateTestCase(TestCase testCase, string serviceUrl)
