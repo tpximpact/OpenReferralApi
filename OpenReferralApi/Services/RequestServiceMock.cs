@@ -22,13 +22,13 @@ public class RequestServiceMock : IRequestService
         return endpoint switch
         {
             "/services" => await ReadJsonFile($"{mockPath}/service_list.json"),
-            "/services/{id}" => await ReadJsonFile($"{mockPath}/service_full.json"),
+            "/services/ac148810-d857-441c-9679-408f346de14b" => await ReadJsonFile($"{mockPath}/service_full.json"),
             "/taxonomies" => await ReadJsonFile($"{mockPath}/taxonomy_list.json"),
-            "/taxonomies/{id}" => await ReadJsonFile($"{mockPath}/taxonomy.json"),
+            "/taxonomies/5c4d79d7-cc55-470e-9f1f-8cad074e4892" => await ReadJsonFile($"{mockPath}/taxonomy.json"),
             "/taxonomy_terms" => await ReadJsonFile($"{mockPath}/taxonomy_term_list.json"),
-            "/taxonomy_terms/{id}" => await ReadJsonFile($"{mockPath}/taxonomy_term.json"),
+            "/taxonomy_terms/3f7b145d-84af-42d7-8fae-eaca714b02b2" => await ReadJsonFile($"{mockPath}/taxonomy_term.json"),
             "/service_at_locations" => await ReadJsonFile($"{mockPath}/service_at_location_list.json"),
-            "/service_at_locations/{id}" => await ReadJsonFile($"{mockPath}/service_at_location_full.json"),
+            "/service_at_locations/e94c9f38-1e8f-4564-91d4-d53501ab1765" => await ReadJsonFile($"{mockPath}/service_at_location_full.json"),
             _ => await ReadJsonFile($"{mockPath}/api_details.json")
         };
     }
