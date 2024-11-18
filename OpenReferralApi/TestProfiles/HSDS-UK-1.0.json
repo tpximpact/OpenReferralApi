@@ -12,7 +12,60 @@
           "description": "Does the services list endpoint return a paginated list of services in the correct schema",
           "endpoint": "/services",
           "schema": "V1.0-UK/service_list.json",
-          "pagination": true
+          "pagination": true,
+          "saveIds": true,
+          "saveIdField": "content"
+        },
+        {
+          "name": "Service by id - API & schema validation",
+          "description": "Does the service by id endpoint return the details of a service in the correct schema",
+          "endpoint": "/services/",
+          "schema": "V1.0-UK/service_list.json",
+          "pagination": true,
+          "useIdFrom": "/services-id"
+        }
+      ]
+    },
+    {
+      "name": "Level 2 Compliance - Extended checks",
+      "description": "Will validate all other endpoints. Validation will not fail if it does not pass all these checks.",
+      "messageLevel": "warning",
+      "required": false,
+      "tests":[
+        {
+          "name": "Taxonomies list - API & schema validation",
+          "description": "Does the taxonomies list endpoint return a paginated list of taxonomies in the correct schema",
+          "endpoint": "/taxonomies",
+          "schema": "V1.0-UK/taxonomy_list.json",
+          "pagination": true,
+          "saveIds": true,
+          "saveIdField": "content"
+        },
+        {
+          "name": "Taxonomy by id - API & schema validation",
+          "description": "Does the taxonomy by id endpoint return the details of a taxonomy in the correct schema",
+          "endpoint": "/taxonomies/",
+          "schema": "V1.0-UK/taxonomy.json",
+          "pagination": true,
+          "useIdFrom": "/taxonomies-id"
+        },
+        {
+          "name": "Organizations list - API & schema validation",
+          "description": "Does the organizations list endpoint return a paginated list of organizations in the correct schema",
+          "endpoint": "/organizations",
+          "schema": "V1.0-UK/organization_list.json"
+        },
+        {
+          "name": "Locations list - API & schema validation",
+          "description": "Does the locations list endpoint return a paginated list of locations in the correct schema",
+          "endpoint": "/locations",
+          "schema": "V1.0-UK/location_list.json"
+        },
+        {
+          "name": "Reviews list - API & schema validation",
+          "description": "Does the reviews list endpoint return a paginated list of reviews in the correct schema",
+          "endpoint": "/locations",
+          "schema": "V1.0-UK/review_list.json"
         }
       ]
     }

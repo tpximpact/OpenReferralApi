@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 using FluentResults;
 using Json.Schema;
@@ -12,11 +13,13 @@ public class ValidatorService : IValidatorService
 {
     private const string V3Profile = "HSDS-UK-3.0";
     private const string V1Profile = "HSDS-UK-1.0";
-    private readonly IRequestService _requestService; 
+    private readonly IRequestService _requestService;
+    private Dictionary<string, string> _savedFields;
 
     public ValidatorService(IRequestService requestService)
     {
         _requestService = requestService;
+        _savedFields = new Dictionary<string, string>();
     }
 
     public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl, string? profile)
@@ -118,8 +121,27 @@ public class ValidatorService : IValidatorService
             Success = true,
             Messages = new List<Issue>()
         };
+
+        var endpoint = testCase.Endpoint;
+        if (testCase.UseIdFrom != null)
+        {
+            try
+            {
+                endpoint += _savedFields[testCase.UseIdFrom];
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                test.Success = false;
+                test.Messages.Add(new Issue 
+                    { Name = "API issue", Message = "Could not get a valid `id` for the request" }
+                );
+                return test;
+            }
+            
+        }
         
-        var apiResponse = await _requestService.GetApiResponse(serviceUrl, testCase.Endpoint);
+        var apiResponse = await _requestService.GetApiResponse(serviceUrl, endpoint);
         if (apiResponse.IsFailed)
         {
             test.Success = false;
@@ -133,6 +155,13 @@ public class ValidatorService : IValidatorService
         var schema = JsonSchema.FromFile(schemaPath);
 
         var issues = ValidateResponseSchema(apiResponse.Value, schema);
+
+        if (testCase.SaveIds)
+        {
+            var fieldValue = apiResponse.Value[testCase.SaveIdField]![0]!["id"];
+            if (fieldValue != null) 
+                _savedFields.Add($"{testCase.Endpoint}-id", fieldValue.ToString());
+        }
         
         if (testCase.Pagination)
         {
