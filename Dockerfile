@@ -3,9 +3,6 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-# ENV ORUK_API_Database__ConnectionString $DB_CONNECTION_STRING
-# ENV ORUK_API_Database__DatabaseName $DB_NAME
-
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY ["OpenReferralApi/OpenReferralApi.csproj", "OpenReferralApi/"]
