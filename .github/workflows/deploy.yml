@@ -17,6 +17,6 @@ jobs:
           heroku_app_name: ${{vars.HEROKU_APP_NAME}}
           heroku_email: ${{vars.HEROKU_EMAIL}}
         env:
-          DB_CONNECTION_STRING: ${{secrets.DB_CONNECTION_STRING}}
-          DB_NAME: oruk-v3
+          HD_DB_CONNECTION_STRING: ${{secrets.DB_CONNECTION_STRING}}
+          HD_DB_NAME: oruk-v3
       - run: heroku auth:whoami
