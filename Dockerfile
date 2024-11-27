@@ -3,7 +3,8 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-ENV ORUK_API_Database__DatabaseName oruk-v3
+ENV ORUK_API_Database__ConnectionString ${{secrets.DB_CONNECTION_STRING}}
+ENV ORUK_API_Database__DatabaseName ${{secrets.DB_NAME}}
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
@@ -15,10 +16,11 @@ RUN dotnet build "OpenReferralApi.csproj" -c Release -o /app/build
 
 FROM build AS publish
 RUN dotnet publish "OpenReferralApi.csproj" -c Release -o /app/publish 
-# -Database__DatabaseName=oruk-v3
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 CMD ASPNETCORE_URLS=http://*:$PORT dotnet OpenReferralApi.dll
-# ENTRYPOINT ["dotnet", "OpenReferralApi.dll"]
+
+# For local development use ENTRYPOINT & comment out CMD line
+# ENTRYPOINT ["dotnet", "OpenReferralApi.dll"] 
