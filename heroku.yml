@@ -1,3 +1,4 @@
 build:
   docker:
-    web: OpenReferralApi/Dockerfile
+    # web: OpenReferralApi/Dockerfile
+    web: Dockerfile
