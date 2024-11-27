@@ -16,11 +16,7 @@ jobs:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
           heroku_app_name: ${{vars.HEROKU_APP_NAME}}
           heroku_email: ${{vars.HEROKU_EMAIL}}
-        #   usedocker: true
-          docker_build_args: |
-            DB_CONNECTION_STRING
-            DB_NAME
         env:
           DB_CONNECTION_STRING: ${{secrets.DB_CONNECTION_STRING}}
-          DB_NAME: ${{secrets.DB_NAME}}
+          DB_NAME: oruk-v3
       - run: heroku auth:whoami
