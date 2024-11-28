@@ -19,6 +19,8 @@ builder.Services.AddSwaggerGen(options =>
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddHttpClient();
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -35,6 +37,8 @@ var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.MapHealthChecks("/health-check");
 
 app.UseHttpsRedirection();
 app.UseRouting();
