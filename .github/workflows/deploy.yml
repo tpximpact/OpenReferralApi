@@ -1,0 +1,27 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Deploy to Heroku
+        uses: akhileshns/heroku-deploy@v3.13.15 # This is the action
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: ${{vars.HEROKU_APP_NAME}}
+          heroku_email: ${{vars.HEROKU_EMAIL}}
+        env:
+          HD_ORUK_API_Database__ConnectionString: ${{secrets.DB_CONNECTION_STRING}}
+          HD_ORUK_API_Database__DatabaseName: ${{secrets.DB_NAME}}
+      - name: Health check
+        uses: jtalk/url-health-check-action@v4
+        with:
+          # Check the following URLs one by one sequentially
+          url: ${{vars.HEALTH_ENDPOINT}}|${{vars.API_BASE_ENDPOINT}}/api/dashboard

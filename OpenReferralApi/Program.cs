@@ -8,6 +8,8 @@ using OpenReferralApi.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddEnvironmentVariables("ORUK_API_");
+
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -16,6 +18,8 @@ builder.Services.AddSwaggerGen(options =>
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
+
+builder.Services.AddHealthChecks();
 
 builder.Services.AddHttpClient();
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -33,6 +37,8 @@ var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.MapHealthChecks("/health-check");
 
 app.UseHttpsRedirection();
 app.UseRouting();
