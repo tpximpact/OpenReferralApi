@@ -14,11 +14,13 @@ public class ValidatorService : IValidatorService
     private const string V3Profile = "HSDS-UK-3.0";
     private const string V1Profile = "HSDS-UK-1.0";
     private readonly IRequestService _requestService;
+    private readonly ILogger<ValidatorService> _logger;
     private Dictionary<string, string> _savedFields;
 
-    public ValidatorService(IRequestService requestService)
+    public ValidatorService(IRequestService requestService, ILogger<ValidatorService> logger)
     {
         _requestService = requestService;
+        _logger = logger;
         _savedFields = new Dictionary<string, string>();
     }
 
@@ -105,7 +107,8 @@ public class ValidatorService : IValidatorService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            _logger.LogError("Error encountered when selecting the test schema");
+            _logger.LogError(e.Message);
         }
 
         return V3Profile;
@@ -131,7 +134,8 @@ public class ValidatorService : IValidatorService
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                _logger.LogError("Error encountered when validating the test case");
+                _logger.LogError(e.Message);
                 test.Success = false;
                 test.Messages.Add(new Issue 
                     { Name = "API issue", Message = "Could not get a valid `id` for the request" }
@@ -317,8 +321,9 @@ public class ValidatorService : IValidatorService
         }
         catch (IOException e)
         {
-            Console.WriteLine("The file could not be read:");
-            Console.WriteLine(e.Message);
+            
+            _logger.LogError("Error encountered when reading from file");
+            _logger.LogError(e.Message);
             return Result.Fail(e.Message);
         }
     } 
