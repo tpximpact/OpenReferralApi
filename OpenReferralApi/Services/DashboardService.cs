@@ -1,18 +1,22 @@
-using System.Text.Json;
 using FluentResults;
 using OpenReferralApi.Models;
 using OpenReferralApi.Repositories.Interfaces;
 using OpenReferralApi.Services.Interfaces;
+using Success = OpenReferralApi.Models.Success;
 
 namespace OpenReferralApi.Services;
 
 public class DashboardService : IDashboardService
 {
     private readonly IDataRepository _dataRepository;
+    private readonly IValidatorService _validatorService;
+    private readonly ILogger<DashboardService> _logger;
 
-    public DashboardService(IDataRepository dataRepository)
+    public DashboardService(IDataRepository dataRepository, IValidatorService validatorService, ILogger<DashboardService> logger)
     {
         _dataRepository = dataRepository;
+        _validatorService = validatorService;
+        _logger = logger;
     }
 
     public async Task<Result<DashboardOutput>> GetServices()
@@ -38,6 +42,52 @@ public class DashboardService : IDashboardService
     {
         var serviceDetails = await _dataRepository.GetServiceById(id);
         return new DashboardServiceDetails(serviceDetails.Value);
+    }
+
+    public async Task<Result> ValidateDashboardServices()
+    {
+        var services = await _dataRepository.GetServices();
+
+        foreach (var service in services.Value)
+        {
+            _logger.LogInformation($"Periodic validation for {service.Name.Value} - Starting");
+            try
+            {
+                if (service.ServiceUrl?.Url == null)
+                {
+                    var updateResult = await _dataRepository
+                        .UpdateServiceTestStatus(service.Id!, Success.Fail, Success.Fail);
+                    if (updateResult.IsFailed)
+                        _logger.LogInformation($"Periodic validation for {service.Name.Value} - Dashboard status could not be updated");
+                }
+
+                var validationResult = await _validatorService.ValidateService(service.ServiceUrl!.Url!, "HSDS-UK-3.0");
+
+                if (validationResult.Value.Service.IsValid)
+                {
+                    var updateResult = await _dataRepository
+                        .UpdateServiceTestStatus(service.Id!, Success.Pass, Success.Pass);
+                    if (updateResult.IsFailed)
+                        _logger.LogInformation($"Periodic validation for {service.Name.Value} - Dashboard status could not be updated");
+                }
+                else
+                {
+                    var updateResult = await _dataRepository
+                        .UpdateServiceTestStatus(service.Id!, Success.Fail, Success.Fail);
+                    if (updateResult.IsFailed)
+                        _logger.LogInformation($"Periodic validation for {service.Name.Value} - Dashboard status could not be updated");
+                }
+                    
+                _logger.LogInformation($"Periodic validation for {service.Name.Value} - Completed");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Periodic validation for {service.Name.Value} - Failed with an error");
+                _logger.LogError(e.Message);
+            }
+        }
+        
+        return Result.Ok();
     }
     
 }
