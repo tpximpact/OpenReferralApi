@@ -37,6 +37,7 @@ public class DashboardController : ControllerBase
     [Route("{id}")]
     public async Task<IActionResult> GetDashboardServiceDetails([FromRoute]string id)
     {
+        // TODO remove when no longer needed for the dev site 
         if (int.TryParse(id, out var idInteger) && idInteger < 50)
             return await ReadJsonFile("Mocks/V3.0-UK-Default/dashboard_service_details_response.json");
         
@@ -46,7 +47,21 @@ public class DashboardController : ControllerBase
             ? Ok(result.Value)
             : BadRequest(result.Errors);
     }
-     
+
+    /// <summary>
+    /// Runs validation testing against all the services on the dashboard 
+    /// </summary>
+    [HttpGet]
+    [Route("validate")]
+    public async Task<IActionResult> ValidateDashboardServices()
+    {
+        var result = await _dashboardService.ValidateDashboardServices();
+        
+        return result.IsSuccess
+            ? Ok(result)
+            : BadRequest(result.Errors);
+    }
+
     private async Task<IActionResult> ReadJsonFile(string filePath)
     {
         try
