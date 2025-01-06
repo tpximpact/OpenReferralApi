@@ -1,11 +1,13 @@
-using System.Diagnostics;
 using System.Text.Json.Nodes;
 using FluentResults;
 using Json.Schema;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Serialization;
 using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
+using JsonSchema = Json.Schema.JsonSchema;
 
 namespace OpenReferralApi.Services;
 
@@ -156,9 +158,13 @@ public class ValidatorService : IValidatorService
         }
 
         var schemaPath = "Schemas/" + testCase.Schema;
-        var schema = JsonSchema.FromFile(schemaPath);
-
-        var issues = ValidateResponseSchema(apiResponse.Value, schema);
+        
+        // Open the text file using a stream reader.
+        using StreamReader reader = new(schemaPath);
+        // Read the stream as a string.
+        var fileContent = await reader.ReadToEndAsync();
+        var jSchema = JSchema.Parse(fileContent);
+        var issuesAlt = ValidateResponseSchema(apiResponse.Value, jSchema);
 
         if (testCase.SaveIds)
         {
@@ -170,11 +176,11 @@ public class ValidatorService : IValidatorService
         if (testCase.Pagination)
         {
             var paginationValidationResponse = await ValidatePagination(testCase, serviceUrl, apiResponse.Value);
-            issues.Value.AddRange(paginationValidationResponse.Value);
+            issuesAlt.Value.AddRange(paginationValidationResponse.Value);
         }
 
-        test.Success = issues.IsSuccess && issues.Value.Count == 0;
-        test.Messages.AddRange(issues.Value);
+        test.Success = issuesAlt.IsSuccess && issuesAlt.Value.Count == 0;
+        test.Messages.AddRange(issuesAlt.Value);
         return test;
 
     }
@@ -271,37 +277,25 @@ public class ValidatorService : IValidatorService
         return Result.Ok(issues);
     }
 
-    private Result<List<Issue>> ValidateResponseSchema(JsonNode response, JsonSchema schema)
+    private Result<List<Issue>> ValidateResponseSchema(JsonNode response, JSchema schema)
     {
-        var evalOptions = new EvaluationOptions
-        {
-            OutputFormat = OutputFormat.List,
-            RequireFormatValidation = true
-        };
-            
-        var results = schema.Evaluate(response, evalOptions);
+        IList<ValidationError> errors;
+        var rString = response.ToString();
+        var jstring = JToken.Parse(rString);
 
-        var issues = new List<Issue>();
-        
-        if (results.IsValid || !results.HasDetails) return issues;
+        var isValid = jstring.IsValid(schema, out errors);
 
-        // TODO translate evaluation results into our output result
-        foreach (var detail in results.Details)
+        if (isValid)
+            return new List<Issue>();
+
+        var issues = errors.Select(error => new Issue() 
         {
-            if (!detail.HasErrors) continue;
-                
-            foreach (var error in detail.Errors!)
-            {
-                var issue = new Issue()
-                {
-                    Name = error.Key,
-                    // TODO create a lookup to return a better description based on the error key 
-                    Description = "A schema validation issue has been found",
-                    Message = error.Value
-                };
-                issues.Add(issue);
-            }
-        }
+            Description = "Schema validation issue", 
+            Name = error.ErrorType.ToString(), 
+            Message = error.Message,
+            Path = $"{error.Path}, line {error.LineNumber}, position {error.LinePosition}",
+            SchemaPath = error.SchemaId!.ToString()
+        }).ToList();
         
         return issues;
     }
