@@ -293,8 +293,8 @@ public class ValidatorService : IValidatorService
             Description = "Schema validation issue", 
             Name = error.ErrorType.ToString(), 
             Message = error.Message,
-            Path = $"{error.Path}, line {error.LineNumber}, position {error.LinePosition}",
-            SchemaPath = error.SchemaId!.ToString()
+            ErrorAt = $"{error.Path}, line {error.LineNumber}, position {error.LinePosition}",
+            ErrorIn = error.SchemaId!.ToString()
         }).ToList();
         
         return issues;
