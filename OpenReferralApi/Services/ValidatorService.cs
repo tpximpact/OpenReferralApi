@@ -6,6 +6,7 @@ using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Serialization;
 using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
+using JsonSchema = Json.Schema.JsonSchema;
 
 namespace OpenReferralApi.Services;
 
