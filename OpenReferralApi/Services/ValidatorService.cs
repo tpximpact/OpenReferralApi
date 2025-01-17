@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using FluentResults;
-using Json.Schema;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
@@ -36,7 +35,7 @@ public class ValidatorService : IValidatorService
         if (!isUrlValid)
             return Result.Fail("Invalid URL provided");
 
-        var testSchema = await SelectTestSchema(serviceUrl, profile);
+        var (testSchema, schemaReason) = await SelectTestSchema(serviceUrl, profile);
         var testProfile = await ReadTestProfileFromFile($"TestProfiles/{testSchema}.json");
         
         var validationResponse = new ValidationResponse
@@ -45,7 +44,8 @@ public class ValidatorService : IValidatorService
             {
                 Url = serviceUrl,
                 IsValid = true,
-                Profile = testProfile.Value.Profile
+                Profile = testProfile.Value.Profile,
+                ProfileReason = schemaReason
             },
             TestSuites = new List<TestGroup>(),
             Metadata = new List<MetaData>() // TODO Add meta data if available
@@ -84,27 +84,31 @@ public class ValidatorService : IValidatorService
         return validationResponse;
     }
 
-    private async Task<string> SelectTestSchema(string serviceUrl, string? profileInput)
+    private async Task<(string, string)> SelectTestSchema(string serviceUrl, string? profileInput)
     {
+        const string defaultReason = "Could not read standard version from '/' endpoint defaulting to HSDS-UK-3.0";
+
         try
         {
             if (!string.IsNullOrEmpty(profileInput))
             {
                 return profileInput switch
                 {
-                    V1Profile => V1Profile,
-                    _ => V3Profile
+                    V1Profile => (V1Profile, "Standard version HSDS-UK-1.0 read from profile parameter"),
+                    V3Profile => (V3Profile, "Standard version HSDS-UK-3.0 read from profile parameter"),
+                    _ => (V3Profile, "Could not read standard version from profile parameter defaulting to HSDS-UK-3.0")
                 };
             }
 
             var apiResult = await _requestService.GetApiResponse(serviceUrl, "/");
             if (apiResult.IsFailed) 
-                return V1Profile;
+                return (V1Profile, "Could not read response from '/' endpoint defaulting to HSDS-UK-1.0");
             
             return apiResult.Value["version"]!.ToString() switch
             {
-                V1Profile => V1Profile,
-                _ => V3Profile
+                V1Profile => (V1Profile, "Standard version HSDS-UK-1.0 read from '/' endpoint"),
+                V3Profile => (V3Profile, "Standard version HSDS-UK-3.0 read from '/' endpoint"),
+                _ => (V3Profile, defaultReason)
             };
         }
         catch (Exception e)
@@ -113,7 +117,7 @@ public class ValidatorService : IValidatorService
             _logger.LogError(e.Message);
         }
 
-        return V3Profile;
+        return (V3Profile, defaultReason);
     }
 
     private async Task<Result<Test>> ValidateTestCase(TestCase testCase, string serviceUrl)
@@ -293,8 +297,8 @@ public class ValidatorService : IValidatorService
             Description = "Schema validation issue", 
             Name = error.ErrorType.ToString(), 
             Message = error.Message,
-            Path = $"{error.Path}, line {error.LineNumber}, position {error.LinePosition}",
-            SchemaPath = error.SchemaId!.ToString()
+            ErrorAt = $"{error.Path}, line {error.LineNumber}, position {error.LinePosition}",
+            ErrorIn = error.SchemaId!.ToString()
         }).ToList();
         
         return issues;
