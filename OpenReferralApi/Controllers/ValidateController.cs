@@ -8,10 +8,12 @@ namespace OpenReferralApi.Controllers;
 public class ValidateController : ControllerBase
 {
     private readonly IValidatorService _validatorService;
+    private readonly ILogger<ValidateController> _logger;
 
-    public ValidateController(IValidatorService validatorService)
+    public ValidateController(IValidatorService validatorService, ILogger<ValidateController> logger)
     {
         _validatorService = validatorService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -22,9 +24,19 @@ public class ValidateController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> ValidateService([FromQuery] string serviceUrl, [FromQuery] string? profile)
     {
-        var response = await _validatorService.ValidateService(serviceUrl, profile);
+        try
+        {
+            var response = await _validatorService.ValidateService(serviceUrl, profile);
 
-        return response.IsSuccess ? Ok(response.Value) : BadRequest(response.Errors);
+            return response.IsSuccess ? Ok(response.Value) : BadRequest(response.Errors);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Error encountered during validation");
+            _logger.LogError(e.Message);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "A critical failure occurred during validation. If this error persists please contact ORUK" });
+        }
     }
     
 }
