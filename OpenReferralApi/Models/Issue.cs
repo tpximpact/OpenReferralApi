@@ -8,4 +8,5 @@ public class Issue
     public string ErrorIn { get; set; } = null!;
     public string ErrorAt { get; set; } = null!;
     public string? Parameters { get; set; }
+    public string? Endpoint { get; set; } = null!;
 }
