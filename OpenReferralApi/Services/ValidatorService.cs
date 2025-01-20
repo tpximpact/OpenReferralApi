@@ -136,7 +136,9 @@ public class ValidatorService : IValidatorService
         {
             try
             {
-                endpoint += _savedFields[testCase.UseIdFrom];
+                var id = _savedFields[testCase.UseIdFrom];
+                endpoint += id;
+                test.Endpoint += id;
             }
             catch (Exception e)
             {
