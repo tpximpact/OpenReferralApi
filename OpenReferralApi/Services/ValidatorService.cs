@@ -168,7 +168,7 @@ public class ValidatorService : IValidatorService
         // Read the stream as a string.
         var fileContent = await reader.ReadToEndAsync();
         var jSchema = JSchema.Parse(fileContent);
-        var issuesAlt = ValidateResponseSchema(apiResponse.Value, jSchema);
+        var issues = ValidateResponseSchema(apiResponse.Value, jSchema);
 
         if (testCase.SaveIds)
         {
@@ -180,11 +180,11 @@ public class ValidatorService : IValidatorService
         if (testCase.Pagination)
         {
             var paginationValidationResponse = await ValidatePagination(testCase, serviceUrl, apiResponse.Value);
-            issuesAlt.Value.AddRange(paginationValidationResponse.Value);
+            issues.Value.AddRange(paginationValidationResponse.Value);
         }
 
-        test.Success = issuesAlt.IsSuccess && issuesAlt.Value.Count == 0;
-        test.Messages.AddRange(issuesAlt.Value);
+        test.Success = issues.IsSuccess && issues.Value.Count == 0;
+        test.Messages.AddRange(issues.Value);
         return test;
 
     }
