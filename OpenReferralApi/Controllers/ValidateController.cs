@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using OpenReferralApi.Services.Interfaces;
 
@@ -22,20 +23,24 @@ public class ValidateController : ControllerBase
     /// <param name="serviceUrl"></param>
     /// <param name="profile"></param>
     [HttpPost]
-    public async Task<IActionResult> ValidateService([FromQuery] string serviceUrl, [FromQuery] string? profile)
+    public async Task<IResult> ValidateService([FromQuery] string serviceUrl, [FromQuery] string? profile)
     {
         try
         {
             var response = await _validatorService.ValidateService(serviceUrl, profile);
 
-            return response.IsSuccess ? Ok(response.Value) : BadRequest(response.Errors);
+            return response.IsSuccess ? Results.Ok(response.Value) : Results.BadRequest(response.Errors);
         }
         catch (Exception e)
         {
             _logger.LogError("Error encountered during validation");
             _logger.LogError(e.Message);
 
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "A critical failure occurred during validation. If this error persists please contact ORUK" });
+            return Results.Problem(
+                title: "Internal Server Error",
+                detail: "A critical failure occurred during validation. If this error persists please contact ORUK",
+                instance: HttpContext.Request.Path + HttpContext.Request.QueryString,
+                statusCode: 500);
         }
     }
     
