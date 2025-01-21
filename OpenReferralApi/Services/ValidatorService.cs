@@ -6,7 +6,6 @@ using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Serialization;
 using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
-using JsonSchema = Json.Schema.JsonSchema;
 
 namespace OpenReferralApi.Services;
 
@@ -65,14 +64,38 @@ public class ValidatorService : IValidatorService
             
             foreach (var testCase in testGroup.Tests)
             {
-                var testResult = await ValidateTestCase(testCase, serviceUrl);
-                if (testResult.IsFailed)
-                    return Result.Fail(testResult.Errors);
+                try
+                {
+                    var testResult = await ValidateTestCase(testCase, serviceUrl);
+                    if (testResult.IsFailed)
+                        return Result.Fail(testResult.Errors);
 
-                testGroupResult.Tests.Add(testResult.Value);
+                    testGroupResult.Tests.Add(testResult.Value);
 
-                if (!testResult.Value.Success)
-                    testGroupResult.Success = false;
+                    if (!testResult.Value.Success)
+                        testGroupResult.Success = false;
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError("Error encountered when testing endpoint " + testCase.Endpoint);
+                    _logger.LogError(e.Message);
+                    testGroupResult.Tests.Add(new Test()
+                    {   
+                        Name = testCase.Name,
+                        Description = testCase.Description,
+                        Endpoint = testCase.Endpoint,
+                        Success = false,
+                        Messages = new List<Issue>()
+                        {
+                            new Issue()
+                            {
+                                Name = "Critical failure",
+                                Description = "A critical failure occured whilst testing the endpoint",
+                                Message = "A critical failure occured whilst testing the endpoint"
+                            }
+                        }
+                    });
+                }
             }
             
             validationResponse.TestSuites.Add(testGroupResult);
@@ -172,9 +195,17 @@ public class ValidatorService : IValidatorService
 
         if (testCase.SaveIds)
         {
-            var fieldValue = apiResponse.Value[testCase.SaveIdField]![0]!["id"];
-            if (fieldValue != null) 
-                _savedFields.Add($"{testCase.Endpoint}-id", fieldValue.ToString());
+            try
+            {
+                var fieldValue = apiResponse.Value[testCase.SaveIdField]?[0]?["id"];
+                if (fieldValue != null) 
+                    _savedFields.Add($"{testCase.Endpoint}-id", fieldValue.ToString());
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("Error encountered when retrieving id required endpoint");
+                _logger.LogError(e.Message);
+            }
         }
         
         if (testCase.Pagination)
