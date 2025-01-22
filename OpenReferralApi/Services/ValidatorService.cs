@@ -1,12 +1,12 @@
 using System.Text.Json.Nodes;
 using FluentResults;
+using Microsoft.AspNetCore.WebUtilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Serialization;
 using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
-using JsonSchema = Json.Schema.JsonSchema;
 
 namespace OpenReferralApi.Services;
 
@@ -131,14 +131,11 @@ public class ValidatorService : IValidatorService
             Messages = new List<Issue>()
         };
 
-        var endpoint = testCase.Endpoint;
         if (testCase.UseIdFrom != null)
         {
             try
             {
-                var id = _savedFields[testCase.UseIdFrom];
-                endpoint += id;
-                test.Endpoint += id;
+                test.Id = _savedFields[testCase.UseIdFrom];
             }
             catch (Exception e)
             {
@@ -153,12 +150,12 @@ public class ValidatorService : IValidatorService
             
         }
         
-        var apiResponse = await _requestService.GetApiResponse(serviceUrl, endpoint);
+        var apiResponse = await _requestService.GetApiResponse(serviceUrl, testCase.Endpoint + test.Id);
         if (apiResponse.IsFailed)
         {
             test.Success = false;
             test.Messages.Add(new Issue 
-                { Name = "API response issue", Message = apiResponse.Errors.First().Message }
+                { Name = "API response issue", Message = apiResponse.Errors.First().Message}
             );
             return test;
         }
@@ -211,8 +208,14 @@ public class ValidatorService : IValidatorService
         for (var page = 1; page <= totalPages; page++)
         {
             var response = await _requestService.GetApiResponse(serviceUrl, testCase.Endpoint, perPage, page);
-            var parameters = $"?per_page={perPage}&page={page}";
-            var endpoint = serviceUrl + testCase.Endpoint + parameters;
+            // TODO remove the duplication below
+            var parameters = new Dictionary<string, string>
+            {
+                { "perPage", perPage.ToString() }, 
+                { "page", page.ToString() }
+            };
+            var endpoint = serviceUrl + testCase.Endpoint;
+            endpoint = QueryHelpers.AddQueryString(endpoint, parameters!);
             if (response.IsFailed)
             {
                 issues.Add(new Issue()

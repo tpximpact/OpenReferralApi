@@ -7,6 +7,6 @@ public class Issue
     public string Message { get; set; } = null!;
     public string ErrorIn { get; set; } = null!;
     public string ErrorAt { get; set; } = null!;
-    public string? Parameters { get; set; }
-    public string? Endpoint { get; set; } = null!;
+    public Dictionary<string, string>? Parameters { get; set; }
+    public string? Endpoint { get; set; }
 }
