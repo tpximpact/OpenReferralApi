@@ -100,7 +100,7 @@ public class ValidatorService : IValidatorService
                 };
             }
 
-            var apiResult = await _requestService.GetApiResponse(serviceUrl, "/");
+            var apiResult = await _requestService.GetApiResponse(serviceUrl);
             if (apiResult.IsFailed) 
                 return (V1Profile, "Could not read response from '/' endpoint defaulting to HSDS-UK-1.0");
             
@@ -147,10 +147,9 @@ public class ValidatorService : IValidatorService
                 );
                 return test;
             }
-            
         }
         
-        var apiResponse = await _requestService.GetApiResponse(serviceUrl, testCase.Endpoint + test.Id);
+        var apiResponse = await _requestService.GetApiResponse(serviceUrl + testCase.Endpoint + test.Id);
         if (apiResponse.IsFailed)
         {
             test.Success = false;
@@ -207,8 +206,6 @@ public class ValidatorService : IValidatorService
         // Request several pages and check the pagination meta data 
         for (var page = 1; page <= totalPages; page++)
         {
-            var response = await _requestService.GetApiResponse(serviceUrl, testCase.Endpoint, perPage, page);
-            // TODO remove the duplication below
             var parameters = new Dictionary<string, string>
             {
                 { "perPage", perPage.ToString() }, 
@@ -216,6 +213,8 @@ public class ValidatorService : IValidatorService
             };
             var endpoint = serviceUrl + testCase.Endpoint;
             endpoint = QueryHelpers.AddQueryString(endpoint, parameters!);
+            
+            var response = await _requestService.GetApiResponse(endpoint);
             if (response.IsFailed)
             {
                 issues.Add(new Issue()
