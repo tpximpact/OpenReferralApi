@@ -1,4 +1,6 @@
+using System.Text.Json.Nodes;
 using FluentAssertions;
+using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using OpenReferralApi.Services;
@@ -8,8 +10,9 @@ namespace OpenReferralApi.Tests;
 
 public class ValidatorServiceShould
 {
-    private readonly IRequestService _requestServiceMock = new RequestServiceMock();
+    private IRequestService _requestServiceMock = new RequestServiceMock();
     private readonly ILogger<ValidatorService> _logger = new Logger<ValidatorService>(new NullLoggerFactory());
+    private const string MockPath = "Mocks/V3.0-UK-";
 
     [SetUp]
     public void Setup() { }
@@ -103,4 +106,27 @@ public class ValidatorServiceShould
         result.Value.TestSuites[0].Success.Should().BeTrue();
         result.Value.TestSuites[1].Success.Should().BeFalse();
     }
+    
+    private async Task<Result<JsonNode>> ReadJsonFile(string filePath)
+    {
+        try
+        {
+            // Open the text file using a stream reader.
+            using StreamReader reader = new(filePath);
+
+            // Read the stream as a string.
+            var mock = await reader.ReadToEndAsync();
+
+            var mockResponse = JsonNode.Parse(mock);
+
+            return mockResponse;
+        }
+        catch (IOException e)
+        {
+            Console.WriteLine("The file could not be read:");
+            Console.WriteLine(e.Message);
+        }
+
+        return Result.Fail("Sorry, something went wrong when trying to return the mock");
+    } 
 }

@@ -14,40 +14,11 @@ public class RequestService : IRequestService
         _httpClient = httpClient;
     }
 
-    public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint)
-    {
-        var requestUrl = url + endpoint;
-
-        return await MakeRequest(requestUrl, null);
-    }
-
-    public async Task<Result<JsonNode>> GetApiResponse(string url, string endpoint, int perPage, int page)
-    {
-        var requestUrl = url + endpoint;
-        var parameters = new Dictionary<string, string>
-        {
-            { "perPage", perPage.ToString() },
-            { "page", page.ToString() }
-        };
-
-        return await MakeRequest(requestUrl, parameters);
-    }
-
-    public async Task<Result<JsonNode>> GetApiDetails(string url)
-    {
-        return await MakeRequest(url, null);
-    }
-
-    private async Task<Result<JsonNode>> MakeRequest(string endpoint, IDictionary<string, string>? parameters)
+    public async Task<Result<JsonNode>> GetApiResponse(string url)
     {
         try
         {
-            var url = parameters == null
-                ? endpoint
-                : QueryHelpers.AddQueryString(endpoint, parameters!);
-
             var result = await _httpClient.GetAsync(url);
-
             var resultString = await result.Content.ReadAsStringAsync();
 
             return result.IsSuccessStatusCode

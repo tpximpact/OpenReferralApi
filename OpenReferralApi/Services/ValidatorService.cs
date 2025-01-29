@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using FluentResults;
+using Microsoft.AspNetCore.WebUtilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
@@ -123,7 +124,7 @@ public class ValidatorService : IValidatorService
                 };
             }
 
-            var apiResult = await _requestService.GetApiResponse(serviceUrl, "/");
+            var apiResult = await _requestService.GetApiResponse(serviceUrl);
             if (apiResult.IsFailed) 
                 return (V1Profile, "Could not read response from '/' endpoint defaulting to HSDS-UK-1.0");
             
@@ -149,17 +150,16 @@ public class ValidatorService : IValidatorService
         {
             Name = testCase.Name,
             Description = testCase.Description,
-            Endpoint = testCase.Endpoint,
+            Endpoint = serviceUrl + testCase.Endpoint,
             Success = true,
             Messages = new List<Issue>()
         };
 
-        var endpoint = testCase.Endpoint;
         if (testCase.UseIdFrom != null)
         {
             try
             {
-                endpoint += _savedFields[testCase.UseIdFrom];
+                test.Id = _savedFields[testCase.UseIdFrom];
             }
             catch (Exception e)
             {
@@ -171,15 +171,14 @@ public class ValidatorService : IValidatorService
                 );
                 return test;
             }
-            
         }
         
-        var apiResponse = await _requestService.GetApiResponse(serviceUrl, endpoint);
+        var apiResponse = await _requestService.GetApiResponse(serviceUrl + testCase.Endpoint + test.Id);
         if (apiResponse.IsFailed)
         {
             test.Success = false;
             test.Messages.Add(new Issue 
-                { Name = "API response issue", Message = apiResponse.Errors.First().Message }
+                { Name = "API response issue", Message = apiResponse.Errors.First().Message}
             );
             return test;
         }
@@ -191,7 +190,7 @@ public class ValidatorService : IValidatorService
         // Read the stream as a string.
         var fileContent = await reader.ReadToEndAsync();
         var jSchema = JSchema.Parse(fileContent);
-        var issuesAlt = ValidateResponseSchema(apiResponse.Value, jSchema);
+        var issues = ValidateResponseSchema(apiResponse.Value, jSchema);
 
         if (testCase.SaveIds)
         {
@@ -211,11 +210,11 @@ public class ValidatorService : IValidatorService
         if (testCase.Pagination)
         {
             var paginationValidationResponse = await ValidatePagination(testCase, serviceUrl, apiResponse.Value);
-            issuesAlt.Value.AddRange(paginationValidationResponse.Value);
+            issues.Value.AddRange(paginationValidationResponse.Value);
         }
 
-        test.Success = issuesAlt.IsSuccess && issuesAlt.Value.Count == 0;
-        test.Messages.AddRange(issuesAlt.Value);
+        test.Success = issues.IsSuccess && issues.Value.Count == 0;
+        test.Messages.AddRange(issues.Value);
         return test;
 
     }
@@ -239,7 +238,15 @@ public class ValidatorService : IValidatorService
         // Request several pages and check the pagination meta data 
         for (var page = 1; page <= totalPages; page++)
         {
-            var response = await _requestService.GetApiResponse(serviceUrl, testCase.Endpoint, perPage, page);
+            var parameters = new Dictionary<string, string>
+            {
+                { "perPage", perPage.ToString() }, 
+                { "page", page.ToString() }
+            };
+            var endpoint = serviceUrl + testCase.Endpoint;
+            endpoint = QueryHelpers.AddQueryString(endpoint, parameters!);
+            
+            var response = await _requestService.GetApiResponse(endpoint);
             if (response.IsFailed)
             {
                 issues.Add(new Issue()
@@ -247,7 +254,8 @@ public class ValidatorService : IValidatorService
                     Name = "API response",
                     Description = $"An error occurred when making a request to the `{testCase.Endpoint}` endpoint",
                     Message = response.Errors.First().Message,
-                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
+                    Parameters = parameters,
+                    Endpoint = endpoint
                 });
                 continue;
             }
@@ -260,7 +268,8 @@ public class ValidatorService : IValidatorService
                     Name = "Total items",
                     Description = "Is the total number of items correct",
                     Message = $"The value of 'total_items' has changed from {firstPage.TotalItems} to {currentPage.TotalItems} whilst requesting page {page} of the data",
-                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
+                    Parameters = parameters,
+                    Endpoint = endpoint
                 });
             }
             // Is the number of items returned per page correct
@@ -271,7 +280,8 @@ public class ValidatorService : IValidatorService
                     Name = "Items per page",
                     Description = "Is the number of items returned per page correct",
                     Message = $"The value of 'size' is {currentPage.Size} when {perPage} item(s) were requested in the 'per_page' parameter",
-                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
+                    Parameters = parameters,
+                    Endpoint = endpoint
                 });
             }
             // Does the number of items returned match the 'size' value in the response
@@ -282,7 +292,8 @@ public class ValidatorService : IValidatorService
                     Name = "Item count",
                     Description = "Does the number of items returned match the 'size' value in the response",
                     Message = $"The value of 'size' is {currentPage.Size} when {currentPage.Contents.Count} item(s) were returned in the response content",
-                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
+                    Parameters = parameters,
+                    Endpoint = endpoint
                 });
             }
             // Is the 'first_page' flag returned correctly
@@ -293,7 +304,8 @@ public class ValidatorService : IValidatorService
                     Name = "First page flag",
                     Description = "Is the 'first_page' flag returned correctly",
                     Message = $"The value of 'first_page' is {currentPage.FirstPage} when the page number is {page}",
-                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
+                    Parameters = parameters,
+                    Endpoint = endpoint
                 });
             }
             // Is the 'last_page' flag returned correctly
@@ -304,7 +316,8 @@ public class ValidatorService : IValidatorService
                     Name = "Last page flag",
                     Description = "Is the 'last_page' flag returned correctly",
                     Message = $"The value of 'last_page' is {currentPage.LastPage} when the page number is {page} of {firstPage.TotalPages}",
-                    Parameters = $"{testCase.Endpoint}?per_page={perPage}&page={page}"
+                    Parameters = parameters,
+                    Endpoint = endpoint
                 });
             }
         }
