@@ -1,7 +1,8 @@
 using System.Text.Json.Nodes;
-using FluentResults;
 using Microsoft.AspNetCore.Mvc;
+using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace OpenReferralApi.Controllers;
 
@@ -60,6 +61,22 @@ public class DashboardController : ControllerBase
         return result.IsSuccess
             ? Ok(result)
             : BadRequest(result.Errors);
+    }
+
+    /// <summary>
+    /// Submits a service to the dashboard 
+    /// </summary>
+    [HttpPost]
+    [Route("submit")]
+    public async Task<IActionResult> SubmitDashboardService([FromBody] DashboardSubmission submission)
+    {
+        var result = new JsonObject
+        {
+            { "submission accepted", true },
+            { "submission", JsonSerializer.SerializeToNode(submission) }
+        };
+
+        return Ok(result);
     }
 
     private async Task<IActionResult> ReadJsonFile(string filePath)
