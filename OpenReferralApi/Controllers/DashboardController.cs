@@ -70,13 +70,13 @@ public class DashboardController : ControllerBase
     [Route("submit")]
     public async Task<IActionResult> SubmitDashboardService([FromBody] DashboardSubmission submission)
     {
-        var result = new JsonObject
+        var response = new JsonObject
         {
-            { "submission accepted", true },
-            { "submission", JsonSerializer.SerializeToNode(submission) }
+            { "message", "Submission accepted" },
+            { "updateLink", "https://github.com/tpximpact/mhclg-oruk/issues/666" }
         };
 
-        return Ok(result);
+        return Accepted(response);
     }
 
     private async Task<IActionResult> ReadJsonFile(string filePath)
