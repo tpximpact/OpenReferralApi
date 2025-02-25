@@ -12,6 +12,7 @@ public class RequestService : IRequestService
     public RequestService(HttpClient httpClient)
     {
         _httpClient = httpClient;
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "oruk");
     }
 
     public async Task<Result<JsonNode>> GetApiResponse(string url)
