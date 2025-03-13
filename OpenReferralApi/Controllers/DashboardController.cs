@@ -2,7 +2,6 @@ using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace OpenReferralApi.Controllers;
 
@@ -11,10 +10,12 @@ namespace OpenReferralApi.Controllers;
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;
+    private readonly IGithubService _githubService;
 
-    public DashboardController(IDashboardService dashboardService)
+    public DashboardController(IDashboardService dashboardService, IGithubService githubService)
     {
         _dashboardService = dashboardService;
+        _githubService = githubService;
     }
 
     /// <summary>
@@ -70,13 +71,9 @@ public class DashboardController : ControllerBase
     [Route("submit")]
     public async Task<IActionResult> SubmitDashboardService([FromBody] DashboardSubmission submission)
     {
-        var response = new JsonObject
-        {
-            { "message", "Submission accepted" },
-            { "updateLink", "https://github.com/tpximpact/mhclg-oruk/issues/666" }
-        };
-
-        return Accepted(response);
+        var result = await _githubService.RaiseIssue(submission);
+        
+        return Accepted(result.Value);
     }
 
     private async Task<IActionResult> ReadJsonFile(string filePath)
