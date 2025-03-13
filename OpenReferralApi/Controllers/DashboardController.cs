@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
-using FluentResults;
 using Microsoft.AspNetCore.Mvc;
+using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
 
 namespace OpenReferralApi.Controllers;
@@ -10,10 +10,12 @@ namespace OpenReferralApi.Controllers;
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;
+    private readonly IGithubService _githubService;
 
-    public DashboardController(IDashboardService dashboardService)
+    public DashboardController(IDashboardService dashboardService, IGithubService githubService)
     {
         _dashboardService = dashboardService;
+        _githubService = githubService;
     }
 
     /// <summary>
@@ -60,6 +62,18 @@ public class DashboardController : ControllerBase
         return result.IsSuccess
             ? Ok(result)
             : BadRequest(result.Errors);
+    }
+
+    /// <summary>
+    /// Submits a service to the dashboard 
+    /// </summary>
+    [HttpPost]
+    [Route("submit")]
+    public async Task<IActionResult> SubmitDashboardService([FromBody] DashboardSubmission submission)
+    {
+        var result = await _githubService.RaiseIssue(submission);
+        
+        return Accepted(result.Value);
     }
 
     private async Task<IActionResult> ReadJsonFile(string filePath)

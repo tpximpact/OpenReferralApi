@@ -27,11 +27,13 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("Database")); 
+builder.Services.Configure<GithubSettings>(builder.Configuration.GetSection("Github")); 
 builder.Services.Configure<ValidatorSettings>(builder.Configuration.GetSection("Validator")); 
 builder.Services.AddSingleton<IDataRepository, DataRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IValidatorService, ValidatorService>();
 builder.Services.AddScoped<IRequestService, RequestService>();
+builder.Services.AddScoped<IGithubService, GithubService>();
 
 builder.Services.AddScoped<DashboardService>();
 // Register as singleton first so it can be injected through Dependency Injection
