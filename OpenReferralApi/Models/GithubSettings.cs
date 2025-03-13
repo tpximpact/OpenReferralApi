@@ -7,7 +7,7 @@ public class GithubSettings
     public string ClientHeader { get; set; } = null!;
     public string[] IssueAssignees { get; set; } = null!;
     public string[] Labels { get; set; } = null!;
-    public int AppId { get; set; }
+    public string ClientId { get; set; } = null!;
     public long InstallationId { get; set; }
     public string Key { get; set; } = null!;
 }

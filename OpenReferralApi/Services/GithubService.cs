@@ -73,7 +73,7 @@ public class GithubService : IGithubService
         {
             { "iat", ToUtcSeconds(utcNow) },
             { "exp", ToUtcSeconds(utcNow.AddMinutes(9)) },
-            { "iss", _githubSettings.AppId }
+            { "iss", _githubSettings.ClientId }
         };
         using var cryptoServiceProvider = new RSACryptoServiceProvider();
         cryptoServiceProvider.ImportFromPem(_githubSettings.Key);
