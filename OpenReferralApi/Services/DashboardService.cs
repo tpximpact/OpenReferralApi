@@ -74,7 +74,7 @@ public class DashboardService : IDashboardService
                         _logger.LogInformation($"Periodic validation for {service.Name.Value} - Dashboard status could not be updated");
                 }
 
-                var validationResult = await _validatorService.ValidateService(service.ServiceUrl!.Url!, "HSDS-UK-3.0");
+                var validationResult = await _validatorService.ValidateService(service.ServiceUrl!.Url!, null);
 
                 if (validationResult.Value.Service.IsValid)
                 {
