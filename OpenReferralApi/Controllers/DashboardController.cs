@@ -39,10 +39,6 @@ public class DashboardController : ControllerBase
     [Route("{id}")]
     public async Task<IActionResult> GetDashboardServiceDetails([FromRoute]string id)
     {
-        // TODO remove when no longer needed for the dev site 
-        if (int.TryParse(id, out var idInteger) && idInteger < 50)
-            return await ReadJsonFile("Mocks/V3.0-UK-Default/dashboard_service_details_response.json");
-        
         var result =  await _dashboardService.GetServiceById(id);
 
         return result.IsSuccess
