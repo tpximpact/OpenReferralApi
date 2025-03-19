@@ -17,7 +17,7 @@ public class DashboardController : ControllerBase
     }
 
     /// <summary>
-    /// Returns data about the known HSDS-UK services and the details needed for the data to be understood & displayed 
+    /// Returns data about the known HSDS-UK services and the details needed for the data to be understood & displayed
     /// </summary>
     [HttpGet]
     [Route("")]
@@ -31,7 +31,7 @@ public class DashboardController : ControllerBase
     }
     
     /// <summary>
-    /// Returns detailed data about a single HSDS-UK service and the details needed for the data to be understood & displayed 
+    /// Returns detailed data about a single HSDS-UK service and the details needed for the data to be understood & displayed
     /// </summary>
     [HttpGet]
     [Route("{id}")]
@@ -45,7 +45,7 @@ public class DashboardController : ControllerBase
     }
 
     /// <summary>
-    /// Runs validation testing against all the services on the dashboard 
+    /// Runs validation testing against all the services on the dashboard
     /// </summary>
     [HttpGet]
     [Route("validate")]
@@ -59,7 +59,7 @@ public class DashboardController : ControllerBase
     }
 
     /// <summary>
-    /// Submits a service to the dashboard 
+    /// Submits a service to the dashboard
     /// </summary>
     [HttpPost]
     [Route("submit")]
