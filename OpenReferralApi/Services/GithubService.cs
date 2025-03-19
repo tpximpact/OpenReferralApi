@@ -41,12 +41,12 @@ public class GithubService : IGithubService
                        $"Developer: {submission.Developer} \r\nDeveloper Url: {submission.DeveloperUrl}"
             };
             
-            foreach (var assignee in _githubSettings.IssueAssignees)
+            foreach (var assignee in _githubSettings.IssueAssignees.Split(','))
             {
                 issue.Assignees.Add(assignee);
             }
             
-            foreach (var label in _githubSettings.Labels)
+            foreach (var label in _githubSettings.Labels.Split(','))
             {
                 issue.Labels.Add(label);
             }
