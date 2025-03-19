@@ -22,7 +22,7 @@ public class DataRepository : IDataRepository
     public async Task<Result<List<ServiceData>>> GetServices()
     {
         var collection = _mongoDatabase.GetCollection<ServiceData>(_databaseSettings.ServicesCollection);
-        var services = await collection.Find(_ => true).ToListAsync();
+        var services = await collection.Find(s => s.Active).ToListAsync();
         
         return services;
     }
