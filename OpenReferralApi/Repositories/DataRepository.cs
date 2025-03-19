@@ -22,7 +22,7 @@ public class DataRepository : IDataRepository
     public async Task<Result<List<ServiceData>>> GetServices()
     {
         var collection = _mongoDatabase.GetCollection<ServiceData>(_databaseSettings.ServicesCollection);
-        var services = await collection.Find(_ => true).ToListAsync();
+        var services = await collection.Find(s => s.Active).ToListAsync();
         
         return services;
     }
@@ -72,5 +72,15 @@ public class DataRepository : IDataRepository
         return output.IsAcknowledged 
             ? Result.Ok()
             : Result.Fail("Update was not acknowledged");
+    }
+
+    public async Task<Result<string?>> AddService(ServiceData newService)
+    {
+        var collection = _mongoDatabase.GetCollection<ServiceData>(_databaseSettings.ServicesCollection);
+        await collection.InsertOneAsync(newService);
+
+        return string.IsNullOrEmpty(newService.Id)
+            ? Result.Fail("Failed to save submission details")
+            : newService.Id;
     }
 }

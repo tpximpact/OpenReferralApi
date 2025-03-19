@@ -10,12 +10,15 @@ public class DashboardService : IDashboardService
 {
     private readonly IDataRepository _dataRepository;
     private readonly IValidatorService _validatorService;
+    private readonly IGithubService _githubService;
     private readonly ILogger<DashboardService> _logger;
 
-    public DashboardService(IDataRepository dataRepository, IValidatorService validatorService, ILogger<DashboardService> logger)
+    public DashboardService(IDataRepository dataRepository, IValidatorService validatorService, 
+        IGithubService githubService, ILogger<DashboardService> logger)
     {
         _dataRepository = dataRepository;
         _validatorService = validatorService;
+        _githubService = githubService;
         _logger = logger;
     }
 
@@ -42,6 +45,16 @@ public class DashboardService : IDashboardService
     {
         var serviceDetails = await _dataRepository.GetServiceById(id);
         return new DashboardServiceDetails(serviceDetails.Value);
+    }
+
+    public async Task<Result<SubmissionResponse>> SubmitService(DashboardSubmission submission)
+    {
+        var newServiceData = new ServiceData(submission);
+        var addServiceResult = await _dataRepository.AddService(newServiceData);
+        if (addServiceResult.IsFailed)
+            return Result.Fail("Failed to save submission details");
+
+        return await _githubService.RaiseIssue(submission);
     }
 
     public async Task<Result> ValidateDashboardServices()

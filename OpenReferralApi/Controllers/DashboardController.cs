@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
-using FluentResults;
 using Microsoft.AspNetCore.Mvc;
+using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
 
 namespace OpenReferralApi.Controllers;
@@ -17,7 +17,7 @@ public class DashboardController : ControllerBase
     }
 
     /// <summary>
-    /// Returns data about the known HSDS-UK services and the details needed for the data to be understood & displayed 
+    /// Returns data about the known HSDS-UK services and the details needed for the data to be understood & displayed
     /// </summary>
     [HttpGet]
     [Route("")]
@@ -31,16 +31,12 @@ public class DashboardController : ControllerBase
     }
     
     /// <summary>
-    /// Returns detailed data about a single HSDS-UK service and the details needed for the data to be understood & displayed 
+    /// Returns detailed data about a single HSDS-UK service and the details needed for the data to be understood & displayed
     /// </summary>
     [HttpGet]
     [Route("{id}")]
     public async Task<IActionResult> GetDashboardServiceDetails([FromRoute]string id)
     {
-        // TODO remove when no longer needed for the dev site 
-        if (int.TryParse(id, out var idInteger) && idInteger < 50)
-            return await ReadJsonFile("Mocks/V3.0-UK-Default/dashboard_service_details_response.json");
-        
         var result =  await _dashboardService.GetServiceById(id);
 
         return result.IsSuccess
@@ -49,7 +45,7 @@ public class DashboardController : ControllerBase
     }
 
     /// <summary>
-    /// Runs validation testing against all the services on the dashboard 
+    /// Runs validation testing against all the services on the dashboard
     /// </summary>
     [HttpGet]
     [Route("validate")]
@@ -60,6 +56,21 @@ public class DashboardController : ControllerBase
         return result.IsSuccess
             ? Ok(result)
             : BadRequest(result.Errors);
+    }
+
+    /// <summary>
+    /// Submits a service to the dashboard
+    /// </summary>
+    [HttpPost]
+    [Route("submit")]
+    public async Task<IActionResult> SubmitDashboardService([FromBody] DashboardSubmission submission)
+    {
+        var submissionResult = await _dashboardService.SubmitService(submission);
+
+        if (submissionResult.IsSuccess)
+            return Accepted(submissionResult.Value);
+        
+        return BadRequest(submissionResult.Value);
     }
 
     private async Task<IActionResult> ReadJsonFile(string filePath)
