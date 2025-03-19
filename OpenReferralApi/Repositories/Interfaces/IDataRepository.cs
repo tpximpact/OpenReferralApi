@@ -11,5 +11,6 @@ public interface IDataRepository
     public Task<Result<List<Field>>> GetColumns();
     public Task<Result<List<View>>> GetViews();
     public Task<Result> UpdateServiceTestStatus(string id, Success apiStatus, Success testStatus);
+    public Task<Result<string?>> AddService(ServiceData newService);
 
 }

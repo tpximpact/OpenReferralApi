@@ -10,12 +10,10 @@ namespace OpenReferralApi.Controllers;
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;
-    private readonly IGithubService _githubService;
 
-    public DashboardController(IDashboardService dashboardService, IGithubService githubService)
+    public DashboardController(IDashboardService dashboardService)
     {
         _dashboardService = dashboardService;
-        _githubService = githubService;
     }
 
     /// <summary>
@@ -67,9 +65,12 @@ public class DashboardController : ControllerBase
     [Route("submit")]
     public async Task<IActionResult> SubmitDashboardService([FromBody] DashboardSubmission submission)
     {
-        var result = await _githubService.RaiseIssue(submission);
+        var submissionResult = await _dashboardService.SubmitService(submission);
+
+        if (submissionResult.IsSuccess)
+            return Accepted(submissionResult.Value);
         
-        return Accepted(result.Value);
+        return BadRequest(submissionResult.Value);
     }
 
     private async Task<IActionResult> ReadJsonFile(string filePath)

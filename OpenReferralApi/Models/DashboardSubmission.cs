@@ -10,4 +10,5 @@ public class DashboardSubmission
     public string DeveloperUrl { get; set; } = null!;
     public string ServiceUrl { get; set; } = null!;
     public string ContactEmail { get; set; } = null!;
+    public string? Version { get; set; }
 }
