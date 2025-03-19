@@ -79,8 +79,8 @@ public class DataRepository : IDataRepository
         var collection = _mongoDatabase.GetCollection<ServiceData>(_databaseSettings.ServicesCollection);
         await collection.InsertOneAsync(newService);
 
-        return string.IsNullOrEmpty(newService.Id) 
-            ? newService.Id 
-            : Result.Fail("Failed to save submission details");
+        return string.IsNullOrEmpty(newService.Id)
+            ? Result.Fail("Failed to save submission details")
+            : newService.Id;
     }
 }
