@@ -33,7 +33,7 @@ public class GithubService : IGithubService
                 Credentials = new Credentials(installationToken.Token, AuthenticationType.Bearer)
             };
 
-            var issue = new NewIssue(submission.Name + " - Dashboard Submission")
+            var issue = new NewIssue("Review dashboard submission - " + submission.Name)
             {
                 Body = "# Dashboard Submission \r\n" +
                        $"Name: {submission.Name} \r\nService Url: {submission.ServiceUrl} \r\nDescription: {submission.Description} \r\n" +
