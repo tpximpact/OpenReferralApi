@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using FluentResults;
-using Microsoft.AspNetCore.WebUtilities;
 using OpenReferralApi.Services.Interfaces;
 
 namespace OpenReferralApi.Services;

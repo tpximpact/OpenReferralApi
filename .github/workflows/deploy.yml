@@ -28,6 +28,8 @@ jobs:
           HD_ORUK_API_Github__ClientHeader: ${{vars.ACTION_CLIENT_HEADER}}
           HD_ORUK_API_Github__ClientId: ${{secrets.ACTION_CLIENT_ID}}
           HD_ORUK_API_Github__InstallationId: ${{secrets.ACTION_INSTALLATION_ID}}
+          HD_ORUK_API_Validator__DashboardTestingEnabled: ${{vars.DASHBOARD_TESTING_ENABLED}}
+          HD_ORUK_API_Validator__DashboardTestingPeriod: ${{vars.DASHBOARD_TESTING_PERIOD}}
       - name: Health check
         uses: jtalk/url-health-check-action@v4
         with:
