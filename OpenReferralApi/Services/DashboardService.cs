@@ -76,35 +76,31 @@ public class DashboardService : IDashboardService
             
             try
             {
-                if (service.ServiceUrl?.Url == null)
+                var serviceAvailable = await IsServiceAvailable(service.ServiceUrl!.Url);
+                if (serviceAvailable.IsFailed)
                 {
-                    await _dataRepository.UpdateServiceTestStatus(service.Id!, Success.Fail, Success.Fail);
                     testResult.TestsPassed = false;
                     testResult.ServiceAvailable = false;
-                    testResult.Message = $"Dashboard validation for {service.Name.Value} - No service url available";
+                    testResult.Message = "Service unavailable";
                     testingResult.Add(testResult);
+                    await _dataRepository.UpdateServiceTestStatus(service.Id!, Success.Fail, Success.Fail);
                     continue;
                 }
+                testResult.ServiceAvailable = true;
 
                 var validationResult = await _validatorService.ValidateService(service.ServiceUrl!.Url!, null);
 
                 if (!validationResult.Value.Service.IsValid)
                 {
                     testResult.TestsPassed = false;
-                    var serviceAvailable = await IsServiceAvailable(service.ServiceUrl.Value!.ToString()!);
-                    testResult.ServiceAvailable = serviceAvailable.IsSuccess;
-                    testResult.Message = $"Dashboard validation for {service.Name.Value} - Tests failed";
+                    testResult.Message = "Tests failed";
                     testingResult.Add(testResult);
-                    var apiStatus = serviceAvailable.IsSuccess
-                        ? Success.Pass
-                        : Success.Fail;
-                    await _dataRepository.UpdateServiceTestStatus(service.Id!, apiStatus, Success.Fail);
+                    await _dataRepository.UpdateServiceTestStatus(service.Id!, Success.Pass, Success.Fail);
                     continue;
                 }
                 
                 await _dataRepository.UpdateServiceTestStatus(service.Id!, Success.Pass, Success.Pass);
                 testResult.TestsPassed = true;
-                testResult.ServiceAvailable = true;
                 testingResult.Add(testResult);
             }
             catch (Exception e)
@@ -113,7 +109,7 @@ public class DashboardService : IDashboardService
                 _logger.LogError(e.Message);
                 testResult.TestsPassed = false;
                 testResult.ServiceAvailable = false;
-                testResult.Message = $"Dashboard validation for {service.Name.Value} - Critically failed with an error. Check the logs for more details";
+                testResult.Message = "Critically failed with an error. Check the logs for more details";
                 testingResult.Add(testResult);
             }
         }
@@ -121,8 +117,11 @@ public class DashboardService : IDashboardService
         return Result.Ok(testingResult);
     }
 
-    private async Task<Result> IsServiceAvailable(string serviceUrl)
+    private async Task<Result> IsServiceAvailable(string? serviceUrl)
     {
+        if (string.IsNullOrEmpty(serviceUrl))
+            return Result.Fail("Invalid URL provided");
+        
         serviceUrl = serviceUrl.TrimEnd('/');
         serviceUrl += "/services";
 
