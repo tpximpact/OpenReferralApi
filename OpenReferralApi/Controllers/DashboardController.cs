@@ -54,7 +54,7 @@ public class DashboardController : ControllerBase
         var result = await _dashboardService.ValidateDashboardServices();
         
         return result.IsSuccess
-            ? Ok(result)
+            ? Ok(result.Value)
             : BadRequest(result.Errors);
     }
 

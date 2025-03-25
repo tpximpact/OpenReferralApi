@@ -11,15 +11,17 @@ public class DashboardService : IDashboardService
     private readonly IDataRepository _dataRepository;
     private readonly IValidatorService _validatorService;
     private readonly IGithubService _githubService;
+    private readonly IRequestService _requestService;
     private readonly ILogger<DashboardService> _logger;
 
     public DashboardService(IDataRepository dataRepository, IValidatorService validatorService, 
-        IGithubService githubService, ILogger<DashboardService> logger)
+        IGithubService githubService, IRequestService requestService, ILogger<DashboardService> logger)
     {
         _dataRepository = dataRepository;
         _validatorService = validatorService;
         _githubService = githubService;
         _logger = logger;
+        _requestService = requestService;
     }
 
     public async Task<Result<DashboardOutput>> GetServices()
@@ -57,50 +59,83 @@ public class DashboardService : IDashboardService
         return await _githubService.RaiseIssue(submission);
     }
 
-    public async Task<Result> ValidateDashboardServices()
+    public async Task<Result<List<DashboardValidationResponse>>> ValidateDashboardServices()
     {
+        var testingResult = new List<DashboardValidationResponse>();
         var services = await _dataRepository.GetServices();
 
         foreach (var service in services.Value)
         {
-            _logger.LogInformation($"Periodic validation for {service.Name.Value} - Starting");
+            _logger.LogInformation($"Dashboard validation for {service.Name!.Value} - Starting");
+            var testResult = new DashboardValidationResponse()
+            {
+                Id = service.Id!,
+                Name = service.Name.Value!.ToString()!,
+                Version = service.SchemaVersion!.Value!.ToString()!
+            };
+            
             try
             {
                 if (service.ServiceUrl?.Url == null)
                 {
-                    var updateResult = await _dataRepository
-                        .UpdateServiceTestStatus(service.Id!, Success.Fail, Success.Fail);
-                    if (updateResult.IsFailed)
-                        _logger.LogInformation($"Periodic validation for {service.Name.Value} - Dashboard status could not be updated");
+                    await _dataRepository.UpdateServiceTestStatus(service.Id!, Success.Fail, Success.Fail);
+                    testResult.TestsPassed = false;
+                    testResult.ServiceAvailable = false;
+                    testResult.Message = $"Dashboard validation for {service.Name.Value} - No service url available";
+                    testingResult.Add(testResult);
+                    continue;
                 }
 
                 var validationResult = await _validatorService.ValidateService(service.ServiceUrl!.Url!, null);
 
-                if (validationResult.Value.Service.IsValid)
+                if (!validationResult.Value.Service.IsValid)
                 {
-                    var updateResult = await _dataRepository
-                        .UpdateServiceTestStatus(service.Id!, Success.Pass, Success.Pass);
-                    if (updateResult.IsFailed)
-                        _logger.LogInformation($"Periodic validation for {service.Name.Value} - Dashboard status could not be updated");
+                    testResult.TestsPassed = false;
+                    var serviceAvailable = await IsServiceAvailable(service.ServiceUrl.Value!.ToString()!);
+                    testResult.ServiceAvailable = serviceAvailable.IsSuccess;
+                    testResult.Message = $"Dashboard validation for {service.Name.Value} - Tests failed";
+                    testingResult.Add(testResult);
+                    var apiStatus = serviceAvailable.IsSuccess
+                        ? Success.Pass
+                        : Success.Fail;
+                    await _dataRepository.UpdateServiceTestStatus(service.Id!, apiStatus, Success.Fail);
+                    continue;
                 }
-                else
-                {
-                    var updateResult = await _dataRepository
-                        .UpdateServiceTestStatus(service.Id!, Success.Fail, Success.Fail);
-                    if (updateResult.IsFailed)
-                        _logger.LogInformation($"Periodic validation for {service.Name.Value} - Dashboard status could not be updated");
-                }
-                    
-                _logger.LogInformation($"Periodic validation for {service.Name.Value} - Completed");
+                
+                await _dataRepository.UpdateServiceTestStatus(service.Id!, Success.Pass, Success.Pass);
+                testResult.TestsPassed = true;
+                testResult.ServiceAvailable = true;
+                testingResult.Add(testResult);
             }
             catch (Exception e)
             {
-                _logger.LogError($"Periodic validation for {service.Name.Value} - Failed with an error");
+                _logger.LogError($"Dashboard validation for {service.Name.Value} - Failed with an error");
                 _logger.LogError(e.Message);
+                testResult.TestsPassed = false;
+                testResult.ServiceAvailable = false;
+                testResult.Message = $"Dashboard validation for {service.Name.Value} - Critically failed with an error. Check the logs for more details";
+                testingResult.Add(testResult);
             }
         }
         
-        return Result.Ok();
+        return Result.Ok(testingResult);
     }
-    
+
+    private async Task<Result> IsServiceAvailable(string serviceUrl)
+    {
+        serviceUrl = serviceUrl.TrimEnd('/');
+        serviceUrl += "/services";
+
+        var isUrlValid = Uri.TryCreate(serviceUrl, UriKind.Absolute, out var uriResult) 
+                         && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        
+        if (!isUrlValid)
+            return Result.Fail("Invalid URL provided");
+
+        var response = await _requestService.GetApiResponse(serviceUrl);
+
+        return response.IsSuccess
+            ? Result.Ok() 
+            : Result.Fail("Request failure");
+    }
 }
