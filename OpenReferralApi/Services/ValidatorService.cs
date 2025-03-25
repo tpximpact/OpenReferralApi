@@ -27,6 +27,7 @@ public class ValidatorService : IValidatorService
 
     public async Task<Result<ValidationResponse>> ValidateService(string serviceUrl, string? profile)
     {
+        _savedFields.Clear();
         serviceUrl = serviceUrl.TrimEnd('/');
 
         var isUrlValid = Uri.TryCreate(serviceUrl, UriKind.Absolute, out var uriResult) 
