@@ -21,34 +21,43 @@ public class PeriodicValidationService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!_testingEnabled)
+        {
+            _logger.LogInformation("Periodic dashboard testing disabled");
+            return;
+        }
+        
         using var timer = new PeriodicTimer(_testingPeriod);
 
-        _logger.LogInformation(_testingEnabled
-            ? "Periodic dashboard testing enabled"
-            : "Periodic dashboard testing disabled");
+        _logger.LogInformation("Periodic dashboard testing enabled");
+        await ExecuteTests();
 
-        while (!stoppingToken.IsCancellationRequested && _testingEnabled &&
-               await timer.WaitForNextTickAsync(stoppingToken))
+        while (!stoppingToken.IsCancellationRequested && _testingEnabled && await timer.WaitForNextTickAsync(stoppingToken))
         {
-            try
-            {
-                _logger.LogInformation("Periodic validation starting...");
-                // Create scope, so we get request services
-                await using var asyncScope = _factory.CreateAsyncScope();
-                // Get service from scope
-                var dashboardService = asyncScope.ServiceProvider.GetRequiredService<DashboardService>();
+            await ExecuteTests();
+        }
+    }
 
-                var result = await dashboardService.ValidateDashboardServices();
+    private async Task ExecuteTests()
+    {
+        try
+        {
+            _logger.LogInformation("Periodic validation starting...");
+            // Create scope, so we get request services
+            await using var asyncScope = _factory.CreateAsyncScope();
+            // Get service from scope
+            var dashboardService = asyncScope.ServiceProvider.GetRequiredService<DashboardService>();
 
-                _logger.LogInformation(result.IsSuccess
-                    ? "Periodic validation completed successfully"
-                    : "Periodic validation completed unsuccessfully");
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("Periodic validation failed with an error");
-                _logger.LogError(e.Message);
-            }
+            var result = await dashboardService.ValidateDashboardServices();
+
+            _logger.LogInformation(result.IsSuccess
+                ? "Periodic validation completed successfully"
+                : "Periodic validation completed unsuccessfully");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Periodic validation failed with an error");
+            _logger.LogError(e.Message);
         }
     }
 }
