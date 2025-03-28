@@ -7,6 +7,8 @@ public class DashboardServiceDetails
         Title = serviceData.Name;
         Publisher = serviceData.Publisher;
         ServiceUrl = serviceData.ServiceUrl;
+        if (float.Parse(serviceData.SchemaVersion.Value.ToString()) == 1.0f)
+            ServiceUrl.Url += "/services";
         IsValid = serviceData.StatusIsValid;
         if (int.TryParse(IsValid.Value.ToString(), out var isValid))
         {
@@ -23,7 +25,8 @@ public class DashboardServiceDetails
                 {
                     serviceData.Developer,
                     serviceData.Comment,
-                    serviceData.Description
+                    serviceData.Description,
+                    serviceData.SchemaVersion
                 }
             }
         };
