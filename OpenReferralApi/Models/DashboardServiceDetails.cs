@@ -25,7 +25,8 @@ public class DashboardServiceDetails
                 {
                     serviceData.Developer,
                     serviceData.Comment,
-                    serviceData.Description
+                    serviceData.Description,
+                    serviceData.SchemaVersion
                 }
             }
         };
