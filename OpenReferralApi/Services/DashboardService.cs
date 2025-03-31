@@ -71,12 +71,16 @@ public class DashboardService : IDashboardService
             {
                 Id = service.Id!,
                 Name = service.Name.Value!.ToString()!,
-                Version = service.SchemaVersion!.Value!.ToString()!
+                Version = service.SchemaVersion!.Value!.ToString()!,
+                Service = service.ServiceUrl!.Url!
             };
             
             try
             {
-                var serviceAvailable = await IsServiceAvailable(service.ServiceUrl!.Url);
+                if (testResult.Version == "1.0")
+                    testResult.Service = service.ServiceUrl.Value.ToString();
+                
+                var serviceAvailable = await IsServiceAvailable(testResult.Service);
                 if (serviceAvailable.IsFailed)
                 {
                     testResult.TestsPassed = false;

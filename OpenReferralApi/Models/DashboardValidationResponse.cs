@@ -7,5 +7,6 @@ public class DashboardValidationResponse
     public bool ServiceAvailable { get; set; }
     public bool TestsPassed { get; set; }
     public string Version { get; set; }
+    public string Service { get; set; }
     public string? Message { get; set; }
 }
