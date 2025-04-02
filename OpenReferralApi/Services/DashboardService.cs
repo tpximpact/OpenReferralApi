@@ -92,7 +92,7 @@ public class DashboardService : IDashboardService
                 }
                 testResult.ServiceAvailable = true;
 
-                var validationResult = await _validatorService.ValidateService(service.ServiceUrl!.Url!, null);
+                var validationResult = await _validatorService.ValidateService(testResult.Service, null);
 
                 if (!validationResult.Value.Service.IsValid)
                 {
