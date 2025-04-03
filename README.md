@@ -1,52 +1,19 @@
 # Open Referral UK API
 
-For more information about the Open Referral UK project you can find the [documentation here](https://docs.openreferraluk.org/en/latest/)
+Open Referral UK (ORUK) is an open data standard that provides a consistent way to publish and describe information. This makes it easier for people to find what they need and supports connected local services.
 
-## Deployment
+For more information about the Open Referral UK project please check out [openreferraluk.org](https://openreferraluk.org/)
 
-The deployment to Heroku requires the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) and [Docker](https://www.docker.com/)
+If you have any questions or issues relating to ORUK or the HSDS standard please direct them to the [community forums](https://forum.openreferral.org/) where the active community will be best placed to respond.
 
-``` powershell
-# Login to Heroku account
-heroku login
+Any issues that directly relate to the website or API please add to the [issues page of the website's repo](https://github.com/tpximpact/mhclg-oruk/issues). Keeping these issues in one place will makes things easier for us to track and manage and reduce the time it takes for the team to respond.
 
-# Login to Heroku container
-heroku container:login
+## Documentation
 
-# Build the image
-# docker build -t {{IMAGE_NAME}} -f OpenReferralApi/Dockerfile .
-docker build -t oruk-api -f OpenReferralApi/Dockerfile .
+If you would like to better understand how the Validator or Dashboard work please read through the information in the [Docs folder](/Docs/) of this repo.
 
-# Tag the image to push to Heroku’s Container registry
-# docker tag {{IMAGE_NAME}}:{{IMAGE_TAG}} registry.heroku.com/{{HEROKU_APP_NAME}}/web
-docker tag oruk-api:latest registry.heroku.com/oruk-api/web
+## License
 
-# Push the image to Heroku’s Container Registry
-# docker push registry.heroku.com/{{HEROKU_APP_NAME}}/web
-docker push registry.heroku.com/oruk-api/web
+The Human Services Data Specification UK (HSDS-UK) and associated documentation are licensed under the Creative Commons Attribution Share-Alike 4.0 license.
 
-# Release the image to Heroku to be deployed
-# heroku container:release web --app {{HEROKU_APP_NAME}}
-heroku container:release web --app oruk-api
-```
-
-### Debugging
-
-To debug the deployed app run the below
-
-``` powershell
-# Login to Heroku account
-heroku login
-
-# Run to see the logs of the deployment
-# heroku logs --app={{HEROKU_APP_NAME}} --tail 
-heroku logs --app=oruk-api --tail 
-```
-
-To run the API container locally
-
-``` powershell
-
-docker run -p 8080:8080 --name oruk-api oruk-api:latest
-
-```
+Please refer to the [LICENSE](/LICENSE) for full details.
