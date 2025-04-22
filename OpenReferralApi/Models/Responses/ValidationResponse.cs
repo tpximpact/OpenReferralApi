@@ -1,8 +1,8 @@
-namespace OpenReferralApi.Models;
+namespace OpenReferralApi.Models.Responses;
 
 public class ValidationResponse
 {
-    public ServiceDetails Service { get; set; }
+    public ServiceResponse Service { get; set; }
     public List<MetaData> Metadata { get; set; }
     public List<TestGroup> TestSuites { get; set; } = null!;
 }

@@ -1,5 +1,7 @@
 using FluentResults;
 using OpenReferralApi.Models;
+using OpenReferralApi.Models.Requests;
+using OpenReferralApi.Models.Responses;
 using OpenReferralApi.Repositories.Interfaces;
 using OpenReferralApi.Services.Interfaces;
 using Success = OpenReferralApi.Models.Success;
@@ -49,7 +51,7 @@ public class DashboardService : IDashboardService
         return new DashboardServiceDetails(serviceDetails.Value);
     }
 
-    public async Task<Result<SubmissionResponse>> SubmitService(DashboardSubmission submission)
+    public async Task<Result<SubmissionResponse>> SubmitService(DashboardSubmissionRequest submission)
     {
         var newServiceData = new ServiceData(submission);
         var addServiceResult = await _dataRepository.AddService(newServiceData);

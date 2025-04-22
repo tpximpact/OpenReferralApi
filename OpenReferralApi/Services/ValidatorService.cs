@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Serialization;
 using OpenReferralApi.Models;
+using OpenReferralApi.Models.Responses;
 using OpenReferralApi.Services.Interfaces;
 
 namespace OpenReferralApi.Services;
@@ -41,7 +42,7 @@ public class ValidatorService : IValidatorService
         
         var validationResponse = new ValidationResponse
         {
-            Service = new ServiceDetails
+            Service = new ServiceResponse
             {
                 Url = serviceUrl,
                 IsValid = true,

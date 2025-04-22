@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 using OpenReferralApi.Models;
+using OpenReferralApi.Models.Settings;
 using OpenReferralApi.Repositories;
 using OpenReferralApi.Repositories.Interfaces;
 using OpenReferralApi.Services;
