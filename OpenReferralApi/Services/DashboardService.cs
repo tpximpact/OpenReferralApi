@@ -26,9 +26,9 @@ public class DashboardService : IDashboardService
         _requestService = requestService;
     }
 
-    public async Task<Result<DashboardOutput>> GetServices()
+    public async Task<Result<DashboardResponse>> GetServices()
     {
-        var response = new DashboardOutput
+        var response = new DashboardResponse
         {
             Definitions = new Definitions()
         };
@@ -45,10 +45,10 @@ public class DashboardService : IDashboardService
         return response;
     }
 
-    public async Task<Result<DashboardServiceDetails>> GetServiceById(string id)
+    public async Task<Result<ServiceDetailsResponse>> GetServiceById(string id)
     {
         var serviceDetails = await _dataRepository.GetServiceById(id);
-        return new DashboardServiceDetails(serviceDetails.Value);
+        return new ServiceDetailsResponse(serviceDetails.Value);
     }
 
     public async Task<Result<SubmissionResponse>> SubmitService(DashboardSubmissionRequest submission)
