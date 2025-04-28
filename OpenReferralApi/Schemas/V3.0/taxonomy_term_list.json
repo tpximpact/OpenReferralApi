@@ -26,6 +26,16 @@
             "example": "3f7b145d-84af-42d7-8fae-eaca714b02b2",
             "core": "Y"
           },
+          "code": {
+            "name": "code",
+            "type": "string",
+            "title": "Code",
+            "description": "The term identfier as used in the taxonomy. This and the taxonomy_id combined define the term.",
+            "constraints": {
+              "unique": true
+            },
+            "example": "code"
+          },
           "name": {
             "name": "name",
             "type": "string",
@@ -70,6 +80,22 @@
             "example": "taxonomy",
             "core": "Y"
           },
+          "taxonomy_detail": {
+            "name": "taxonomy",
+            "title": "Taxonomy",
+            "description": "Taxonomies from which taxonomy terms are taken",
+            "$ref": "taxonomy.json"
+          },
+          "language": {
+            "name": "language",
+            "type": "string",
+            "title": "Language",
+            "description": "An ISO 639-1, ISO 639-2, or ISO 639-3 [language code](http://www.loc.gov/standards/iso639-2/php/code_list.php) to represent the language of the term. The three-letter codes from ISO 639-2 and ISO 639-3 provide greater accuracy when describing variants of languages, which may be relevant to particular communities.",
+            "constraints": {
+              "unique": false
+            },
+            "example": "eng"
+          },
           "taxonomy_id": {
             "name": "taxonomy_id",
             "type": "string",
@@ -92,16 +118,14 @@
             },
             "example": "http://example.com"
           },
-          "term": {
-            "name": "term",
-            "type": "string",
-            "title": "Term",
-            "description": "The taxonomy term itself.",
-            "constraints": {
-              "unique": false
-            },
-            "example": "name",
-            "core": "Y"
+          "metadata": {
+            "name": "metadata",
+            "type": "array",
+            "title": "Metadata",
+            "description": "A record of the changes that have been made to the data in order to maintain provenance information.",
+            "items": {
+              "$ref": "metadata.json"
+            }
           }
         },
         "required": ["id", "name", "description"]

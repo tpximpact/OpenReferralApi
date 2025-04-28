@@ -498,18 +498,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy"
                     },
                     "language": {
@@ -664,18 +657,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "description"
-                  ],
+                  "required": ["id", "name", "description"],
                   "title": "Taxonomy Term"
                 },
                 "metadata": {
@@ -798,10 +784,7 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 },
                 "label": {
@@ -815,14 +798,8 @@
                   "example": "An Example Label"
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "link_id",
-                "taxonomy_term_id",
-                "link_entity"
-              ]
+              "required": ["id"],
+              "tabular_required": ["link_id", "taxonomy_term_id", "link_entity"]
             }
           },
           "metadata": {
@@ -945,17 +922,11 @@
                 "replacement_value",
                 "updated_by"
               ],
-              "tabular_required": [
-                "resource_id",
-                "resource_type"
-              ]
+              "tabular_required": ["resource_id", "resource_type"]
             }
           }
         },
-        "required": [
-          "id",
-          "url"
-        ]
+        "required": ["id", "url"]
       }
     },
     "tax_status": {
@@ -1438,18 +1409,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy"
                     },
                     "language": {
@@ -1604,18 +1568,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "description"
-                  ],
+                  "required": ["id", "name", "description"],
                   "title": "Taxonomy Term"
                 },
                 "metadata": {
@@ -1738,10 +1695,7 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 },
                 "label": {
@@ -1755,14 +1709,8 @@
                   "example": "An Example Label"
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "link_id",
-                "taxonomy_term_id",
-                "link_entity"
-              ]
+              "required": ["id"],
+              "tabular_required": ["link_id", "taxonomy_term_id", "link_entity"]
             }
           },
           "metadata": {
@@ -1885,16 +1833,11 @@
                 "replacement_value",
                 "updated_by"
               ],
-              "tabular_required": [
-                "resource_id",
-                "resource_type"
-              ]
+              "tabular_required": ["resource_id", "resource_type"]
             }
           }
         },
-        "required": [
-          "id"
-        ]
+        "required": ["id"]
       }
     },
     "contacts": {
@@ -2589,11 +2532,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy"
                                 },
                                 "language": {
@@ -2755,11 +2694,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "name",
-                                "description"
-                              ],
+                              "required": ["id", "name", "description"],
                               "title": "Taxonomy Term"
                             },
                             "metadata": {
@@ -2899,9 +2834,7 @@
                               "example": "An Example Label"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
+                          "required": ["id"],
                           "tabular_required": [
                             "link_id",
                             "taxonomy_term_id",
@@ -3029,16 +2962,11 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       }
                     },
-                    "required": [
-                      "id"
-                    ]
+                    "required": ["id"]
                   }
                 },
                 "attributes": {
@@ -3396,11 +3324,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -3562,11 +3486,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -3689,10 +3609,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -3706,9 +3623,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -3836,17 +3751,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id",
-                "number"
-              ]
+              "required": ["id", "number"]
             }
           },
           "attributes": {
@@ -4197,18 +4106,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy"
                     },
                     "language": {
@@ -4363,18 +4265,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "description"
-                  ],
+                  "required": ["id", "name", "description"],
                   "title": "Taxonomy Term"
                 },
                 "metadata": {
@@ -4497,10 +4392,7 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 },
                 "label": {
@@ -4514,14 +4406,8 @@
                   "example": "An Example Label"
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "link_id",
-                "taxonomy_term_id",
-                "link_entity"
-              ]
+              "required": ["id"],
+              "tabular_required": ["link_id", "taxonomy_term_id", "link_entity"]
             }
           },
           "metadata": {
@@ -4644,16 +4530,11 @@
                 "replacement_value",
                 "updated_by"
               ],
-              "tabular_required": [
-                "resource_id",
-                "resource_type"
-              ]
+              "tabular_required": ["resource_id", "resource_type"]
             }
           }
         },
-        "required": [
-          "id"
-        ]
+        "required": ["id"]
       }
     },
     "phones": {
@@ -5231,11 +5112,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -5397,11 +5274,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -5524,10 +5397,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -5541,9 +5411,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -5671,16 +5539,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "attributes": {
@@ -6031,18 +5894,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy"
                     },
                     "language": {
@@ -6197,18 +6053,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "description"
-                  ],
+                  "required": ["id", "name", "description"],
                   "title": "Taxonomy Term"
                 },
                 "metadata": {
@@ -6331,10 +6180,7 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 },
                 "label": {
@@ -6348,14 +6194,8 @@
                   "example": "An Example Label"
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "link_id",
-                "taxonomy_term_id",
-                "link_entity"
-              ]
+              "required": ["id"],
+              "tabular_required": ["link_id", "taxonomy_term_id", "link_entity"]
             }
           },
           "metadata": {
@@ -6478,17 +6318,11 @@
                 "replacement_value",
                 "updated_by"
               ],
-              "tabular_required": [
-                "resource_id",
-                "resource_type"
-              ]
+              "tabular_required": ["resource_id", "resource_type"]
             }
           }
         },
-        "required": [
-          "id",
-          "number"
-        ]
+        "required": ["id", "number"]
       }
     },
     "locations": {
@@ -6530,11 +6364,7 @@
             },
             "example": "physical",
             "core": "Y",
-            "enum": [
-              "physical",
-              "postal",
-              "virtual"
-            ]
+            "enum": ["physical", "postal", "virtual"]
           },
           "url": {
             "name": "url",
@@ -7092,11 +6922,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -7258,11 +7084,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -7385,10 +7207,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -7402,9 +7221,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -7532,16 +7349,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "addresses": {
@@ -7682,11 +7494,7 @@
                   },
                   "example": "postal",
                   "core": "Y",
-                  "enum": [
-                    "physical",
-                    "postal",
-                    "virtual"
-                  ]
+                  "enum": ["physical", "postal", "virtual"]
                 },
                 "attributes": {
                   "name": "attributes",
@@ -8043,11 +7851,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -8209,11 +8013,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -8336,10 +8136,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -8353,9 +8150,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -8483,10 +8278,7 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
@@ -9359,11 +9151,7 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "id",
-                                      "name",
-                                      "description"
-                                    ],
+                                    "required": ["id", "name", "description"],
                                     "title": "Taxonomy Term"
                                   },
                                   "metadata": {
@@ -9503,9 +9291,7 @@
                                     "example": "An Example Label"
                                   }
                                 },
-                                "required": [
-                                  "id"
-                                ],
+                                "required": ["id"],
                                 "tabular_required": [
                                   "link_id",
                                   "taxonomy_term_id",
@@ -9640,9 +9426,7 @@
                               }
                             }
                           },
-                          "required": [
-                            "id"
-                          ]
+                          "required": ["id"]
                         }
                       },
                       "attributes": {
@@ -10000,11 +9784,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy"
                                 },
                                 "language": {
@@ -10166,11 +9946,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "name",
-                                "description"
-                              ],
+                              "required": ["id", "name", "description"],
                               "title": "Taxonomy Term"
                             },
                             "metadata": {
@@ -10310,9 +10086,7 @@
                               "example": "An Example Label"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
+                          "required": ["id"],
                           "tabular_required": [
                             "link_id",
                             "taxonomy_term_id",
@@ -10440,17 +10214,11 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       }
                     },
-                    "required": [
-                      "id",
-                      "number"
-                    ]
+                    "required": ["id", "number"]
                   }
                 },
                 "attributes": {
@@ -10808,11 +10576,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -10974,11 +10738,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -11101,10 +10861,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -11118,9 +10875,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -11248,16 +11003,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "accessibility": {
@@ -11688,11 +11438,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -11854,11 +11600,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -11981,10 +11723,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -11998,9 +11737,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -12128,16 +11865,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "phones": {
@@ -12715,11 +12447,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy"
                                 },
                                 "language": {
@@ -12881,11 +12609,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "name",
-                                "description"
-                              ],
+                              "required": ["id", "name", "description"],
                               "title": "Taxonomy Term"
                             },
                             "metadata": {
@@ -13025,9 +12749,7 @@
                               "example": "An Example Label"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
+                          "required": ["id"],
                           "tabular_required": [
                             "link_id",
                             "taxonomy_term_id",
@@ -13155,16 +12877,11 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       }
                     },
-                    "required": [
-                      "id"
-                    ]
+                    "required": ["id"]
                   }
                 },
                 "attributes": {
@@ -13522,11 +13239,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -13688,11 +13401,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -13815,10 +13524,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -13832,9 +13538,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -13962,17 +13666,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id",
-                "number"
-              ]
+              "required": ["id", "number"]
             }
           },
           "schedules": {
@@ -14115,15 +13813,7 @@
                     "unique": false
                   },
                   "example": "TU",
-                  "enum": [
-                    "MO",
-                    "TU",
-                    "WE",
-                    "TH",
-                    "FR",
-                    "SA",
-                    "SU"
-                  ]
+                  "enum": ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
                 },
                 "freq": {
                   "name": "freq",
@@ -14135,10 +13825,7 @@
                   },
                   "example": "WEEKLY",
                   "core": "Y",
-                  "enum": [
-                    "WEEKLY",
-                    "MONTHLY"
-                  ]
+                  "enum": ["WEEKLY", "MONTHLY"]
                 },
                 "interval": {
                   "name": "interval",
@@ -14614,11 +14301,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -14780,11 +14463,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -14907,10 +14586,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -14924,9 +14600,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -15054,16 +14728,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "attributes": {
@@ -15414,18 +15083,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy"
                     },
                     "language": {
@@ -15580,18 +15242,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "description"
-                  ],
+                  "required": ["id", "name", "description"],
                   "title": "Taxonomy Term"
                 },
                 "metadata": {
@@ -15714,10 +15369,7 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 },
                 "label": {
@@ -15731,14 +15383,8 @@
                   "example": "An Example Label"
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "link_id",
-                "taxonomy_term_id",
-                "link_entity"
-              ]
+              "required": ["id"],
+              "tabular_required": ["link_id", "taxonomy_term_id", "link_entity"]
             }
           },
           "metadata": {
@@ -15861,17 +15507,11 @@
                 "replacement_value",
                 "updated_by"
               ],
-              "tabular_required": [
-                "resource_id",
-                "resource_type"
-              ]
+              "tabular_required": ["resource_id", "resource_type"]
             }
           }
         },
-        "required": [
-          "id",
-          "location_type"
-        ]
+        "required": ["id", "location_type"]
       }
     },
     "programs": {
@@ -16291,18 +15931,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy"
                     },
                     "language": {
@@ -16457,18 +16090,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "description"
-                  ],
+                  "required": ["id", "name", "description"],
                   "title": "Taxonomy Term"
                 },
                 "metadata": {
@@ -16591,10 +16217,7 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 },
                 "label": {
@@ -16608,14 +16231,8 @@
                   "example": "An Example Label"
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "link_id",
-                "taxonomy_term_id",
-                "link_entity"
-              ]
+              "required": ["id"],
+              "tabular_required": ["link_id", "taxonomy_term_id", "link_entity"]
             }
           },
           "metadata": {
@@ -16738,21 +16355,12 @@
                 "replacement_value",
                 "updated_by"
               ],
-              "tabular_required": [
-                "resource_id",
-                "resource_type"
-              ]
+              "tabular_required": ["resource_id", "resource_type"]
             }
           }
         },
-        "required": [
-          "id",
-          "name",
-          "description"
-        ],
-        "tabular_required": [
-          "organization_id"
-        ]
+        "required": ["id", "name", "description"],
+        "tabular_required": ["organization_id"]
       }
     },
     "organization_identifiers": {
@@ -17172,18 +16780,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy"
                     },
                     "language": {
@@ -17338,18 +16939,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "description"
-                  ],
+                  "required": ["id", "name", "description"],
                   "title": "Taxonomy Term"
                 },
                 "metadata": {
@@ -17472,10 +17066,7 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 },
                 "label": {
@@ -17489,14 +17080,8 @@
                   "example": "An Example Label"
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "link_id",
-                "taxonomy_term_id",
-                "link_entity"
-              ]
+              "required": ["id"],
+              "tabular_required": ["link_id", "taxonomy_term_id", "link_entity"]
             }
           },
           "metadata": {
@@ -17619,21 +17204,12 @@
                 "replacement_value",
                 "updated_by"
               ],
-              "tabular_required": [
-                "resource_id",
-                "resource_type"
-              ]
+              "tabular_required": ["resource_id", "resource_type"]
             }
           }
         },
-        "required": [
-          "id",
-          "identifier_type",
-          "identifier"
-        ],
-        "tabular_required": [
-          "organization_id"
-        ]
+        "required": ["id", "identifier_type", "identifier"],
+        "tabular_required": ["organization_id"]
       }
     },
     "attributes": {
@@ -17984,18 +17560,11 @@
                         "replacement_value",
                         "updated_by"
                       ],
-                      "tabular_required": [
-                        "resource_id",
-                        "resource_type"
-                      ]
+                      "tabular_required": ["resource_id", "resource_type"]
                     }
                   }
                 },
-                "required": [
-                  "id",
-                  "name",
-                  "description"
-                ],
+                "required": ["id", "name", "description"],
                 "title": "Taxonomy"
               },
               "language": {
@@ -18150,18 +17719,11 @@
                     "replacement_value",
                     "updated_by"
                   ],
-                  "tabular_required": [
-                    "resource_id",
-                    "resource_type"
-                  ]
+                  "tabular_required": ["resource_id", "resource_type"]
                 }
               }
             },
-            "required": [
-              "id",
-              "name",
-              "description"
-            ],
+            "required": ["id", "name", "description"],
             "title": "Taxonomy Term"
           },
           "metadata": {
@@ -18284,10 +17846,7 @@
                 "replacement_value",
                 "updated_by"
               ],
-              "tabular_required": [
-                "resource_id",
-                "resource_type"
-              ]
+              "tabular_required": ["resource_id", "resource_type"]
             }
           },
           "label": {
@@ -18301,14 +17860,8 @@
             "example": "An Example Label"
           }
         },
-        "required": [
-          "id"
-        ],
-        "tabular_required": [
-          "link_id",
-          "taxonomy_term_id",
-          "link_entity"
-        ]
+        "required": ["id"],
+        "tabular_required": ["link_id", "taxonomy_term_id", "link_entity"]
       }
     },
     "metadata": {
@@ -18431,10 +17984,7 @@
           "replacement_value",
           "updated_by"
         ],
-        "tabular_required": [
-          "resource_id",
-          "resource_type"
-        ]
+        "tabular_required": ["resource_id", "resource_type"]
       }
     },
     "services": {
@@ -18956,11 +18506,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -19122,11 +18668,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -19249,10 +18791,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -19266,9 +18805,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -19396,17 +18933,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id",
-                "url"
-              ]
+              "required": ["id", "url"]
             }
           },
           "email": {
@@ -19431,12 +18962,7 @@
             },
             "example": "active",
             "core": "Y",
-            "enum": [
-              "active",
-              "inactive",
-              "defunct",
-              "temporarily closed"
-            ]
+            "enum": ["active", "inactive", "defunct", "temporarily closed"]
           },
           "interpretation_services": {
             "name": "interpretation_services",
@@ -20158,11 +19684,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy"
                                 },
                                 "language": {
@@ -20324,11 +19846,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "name",
-                                "description"
-                              ],
+                              "required": ["id", "name", "description"],
                               "title": "Taxonomy Term"
                             },
                             "metadata": {
@@ -20468,9 +19986,7 @@
                               "example": "An Example Label"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
+                          "required": ["id"],
                           "tabular_required": [
                             "link_id",
                             "taxonomy_term_id",
@@ -20598,16 +20114,11 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       }
                     },
-                    "required": [
-                      "id"
-                    ]
+                    "required": ["id"]
                   }
                 },
                 "attributes": {
@@ -20965,11 +20476,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -21131,11 +20638,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -21258,10 +20761,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -21275,9 +20775,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -21405,17 +20903,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id",
-                "number"
-              ]
+              "required": ["id", "number"]
             }
           },
           "schedules": {
@@ -21558,15 +21050,7 @@
                     "unique": false
                   },
                   "example": "TU",
-                  "enum": [
-                    "MO",
-                    "TU",
-                    "WE",
-                    "TH",
-                    "FR",
-                    "SA",
-                    "SU"
-                  ]
+                  "enum": ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
                 },
                 "freq": {
                   "name": "freq",
@@ -21578,10 +21062,7 @@
                   },
                   "example": "WEEKLY",
                   "core": "Y",
-                  "enum": [
-                    "WEEKLY",
-                    "MONTHLY"
-                  ]
+                  "enum": ["WEEKLY", "MONTHLY"]
                 },
                 "interval": {
                   "name": "interval",
@@ -22057,11 +21538,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -22223,11 +21700,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -22350,10 +21823,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -22367,9 +21837,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -22497,16 +21965,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "service_areas": {
@@ -22969,11 +22432,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -23135,11 +22594,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -23262,10 +22717,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -23279,9 +22731,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -23409,16 +22859,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "service_at_locations": {
@@ -23944,11 +23389,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy"
                                 },
                                 "language": {
@@ -24110,11 +23551,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "name",
-                                "description"
-                              ],
+                              "required": ["id", "name", "description"],
                               "title": "Taxonomy Term"
                             },
                             "metadata": {
@@ -24254,9 +23691,7 @@
                               "example": "An Example Label"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
+                          "required": ["id"],
                           "tabular_required": [
                             "link_id",
                             "taxonomy_term_id",
@@ -24384,16 +23819,11 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       }
                     },
-                    "required": [
-                      "id"
-                    ]
+                    "required": ["id"]
                   }
                 },
                 "contacts": {
@@ -25398,9 +24828,7 @@
                                           "example": "An Example Label"
                                         }
                                       },
-                                      "required": [
-                                        "id"
-                                      ],
+                                      "required": ["id"],
                                       "tabular_required": [
                                         "link_id",
                                         "taxonomy_term_id",
@@ -25535,9 +24963,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id"
-                                ]
+                                "required": ["id"]
                               }
                             },
                             "attributes": {
@@ -26061,11 +25487,7 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "id",
-                                      "name",
-                                      "description"
-                                    ],
+                                    "required": ["id", "name", "description"],
                                     "title": "Taxonomy Term"
                                   },
                                   "metadata": {
@@ -26205,9 +25627,7 @@
                                     "example": "An Example Label"
                                   }
                                 },
-                                "required": [
-                                  "id"
-                                ],
+                                "required": ["id"],
                                 "tabular_required": [
                                   "link_id",
                                   "taxonomy_term_id",
@@ -26342,10 +25762,7 @@
                               }
                             }
                           },
-                          "required": [
-                            "id",
-                            "number"
-                          ]
+                          "required": ["id", "number"]
                         }
                       },
                       "attributes": {
@@ -26703,11 +26120,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy"
                                 },
                                 "language": {
@@ -26869,11 +26282,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "name",
-                                "description"
-                              ],
+                              "required": ["id", "name", "description"],
                               "title": "Taxonomy Term"
                             },
                             "metadata": {
@@ -27013,9 +26422,7 @@
                               "example": "An Example Label"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
+                          "required": ["id"],
                           "tabular_required": [
                             "link_id",
                             "taxonomy_term_id",
@@ -27143,16 +26550,11 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       }
                     },
-                    "required": [
-                      "id"
-                    ]
+                    "required": ["id"]
                   }
                 },
                 "phones": {
@@ -27896,11 +27298,7 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "id",
-                                      "name",
-                                      "description"
-                                    ],
+                                    "required": ["id", "name", "description"],
                                     "title": "Taxonomy Term"
                                   },
                                   "metadata": {
@@ -28040,9 +27438,7 @@
                                     "example": "An Example Label"
                                   }
                                 },
-                                "required": [
-                                  "id"
-                                ],
+                                "required": ["id"],
                                 "tabular_required": [
                                   "link_id",
                                   "taxonomy_term_id",
@@ -28177,9 +27573,7 @@
                               }
                             }
                           },
-                          "required": [
-                            "id"
-                          ]
+                          "required": ["id"]
                         }
                       },
                       "attributes": {
@@ -28537,11 +27931,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy"
                                 },
                                 "language": {
@@ -28703,11 +28093,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "name",
-                                "description"
-                              ],
+                              "required": ["id", "name", "description"],
                               "title": "Taxonomy Term"
                             },
                             "metadata": {
@@ -28847,9 +28233,7 @@
                               "example": "An Example Label"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
+                          "required": ["id"],
                           "tabular_required": [
                             "link_id",
                             "taxonomy_term_id",
@@ -28977,17 +28361,11 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       }
                     },
-                    "required": [
-                      "id",
-                      "number"
-                    ]
+                    "required": ["id", "number"]
                   }
                 },
                 "schedules": {
@@ -29130,15 +28508,7 @@
                           "unique": false
                         },
                         "example": "TU",
-                        "enum": [
-                          "MO",
-                          "TU",
-                          "WE",
-                          "TH",
-                          "FR",
-                          "SA",
-                          "SU"
-                        ]
+                        "enum": ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
                       },
                       "freq": {
                         "name": "freq",
@@ -29150,10 +28520,7 @@
                         },
                         "example": "WEEKLY",
                         "core": "Y",
-                        "enum": [
-                          "WEEKLY",
-                          "MONTHLY"
-                        ]
+                        "enum": ["WEEKLY", "MONTHLY"]
                       },
                       "interval": {
                         "name": "interval",
@@ -29629,11 +28996,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy"
                                 },
                                 "language": {
@@ -29795,11 +29158,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "name",
-                                "description"
-                              ],
+                              "required": ["id", "name", "description"],
                               "title": "Taxonomy Term"
                             },
                             "metadata": {
@@ -29939,9 +29298,7 @@
                               "example": "An Example Label"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
+                          "required": ["id"],
                           "tabular_required": [
                             "link_id",
                             "taxonomy_term_id",
@@ -30069,16 +29426,11 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       }
                     },
-                    "required": [
-                      "id"
-                    ]
+                    "required": ["id"]
                   }
                 },
                 "location": {
@@ -30115,11 +29467,7 @@
                       },
                       "example": "physical",
                       "core": "Y",
-                      "enum": [
-                        "physical",
-                        "postal",
-                        "virtual"
-                      ]
+                      "enum": ["physical", "postal", "virtual"]
                     },
                     "url": {
                       "name": "url",
@@ -30677,11 +30025,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -30843,11 +30187,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -30987,9 +30327,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -31124,9 +30462,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id"
-                        ]
+                        "required": ["id"]
                       }
                     },
                     "addresses": {
@@ -31267,11 +30603,7 @@
                             },
                             "example": "postal",
                             "core": "Y",
-                            "enum": [
-                              "physical",
-                              "postal",
-                              "virtual"
-                            ]
+                            "enum": ["physical", "postal", "virtual"]
                           },
                           "attributes": {
                             "name": "attributes",
@@ -31628,11 +30960,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -31794,11 +31122,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -31938,9 +31262,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -33088,9 +32410,7 @@
                                               "example": "An Example Label"
                                             }
                                           },
-                                          "required": [
-                                            "id"
-                                          ],
+                                          "required": ["id"],
                                           "tabular_required": [
                                             "link_id",
                                             "taxonomy_term_id",
@@ -33225,9 +32545,7 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "id"
-                                    ]
+                                    "required": ["id"]
                                   }
                                 },
                                 "attributes": {
@@ -33895,9 +33213,7 @@
                                         "example": "An Example Label"
                                       }
                                     },
-                                    "required": [
-                                      "id"
-                                    ],
+                                    "required": ["id"],
                                     "tabular_required": [
                                       "link_id",
                                       "taxonomy_term_id",
@@ -34032,10 +33348,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "number"
-                              ]
+                              "required": ["id", "number"]
                             }
                           },
                           "attributes": {
@@ -34393,11 +33706,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -34559,11 +33868,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -34703,9 +34008,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -34840,9 +34143,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id"
-                        ]
+                        "required": ["id"]
                       }
                     },
                     "accessibility": {
@@ -35273,11 +34574,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -35439,11 +34736,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -35583,9 +34876,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -35720,9 +35011,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id"
-                        ]
+                        "required": ["id"]
                       }
                     },
                     "phones": {
@@ -36610,9 +35899,7 @@
                                         "example": "An Example Label"
                                       }
                                     },
-                                    "required": [
-                                      "id"
-                                    ],
+                                    "required": ["id"],
                                     "tabular_required": [
                                       "link_id",
                                       "taxonomy_term_id",
@@ -36747,9 +36034,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id"
-                              ]
+                              "required": ["id"]
                             }
                           },
                           "attributes": {
@@ -37107,11 +36392,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -37273,11 +36554,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -37417,9 +36694,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -37554,10 +36829,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "number"
-                        ]
+                        "required": ["id", "number"]
                       }
                     },
                     "schedules": {
@@ -37700,15 +36972,7 @@
                               "unique": false
                             },
                             "example": "TU",
-                            "enum": [
-                              "MO",
-                              "TU",
-                              "WE",
-                              "TH",
-                              "FR",
-                              "SA",
-                              "SU"
-                            ]
+                            "enum": ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
                           },
                           "freq": {
                             "name": "freq",
@@ -37720,10 +36984,7 @@
                             },
                             "example": "WEEKLY",
                             "core": "Y",
-                            "enum": [
-                              "WEEKLY",
-                              "MONTHLY"
-                            ]
+                            "enum": ["WEEKLY", "MONTHLY"]
                           },
                           "interval": {
                             "name": "interval",
@@ -38199,11 +37460,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -38365,11 +37622,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -38509,9 +37762,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -38646,9 +37897,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id"
-                        ]
+                        "required": ["id"]
                       }
                     },
                     "attributes": {
@@ -39006,11 +38255,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id",
-                                  "name",
-                                  "description"
-                                ],
+                                "required": ["id", "name", "description"],
                                 "title": "Taxonomy"
                               },
                               "language": {
@@ -39172,11 +38417,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy Term"
                           },
                           "metadata": {
@@ -39316,9 +38557,7 @@
                             "example": "An Example Label"
                           }
                         },
-                        "required": [
-                          "id"
-                        ],
+                        "required": ["id"],
                         "tabular_required": [
                           "link_id",
                           "taxonomy_term_id",
@@ -39446,17 +38685,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "location_type"
-                  ],
+                  "required": ["id", "location_type"],
                   "title": "Location"
                 },
                 "attributes": {
@@ -39814,11 +39047,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -39980,11 +39209,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -40107,10 +39332,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -40124,9 +39346,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -40254,20 +39474,12 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "service_id",
-                "location_id"
-              ]
+              "required": ["id"],
+              "tabular_required": ["service_id", "location_id"]
             }
           },
           "languages": {
@@ -40719,11 +39931,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -40885,11 +40093,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -41012,10 +40216,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -41029,9 +40230,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -41159,16 +40358,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "organization": {
@@ -41678,11 +40872,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id",
-                                  "name",
-                                  "description"
-                                ],
+                                "required": ["id", "name", "description"],
                                 "title": "Taxonomy"
                               },
                               "language": {
@@ -41844,11 +41034,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy Term"
                           },
                           "metadata": {
@@ -41988,9 +41174,7 @@
                             "example": "An Example Label"
                           }
                         },
-                        "required": [
-                          "id"
-                        ],
+                        "required": ["id"],
                         "tabular_required": [
                           "link_id",
                           "taxonomy_term_id",
@@ -42118,17 +41302,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "url"
-                  ]
+                  "required": ["id", "url"]
                 }
               },
               "tax_status": {
@@ -42618,11 +41796,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id",
-                                  "name",
-                                  "description"
-                                ],
+                                "required": ["id", "name", "description"],
                                 "title": "Taxonomy"
                               },
                               "language": {
@@ -42784,11 +41958,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy Term"
                           },
                           "metadata": {
@@ -42928,9 +42098,7 @@
                             "example": "An Example Label"
                           }
                         },
-                        "required": [
-                          "id"
-                        ],
+                        "required": ["id"],
                         "tabular_required": [
                           "link_id",
                           "taxonomy_term_id",
@@ -43058,16 +42226,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id"
-                  ]
+                  "required": ["id"]
                 }
               },
               "contacts": {
@@ -44072,9 +43235,7 @@
                                         "example": "An Example Label"
                                       }
                                     },
-                                    "required": [
-                                      "id"
-                                    ],
+                                    "required": ["id"],
                                     "tabular_required": [
                                       "link_id",
                                       "taxonomy_term_id",
@@ -44209,9 +43370,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id"
-                              ]
+                              "required": ["id"]
                             }
                           },
                           "attributes": {
@@ -44569,11 +43728,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -44735,11 +43890,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -44879,9 +44030,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -45016,10 +44165,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "number"
-                        ]
+                        "required": ["id", "number"]
                       }
                     },
                     "attributes": {
@@ -45377,11 +44523,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id",
-                                  "name",
-                                  "description"
-                                ],
+                                "required": ["id", "name", "description"],
                                 "title": "Taxonomy"
                               },
                               "language": {
@@ -45543,11 +44685,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy Term"
                           },
                           "metadata": {
@@ -45687,9 +44825,7 @@
                             "example": "An Example Label"
                           }
                         },
-                        "required": [
-                          "id"
-                        ],
+                        "required": ["id"],
                         "tabular_required": [
                           "link_id",
                           "taxonomy_term_id",
@@ -45817,16 +44953,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id"
-                  ]
+                  "required": ["id"]
                 }
               },
               "phones": {
@@ -46404,11 +45535,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -46570,11 +45697,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -46714,9 +45837,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -46851,9 +45972,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id"
-                        ]
+                        "required": ["id"]
                       }
                     },
                     "attributes": {
@@ -47211,11 +46330,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id",
-                                  "name",
-                                  "description"
-                                ],
+                                "required": ["id", "name", "description"],
                                 "title": "Taxonomy"
                               },
                               "language": {
@@ -47377,11 +46492,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy Term"
                           },
                           "metadata": {
@@ -47521,9 +46632,7 @@
                             "example": "An Example Label"
                           }
                         },
-                        "required": [
-                          "id"
-                        ],
+                        "required": ["id"],
                         "tabular_required": [
                           "link_id",
                           "taxonomy_term_id",
@@ -47651,17 +46760,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "number"
-                  ]
+                  "required": ["id", "number"]
                 }
               },
               "locations": {
@@ -47703,11 +46806,7 @@
                       },
                       "example": "physical",
                       "core": "Y",
-                      "enum": [
-                        "physical",
-                        "postal",
-                        "virtual"
-                      ]
+                      "enum": ["physical", "postal", "virtual"]
                     },
                     "url": {
                       "name": "url",
@@ -48265,11 +47364,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -48431,11 +47526,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -48575,9 +47666,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -48712,9 +47801,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id"
-                        ]
+                        "required": ["id"]
                       }
                     },
                     "addresses": {
@@ -48855,11 +47942,7 @@
                             },
                             "example": "postal",
                             "core": "Y",
-                            "enum": [
-                              "physical",
-                              "postal",
-                              "virtual"
-                            ]
+                            "enum": ["physical", "postal", "virtual"]
                           },
                           "attributes": {
                             "name": "attributes",
@@ -49216,11 +48299,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -49382,11 +48461,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -49526,9 +48601,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -50676,9 +49749,7 @@
                                               "example": "An Example Label"
                                             }
                                           },
-                                          "required": [
-                                            "id"
-                                          ],
+                                          "required": ["id"],
                                           "tabular_required": [
                                             "link_id",
                                             "taxonomy_term_id",
@@ -50813,9 +49884,7 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "id"
-                                    ]
+                                    "required": ["id"]
                                   }
                                 },
                                 "attributes": {
@@ -51483,9 +50552,7 @@
                                         "example": "An Example Label"
                                       }
                                     },
-                                    "required": [
-                                      "id"
-                                    ],
+                                    "required": ["id"],
                                     "tabular_required": [
                                       "link_id",
                                       "taxonomy_term_id",
@@ -51620,10 +50687,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "number"
-                              ]
+                              "required": ["id", "number"]
                             }
                           },
                           "attributes": {
@@ -51981,11 +51045,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -52147,11 +51207,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -52291,9 +51347,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -52428,9 +51482,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id"
-                        ]
+                        "required": ["id"]
                       }
                     },
                     "accessibility": {
@@ -52861,11 +51913,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -53027,11 +52075,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -53171,9 +52215,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -53308,9 +52350,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id"
-                        ]
+                        "required": ["id"]
                       }
                     },
                     "phones": {
@@ -54198,9 +53238,7 @@
                                         "example": "An Example Label"
                                       }
                                     },
-                                    "required": [
-                                      "id"
-                                    ],
+                                    "required": ["id"],
                                     "tabular_required": [
                                       "link_id",
                                       "taxonomy_term_id",
@@ -54335,9 +53373,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id"
-                              ]
+                              "required": ["id"]
                             }
                           },
                           "attributes": {
@@ -54695,11 +53731,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -54861,11 +53893,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -55005,9 +54033,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -55142,10 +54168,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "number"
-                        ]
+                        "required": ["id", "number"]
                       }
                     },
                     "schedules": {
@@ -55288,15 +54311,7 @@
                               "unique": false
                             },
                             "example": "TU",
-                            "enum": [
-                              "MO",
-                              "TU",
-                              "WE",
-                              "TH",
-                              "FR",
-                              "SA",
-                              "SU"
-                            ]
+                            "enum": ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
                           },
                           "freq": {
                             "name": "freq",
@@ -55308,10 +54323,7 @@
                             },
                             "example": "WEEKLY",
                             "core": "Y",
-                            "enum": [
-                              "WEEKLY",
-                              "MONTHLY"
-                            ]
+                            "enum": ["WEEKLY", "MONTHLY"]
                           },
                           "interval": {
                             "name": "interval",
@@ -55787,11 +54799,7 @@
                                           }
                                         }
                                       },
-                                      "required": [
-                                        "id",
-                                        "name",
-                                        "description"
-                                      ],
+                                      "required": ["id", "name", "description"],
                                       "title": "Taxonomy"
                                     },
                                     "language": {
@@ -55953,11 +54961,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy Term"
                                 },
                                 "metadata": {
@@ -56097,9 +55101,7 @@
                                   "example": "An Example Label"
                                 }
                               },
-                              "required": [
-                                "id"
-                              ],
+                              "required": ["id"],
                               "tabular_required": [
                                 "link_id",
                                 "taxonomy_term_id",
@@ -56234,9 +55236,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id"
-                        ]
+                        "required": ["id"]
                       }
                     },
                     "attributes": {
@@ -56594,11 +55594,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id",
-                                  "name",
-                                  "description"
-                                ],
+                                "required": ["id", "name", "description"],
                                 "title": "Taxonomy"
                               },
                               "language": {
@@ -56760,11 +55756,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy Term"
                           },
                           "metadata": {
@@ -56904,9 +55896,7 @@
                             "example": "An Example Label"
                           }
                         },
-                        "required": [
-                          "id"
-                        ],
+                        "required": ["id"],
                         "tabular_required": [
                           "link_id",
                           "taxonomy_term_id",
@@ -57034,17 +56024,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "location_type"
-                  ]
+                  "required": ["id", "location_type"]
                 }
               },
               "programs": {
@@ -57471,11 +56455,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id",
-                                  "name",
-                                  "description"
-                                ],
+                                "required": ["id", "name", "description"],
                                 "title": "Taxonomy"
                               },
                               "language": {
@@ -57637,11 +56617,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy Term"
                           },
                           "metadata": {
@@ -57781,9 +56757,7 @@
                             "example": "An Example Label"
                           }
                         },
-                        "required": [
-                          "id"
-                        ],
+                        "required": ["id"],
                         "tabular_required": [
                           "link_id",
                           "taxonomy_term_id",
@@ -57911,21 +56885,12 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "description"
-                  ],
-                  "tabular_required": [
-                    "organization_id"
-                  ]
+                  "required": ["id", "name", "description"],
+                  "tabular_required": ["organization_id"]
                 }
               },
               "organization_identifiers": {
@@ -58352,11 +57317,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id",
-                                  "name",
-                                  "description"
-                                ],
+                                "required": ["id", "name", "description"],
                                 "title": "Taxonomy"
                               },
                               "language": {
@@ -58518,11 +57479,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy Term"
                           },
                           "metadata": {
@@ -58662,9 +57619,7 @@
                             "example": "An Example Label"
                           }
                         },
-                        "required": [
-                          "id"
-                        ],
+                        "required": ["id"],
                         "tabular_required": [
                           "link_id",
                           "taxonomy_term_id",
@@ -58792,21 +57747,12 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "identifier_type",
-                    "identifier"
-                  ],
-                  "tabular_required": [
-                    "organization_id"
-                  ]
+                  "required": ["id", "identifier_type", "identifier"],
+                  "tabular_required": ["organization_id"]
                 }
               },
               "attributes": {
@@ -59164,11 +58110,7 @@
                               }
                             }
                           },
-                          "required": [
-                            "id",
-                            "name",
-                            "description"
-                          ],
+                          "required": ["id", "name", "description"],
                           "title": "Taxonomy"
                         },
                         "language": {
@@ -59323,18 +58265,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy Term"
                     },
                     "metadata": {
@@ -59457,10 +58392,7 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     },
                     "label": {
@@ -59474,9 +58406,7 @@
                       "example": "An Example Label"
                     }
                   },
-                  "required": [
-                    "id"
-                  ],
+                  "required": ["id"],
                   "tabular_required": [
                     "link_id",
                     "taxonomy_term_id",
@@ -59604,18 +58534,11 @@
                     "replacement_value",
                     "updated_by"
                   ],
-                  "tabular_required": [
-                    "resource_id",
-                    "resource_type"
-                  ]
+                  "tabular_required": ["resource_id", "resource_type"]
                 }
               }
             },
-            "required": [
-              "id",
-              "name",
-              "description"
-            ],
+            "required": ["id", "name", "description"],
             "title": "Organization"
           },
           "funding": {
@@ -60033,11 +58956,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -60199,11 +59118,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -60326,10 +59241,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -60343,9 +59255,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -60473,16 +59383,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "cost_options": {
@@ -60941,11 +59846,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -61107,11 +60008,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -61234,10 +60131,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -61251,9 +60145,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -61381,19 +60273,12 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "service_id"
-              ]
+              "required": ["id"],
+              "tabular_required": ["service_id"]
             }
           },
           "program": {
@@ -61815,11 +60700,7 @@
                               }
                             }
                           },
-                          "required": [
-                            "id",
-                            "name",
-                            "description"
-                          ],
+                          "required": ["id", "name", "description"],
                           "title": "Taxonomy"
                         },
                         "language": {
@@ -61974,18 +60855,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy Term"
                     },
                     "metadata": {
@@ -62108,10 +60982,7 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     },
                     "label": {
@@ -62125,9 +60996,7 @@
                       "example": "An Example Label"
                     }
                   },
-                  "required": [
-                    "id"
-                  ],
+                  "required": ["id"],
                   "tabular_required": [
                     "link_id",
                     "taxonomy_term_id",
@@ -62255,21 +61124,12 @@
                     "replacement_value",
                     "updated_by"
                   ],
-                  "tabular_required": [
-                    "resource_id",
-                    "resource_type"
-                  ]
+                  "tabular_required": ["resource_id", "resource_type"]
                 }
               }
             },
-            "required": [
-              "id",
-              "name",
-              "description"
-            ],
-            "tabular_required": [
-              "organization_id"
-            ],
+            "required": ["id", "name", "description"],
+            "tabular_required": ["organization_id"],
             "title": "Program"
           },
           "required_documents": {
@@ -62687,11 +61547,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -62853,11 +61709,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -62980,10 +61832,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -62997,9 +61846,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -63127,16 +61974,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "contacts": {
@@ -63997,11 +62839,7 @@
                                         }
                                       }
                                     },
-                                    "required": [
-                                      "id",
-                                      "name",
-                                      "description"
-                                    ],
+                                    "required": ["id", "name", "description"],
                                     "title": "Taxonomy Term"
                                   },
                                   "metadata": {
@@ -64141,9 +62979,7 @@
                                     "example": "An Example Label"
                                   }
                                 },
-                                "required": [
-                                  "id"
-                                ],
+                                "required": ["id"],
                                 "tabular_required": [
                                   "link_id",
                                   "taxonomy_term_id",
@@ -64278,9 +63114,7 @@
                               }
                             }
                           },
-                          "required": [
-                            "id"
-                          ]
+                          "required": ["id"]
                         }
                       },
                       "attributes": {
@@ -64638,11 +63472,7 @@
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "id",
-                                    "name",
-                                    "description"
-                                  ],
+                                  "required": ["id", "name", "description"],
                                   "title": "Taxonomy"
                                 },
                                 "language": {
@@ -64804,11 +63634,7 @@
                                   }
                                 }
                               },
-                              "required": [
-                                "id",
-                                "name",
-                                "description"
-                              ],
+                              "required": ["id", "name", "description"],
                               "title": "Taxonomy Term"
                             },
                             "metadata": {
@@ -64948,9 +63774,7 @@
                               "example": "An Example Label"
                             }
                           },
-                          "required": [
-                            "id"
-                          ],
+                          "required": ["id"],
                           "tabular_required": [
                             "link_id",
                             "taxonomy_term_id",
@@ -65078,17 +63902,11 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       }
                     },
-                    "required": [
-                      "id",
-                      "number"
-                    ]
+                    "required": ["id", "number"]
                   }
                 },
                 "attributes": {
@@ -65446,11 +64264,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -65612,11 +64426,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -65739,10 +64549,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -65756,9 +64563,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -65886,16 +64691,11 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id"
-              ]
+              "required": ["id"]
             }
           },
           "capacities": {
@@ -66362,11 +65162,7 @@
                                     }
                                   }
                                 },
-                                "required": [
-                                  "id",
-                                  "name",
-                                  "description"
-                                ],
+                                "required": ["id", "name", "description"],
                                 "title": "Taxonomy"
                               },
                               "language": {
@@ -66528,11 +65324,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy Term"
                           },
                           "metadata": {
@@ -66672,9 +65464,7 @@
                             "example": "An Example Label"
                           }
                         },
-                        "required": [
-                          "id"
-                        ],
+                        "required": ["id"],
                         "tabular_required": [
                           "link_id",
                           "taxonomy_term_id",
@@ -66802,17 +65592,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name"
-                  ]
+                  "required": ["id", "name"]
                 },
                 "unit_id": {
                   "name": "unit_id",
@@ -67226,11 +66010,7 @@
                                 }
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "description"
-                            ],
+                            "required": ["id", "name", "description"],
                             "title": "Taxonomy"
                           },
                           "language": {
@@ -67392,11 +66172,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "description"
-                        ],
+                        "required": ["id", "name", "description"],
                         "title": "Taxonomy Term"
                       },
                       "metadata": {
@@ -67519,10 +66295,7 @@
                             "replacement_value",
                             "updated_by"
                           ],
-                          "tabular_required": [
-                            "resource_id",
-                            "resource_type"
-                          ]
+                          "tabular_required": ["resource_id", "resource_type"]
                         }
                       },
                       "label": {
@@ -67536,9 +66309,7 @@
                         "example": "An Example Label"
                       }
                     },
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "tabular_required": [
                       "link_id",
                       "taxonomy_term_id",
@@ -67666,23 +66437,12 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 }
               },
-              "required": [
-                "id",
-                "unit",
-                "available",
-                "updated"
-              ],
-              "tabular_required": [
-                "unit_id",
-                "service_id"
-              ]
+              "required": ["id", "unit", "available", "updated"],
+              "tabular_required": ["unit_id", "service_id"]
             }
           },
           "attributes": {
@@ -68033,18 +66793,11 @@
                               "replacement_value",
                               "updated_by"
                             ],
-                            "tabular_required": [
-                              "resource_id",
-                              "resource_type"
-                            ]
+                            "tabular_required": ["resource_id", "resource_type"]
                           }
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "description"
-                      ],
+                      "required": ["id", "name", "description"],
                       "title": "Taxonomy"
                     },
                     "language": {
@@ -68199,18 +66952,11 @@
                           "replacement_value",
                           "updated_by"
                         ],
-                        "tabular_required": [
-                          "resource_id",
-                          "resource_type"
-                        ]
+                        "tabular_required": ["resource_id", "resource_type"]
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "description"
-                  ],
+                  "required": ["id", "name", "description"],
                   "title": "Taxonomy Term"
                 },
                 "metadata": {
@@ -68333,10 +67079,7 @@
                       "replacement_value",
                       "updated_by"
                     ],
-                    "tabular_required": [
-                      "resource_id",
-                      "resource_type"
-                    ]
+                    "tabular_required": ["resource_id", "resource_type"]
                   }
                 },
                 "label": {
@@ -68350,14 +67093,8 @@
                   "example": "An Example Label"
                 }
               },
-              "required": [
-                "id"
-              ],
-              "tabular_required": [
-                "link_id",
-                "taxonomy_term_id",
-                "link_entity"
-              ]
+              "required": ["id"],
+              "tabular_required": ["link_id", "taxonomy_term_id", "link_entity"]
             }
           },
           "metadata": {
@@ -68480,27 +67217,14 @@
                 "replacement_value",
                 "updated_by"
               ],
-              "tabular_required": [
-                "resource_id",
-                "resource_type"
-              ]
+              "tabular_required": ["resource_id", "resource_type"]
             }
           }
         },
-        "required": [
-          "id",
-          "name",
-          "status"
-        ],
-        "tabular_required": [
-          "organization_id"
-        ]
+        "required": ["id", "name", "status"],
+        "tabular_required": ["organization_id"]
       }
     }
   },
-  "required": [
-    "id",
-    "name",
-    "description"
-  ]
+  "required": ["id", "name", "description"]
 }

@@ -50,6 +50,16 @@
             "example": "3a19ff88-4620-4d17-9830-ac1d859eb5d5",
             "core": "Y"
           },
+          "description": {
+            "name": "description",
+            "type": "string",
+            "title": "Description",
+            "description": "A free text description of the service at this specific location.",
+            "constraints": {
+              "unique": false
+            },
+            "example": "Counselling Services provided by trained professionals in the MyCity area."
+          },
           "location": {
             "name": "location",
             "path": "locations.csv",
@@ -78,13 +88,36 @@
                 "name": "location_type",
                 "type": "string",
                 "title": "Location Type",
-                "description": "The type of location, which may be either physical, postal, or virtual.",
+                "description": "The type of location, which may be either `physical`, `postal`, or `virtual`.",
                 "constraints": {
                   "unique": false
                 },
                 "example": "physical",
                 "core": "Y",
                 "enum": ["physical", "postal", "virtual"]
+              },
+              "url": {
+                "name": "url",
+                "type": "string",
+                "title": "URL",
+                "description": "If location_type is virtual, then this field represents the URL of a virtual location.",
+                "format": "uri",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "http://example.com",
+                "core": "Y"
+              },
+              "organization_id": {
+                "name": "organization_id",
+                "type": "string",
+                "title": "Organization Identifier",
+                "description": "The organization identifier for a location. This is the organization that is responsible for maintaining information about this location. The identifier of the organization should be given here. Details of the services the organization delivers at this location should be provided in the services_at_location table.",
+                "format": "uuid",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "985e4a42-bd9f-4edc-911d-0243a4640aca"
               },
               "name": {
                 "name": "name",
@@ -97,6 +130,16 @@
                 "example": "MyCity Civic Center",
                 "core": "Y"
               },
+              "alternate_name": {
+                "name": "alternate_name",
+                "type": "string",
+                "title": "Alternate Name",
+                "description": "An (optional) alternative name of the location.",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "Civic Center"
+              },
               "description": {
                 "name": "description",
                 "type": "string",
@@ -107,6 +150,16 @@
                 },
                 "example": "MyCity Civic Center is located on Main Street and contains facilities for a number of civic and community services available.",
                 "core": "Y"
+              },
+              "transportation": {
+                "name": "transportation",
+                "type": "string",
+                "title": "Transportation",
+                "description": "A free text description of the access to public or private transportation to and from the location.",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "MyCity Civic Center is serviced by the number 1 Bus and is a short walk from the Main Street Metro Station"
               },
               "latitude": {
                 "name": "latitude",
@@ -190,6 +243,17 @@
                 "example": "d9d5e0f5-d3ce-4f73-9a2f-4dd0ecc6c610",
                 "core": "Y"
               },
+              "program_id": {
+                "name": "program_id",
+                "type": "string",
+                "title": "Program Identifier",
+                "description": "The identifier of the program this service is delivered under.",
+                "format": "uuid",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "e7ec2e57-4540-43fa-b2c7-6be5a0ef7f42"
+              },
               "name": {
                 "name": "name",
                 "type": "string",
@@ -200,6 +264,16 @@
                 },
                 "example": "Community Counselling",
                 "core": "Y"
+              },
+              "alternate_name": {
+                "name": "alternate_name",
+                "type": "string",
+                "title": "Alternate Name",
+                "description": "An (optional) alternative name for this service.",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "MyCity Counselling Services"
               },
               "description": {
                 "name": "description",
@@ -248,6 +322,46 @@
                 "core": "Y",
                 "enum": ["active", "inactive", "defunct", "temporarily closed"]
               },
+              "interpretation_services": {
+                "name": "interpretation_services",
+                "type": "string",
+                "title": "Interpretation Services",
+                "description": "A free text description of any interpretation services available for accessing this service.",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "Interpretation services are available in Urdu, Polish, and Slovak"
+              },
+              "application_process": {
+                "name": "application_process",
+                "type": "string",
+                "title": "Application Process",
+                "description": "A free text description of the steps needed to access this service.",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "If you are an NHS patient please ask your GP for a referral letter, we will then be in touch with you directly. If you are not an NHS patient you should ring our reception to arrange an appointment"
+              },
+              "fees_description": {
+                "name": "fees_description",
+                "type": "string",
+                "title": "Fees Description",
+                "description": "A free text description of any charges for service users to access this service.",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "Non-NHS patients are expected to pay for their counselling sessions. We charge a flat rate per hour of counselling. The current rate is \u00a350 per hour. Please see our website for up to date prices."
+              },
+              "wait_time": {
+                "name": "wait_time",
+                "type": "string",
+                "title": "Wait Time",
+                "description": "DEPRECATED: The time a client may expect to wait before receiving a service.",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "wait_time"
+              },
               "fees": {
                 "name": "fees",
                 "type": "string",
@@ -267,6 +381,17 @@
                   "unique": false
                 },
                 "example": "All of our practitioners are accredited by the BASC, UKCP, and the Professional Standards Body"
+              },
+              "eligibility_description": {
+                "name": "eligibility_description",
+                "type": "string",
+                "title": "Eligibility Description",
+                "description": "A free text description of the type of person for whom this service is intended.",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "This service is intended for all people aged 12 and over who require counselling services in the MyCity area",
+                "core": "Y"
               },
               "minimum_age": {
                 "name": "minimum_age",
@@ -309,6 +434,16 @@
                   "unique": false
                 },
                 "example": "email@example.com"
+              },
+              "licenses": {
+                "name": "licenses",
+                "type": "string",
+                "title": "Licenses",
+                "description": "DEPRECATED: An organization may have a license issued by a government entity to operate legally. A list of any such licenses can be provided here.",
+                "constraints": {
+                  "unique": false
+                },
+                "example": "licences"
               },
               "alert": {
                 "name": "alert",
@@ -367,6 +502,17 @@
                     "example": "Example Organization Inc.",
                     "core": "Y"
                   },
+                  "alternate_name": {
+                    "name": "alternate_name",
+                    "type": "string",
+                    "title": "Alternate Name",
+                    "description": "An (optional) alternative or commonly used name for the organization.",
+                    "constraints": {
+                      "unique": false
+                    },
+                    "example": "Example Org",
+                    "core": "Y"
+                  },
                   "description": {
                     "name": "description",
                     "type": "string",
@@ -393,14 +539,54 @@
                   "website": {
                     "name": "website",
                     "type": "string",
+                    "format": "uri",
                     "title": "Website",
                     "description": "The URL (website address) of the organization.",
-                    "format": "uri",
                     "constraints": {
                       "unique": false
                     },
                     "example": "http://example.com",
                     "core": "Y"
+                  },
+                  "tax_status": {
+                    "name": "tax_status",
+                    "type": "string",
+                    "title": "Tax Status",
+                    "description": "DEPRECATED: Government assigned tax designation for tax-exempt organizations.",
+                    "constraints": {
+                      "unique": false
+                    },
+                    "example": "tax_status"
+                  },
+                  "tax_id": {
+                    "name": "tax_id",
+                    "type": "string",
+                    "title": "Tax Identifier",
+                    "description": "DEPRECATED: A government issued identifier used for the purpose of tax administration.",
+                    "constraints": {
+                      "unique": false
+                    },
+                    "example": "tax_id"
+                  },
+                  "year_incorporated": {
+                    "name": "year_incorporated",
+                    "type": "number",
+                    "title": "Year Incorporated",
+                    "description": "The year in which the organization was legally formed.",
+                    "constraints": {
+                      "unique": false
+                    },
+                    "example": "2011"
+                  },
+                  "legal_status": {
+                    "name": "legal_status",
+                    "type": "string",
+                    "title": "Legal Status",
+                    "description": "The legal conditions that an organization is operating under.",
+                    "constraints": {
+                      "unique": false
+                    },
+                    "example": "Limited Company"
                   },
                   "logo": {
                     "name": "logo",
@@ -437,6 +623,75 @@
                 },
                 "required": ["id", "name", "description"],
                 "title": "Organization"
+              },
+              "program": {
+                "name": "program",
+                "path": "programs.csv",
+                "description": "The details of collections of related services.",
+                "datapackage_metadata": {
+                  "format": "csv",
+                  "mediatype": "text/csv",
+                  "profile": "tabular-data-resource",
+                  "order": 2
+                },
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "name": "id",
+                    "type": "string",
+                    "title": "Identifier",
+                    "description": "The identifier for the program. Each program must have a unique identifier.",
+                    "format": "uuid",
+                    "constraints": {
+                      "unique": true
+                    },
+                    "example": "e7ec2e57-4540-43fa-b2c7-6be5a0ef7f42"
+                  },
+                  "organization_id": {
+                    "name": "organization_id",
+                    "type": "string",
+                    "title": "Organization Identifier",
+                    "description": "The identifier for the organization which the program belongs to. Each program must belong to a single organization, and the identifier for that organization should be given here.",
+                    "format": "uuid",
+                    "constraints": {
+                      "unique": true
+                    },
+                    "example": "d9d5e0f5-d3ce-4f73-9a2f-4dd0ecc6c610"
+                  },
+                  "name": {
+                    "name": "name",
+                    "type": "string",
+                    "title": "Name",
+                    "description": "The name of the program.",
+                    "constraints": {
+                      "unique": false
+                    },
+                    "example": "Community Mental Health Support"
+                  },
+                  "alternate_name": {
+                    "name": "alternate_name",
+                    "type": "string",
+                    "title": "Alternate Name",
+                    "description": "The (optional) alternative name for the program.",
+                    "constraints": {
+                      "unique": false
+                    },
+                    "example": "MyCity Mental Health Group"
+                  },
+                  "description": {
+                    "name": "description",
+                    "type": "string",
+                    "title": "Description",
+                    "description": "A free text description of the program",
+                    "constraints": {
+                      "unique": false
+                    },
+                    "example": "Comprehensive Mental Health Services available to residents of MyCity including CBT and Counselling. This is not an emergency service and should not be used as an alternative to hospital and GP services."
+                  }
+                },
+                "required": ["id", "name", "description"],
+                "tabular_required": ["organization_id"],
+                "title": "Program"
               }
             },
             "required": ["id", "name", "status"],
