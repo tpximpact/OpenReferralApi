@@ -13,6 +13,7 @@ namespace OpenReferralApi.Services;
 public class ValidatorService : IValidatorService
 {
     private const string V3Profile = "HSDS-UK-3.0";
+    private const string V3InternationalProfile = "HSDS-3.0";
     private const string V1Profile = "HSDS-UK-1.0";
     private readonly IRequestService _requestService;
     private readonly ILogger<ValidatorService> _logger;
@@ -121,6 +122,7 @@ public class ValidatorService : IValidatorService
                 {
                     V1Profile => (V1Profile, "Standard version HSDS-UK-1.0 read from profile parameter"),
                     V3Profile => (V3Profile, "Standard version HSDS-UK-3.0 read from profile parameter"),
+                    V3InternationalProfile => (V3InternationalProfile, "Standard version HSDS-3.0 read from profile parameter"),
                     _ => (V3Profile, "Could not read standard version from profile parameter defaulting to HSDS-UK-3.0")
                 };
             }
@@ -133,6 +135,7 @@ public class ValidatorService : IValidatorService
             {
                 V1Profile => (V1Profile, "Standard version HSDS-UK-1.0 read from '/' endpoint"),
                 V3Profile => (V3Profile, "Standard version HSDS-UK-3.0 read from '/' endpoint"),
+                V3InternationalProfile => (V3InternationalProfile, "Standard version HSDS-3.0 read from '/' endpoint"),
                 _ => (V3Profile, defaultReason)
             };
         }
