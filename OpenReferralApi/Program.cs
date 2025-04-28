@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
-using OpenReferralApi.Models;
 using OpenReferralApi.Models.Settings;
 using OpenReferralApi.Repositories;
 using OpenReferralApi.Repositories.Interfaces;
@@ -35,6 +34,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IValidatorService, ValidatorService>();
 builder.Services.AddScoped<IRequestService, RequestService>();
 builder.Services.AddScoped<IGithubService, GithubService>();
+builder.Services.AddScoped<ITestProfileService, TestProfileService>();
 
 builder.Services.AddScoped<DashboardService>();
 // Register as singleton first so it can be injected through Dependency Injection
@@ -42,6 +42,7 @@ builder.Services.AddSingleton<PeriodicValidationService>();
 // Add as hosted service using the instance registered as singleton before
 builder.Services.AddHostedService(provider => provider.GetRequiredService<PeriodicValidationService>());
 
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 

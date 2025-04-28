@@ -3,6 +3,7 @@ using FluentAssertions;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using OpenReferralApi.Services;
 using OpenReferralApi.Services.Interfaces;
 
@@ -10,8 +11,9 @@ namespace OpenReferralApi.Tests;
 
 public class ValidatorServiceShould
 {
-    private IRequestService _requestServiceMock = new RequestServiceMock();
     private readonly ILogger<ValidatorService> _logger = new Logger<ValidatorService>(new NullLoggerFactory());
+    private IRequestService _requestServiceMock = new RequestServiceMock();
+    private Mock<ITestProfileService> _testProfileMock = new Mock<ITestProfileService>();
     private const string MockPath = "Mocks/V3.0-UK-";
 
     [SetUp]
@@ -25,7 +27,7 @@ public class ValidatorServiceShould
     public async Task Remove_trailing_slashes_from_urls(string inputUrl, string expectedUrl)
     {
         // Arrange
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileMock.Object);
         
         // Act
         var result = await validatorService.ValidateService(inputUrl, "V3-UK");
@@ -42,7 +44,7 @@ public class ValidatorServiceShould
     public async Task Reject_invalid_urls(string inputUrl)
     {
         // Arrange
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileMock.Object);
         
         // Act
         var result = await validatorService.ValidateService(inputUrl, "V3-UK");
@@ -58,7 +60,7 @@ public class ValidatorServiceShould
     {
         // Arrange
         var url = "https://pass.org";
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileMock.Object);
         
         // Act
         var result = await validatorService.ValidateService(url, "V3-UK");
@@ -76,7 +78,7 @@ public class ValidatorServiceShould
     {
         // Arrange
         var url = "https://fail.org";
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileMock.Object);
         
         // Act
         var result = await validatorService.ValidateService(url, "V3-UK");
@@ -94,7 +96,7 @@ public class ValidatorServiceShould
     {
         // Arrange
         var url = "https://warn.org";
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileMock.Object);
         
         // Act
         var result = await validatorService.ValidateService(url, "V3-UK");

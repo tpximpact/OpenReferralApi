@@ -13,16 +13,16 @@ namespace OpenReferralApi.Services;
 
 public class ValidatorService : IValidatorService
 {
-    private const string V3Profile = "HSDS-UK-3.0";
-    private const string V1Profile = "HSDS-UK-1.0";
-    private readonly IRequestService _requestService;
     private readonly ILogger<ValidatorService> _logger;
+    private readonly IRequestService _requestService;
+    private readonly ITestProfileService _testProfileService;
     private Dictionary<string, string> _savedFields;
 
-    public ValidatorService(IRequestService requestService, ILogger<ValidatorService> logger)
+    public ValidatorService(ILogger<ValidatorService> logger, IRequestService requestService, ITestProfileService testProfileService)
     {
-        _requestService = requestService;
         _logger = logger;
+        _requestService = requestService;
+        _testProfileService = testProfileService;
         _savedFields = new Dictionary<string, string>();
     }
 
@@ -37,8 +37,8 @@ public class ValidatorService : IValidatorService
         if (!isUrlValid)
             return Result.Fail("Invalid URL provided");
 
-        var (testSchema, schemaReason) = await SelectTestSchema(serviceUrl, profile);
-        var testProfile = await ReadTestProfileFromFile($"TestProfiles/{testSchema}.json");
+        var (testSchema, schemaReason) = await _testProfileService.SelectTestSchema(serviceUrl, profile);
+        var testProfile = await _testProfileService.ReadTestProfileFromFile(testSchema);
         
         var validationResponse = new ValidationResponse
         {
@@ -110,42 +110,6 @@ public class ValidatorService : IValidatorService
         return validationResponse;
     }
 
-    private async Task<(string, string)> SelectTestSchema(string serviceUrl, string? profileInput)
-    {
-        const string defaultReason = "Could not read standard version from '/' endpoint defaulting to HSDS-UK-3.0";
-
-        try
-        {
-            if (!string.IsNullOrEmpty(profileInput))
-            {
-                return profileInput switch
-                {
-                    V1Profile => (V1Profile, "Standard version HSDS-UK-1.0 read from profile parameter"),
-                    V3Profile => (V3Profile, "Standard version HSDS-UK-3.0 read from profile parameter"),
-                    _ => (V3Profile, "Could not read standard version from profile parameter defaulting to HSDS-UK-3.0")
-                };
-            }
-
-            var apiResult = await _requestService.GetApiResponse(serviceUrl);
-            if (apiResult.IsFailed) 
-                return (V1Profile, "Could not read response from '/' endpoint defaulting to HSDS-UK-1.0");
-            
-            return apiResult.Value["version"]!.ToString() switch
-            {
-                V1Profile => (V1Profile, "Standard version HSDS-UK-1.0 read from '/' endpoint"),
-                V3Profile => (V3Profile, "Standard version HSDS-UK-3.0 read from '/' endpoint"),
-                _ => (V3Profile, defaultReason)
-            };
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("Error encountered when selecting the test schema");
-            _logger.LogError(e.Message);
-        }
-
-        return (V3Profile, defaultReason);
-    }
-
     private async Task<Result<Test>> ValidateTestCase(TestCase testCase, string serviceUrl)
     {
         var test = new Test
@@ -162,6 +126,7 @@ public class ValidatorService : IValidatorService
             try
             {
                 test.Id = _savedFields[testCase.UseIdFrom];
+                await FetchIds(serviceUrl + testCase.Endpoint);
             }
             catch (Exception e)
             {
@@ -221,7 +186,7 @@ public class ValidatorService : IValidatorService
 
     }
 
-    private async Task<Result<List<Issue>>> ValidatePagination(TestCase testCase, string serviceUrl, JsonNode apiResponse)
+    public async Task<Result<List<Issue>>> ValidatePagination(TestCase testCase, string serviceUrl, JsonNode apiResponse)
     {
         var serializerSettings = new JsonSerializerSettings
         {
@@ -327,7 +292,7 @@ public class ValidatorService : IValidatorService
         return Result.Ok(issues);
     }
 
-    private Result<List<Issue>> ValidateResponseSchema(JsonNode response, JSchema schema)
+    public Result<List<Issue>> ValidateResponseSchema(JsonNode response, JSchema schema)
     {
         IList<ValidationError> errors;
         var rString = response.ToString();
@@ -350,25 +315,35 @@ public class ValidatorService : IValidatorService
         return issues;
     }
 
-    private async Task<Result<TestProfile>> ReadTestProfileFromFile(string filePath)
+    public async Task<Result<List<string>>> FetchIds(string url)
     {
-        try
-        {
-            // Open the text file using a stream reader.
-            using StreamReader reader = new(filePath);
+        var random = new Random();
+        var ids = new List<string>();
+        const int idCountLimit = 3;
+        var page = 1;
 
-            // Read the stream as a string.
-            var fileContent = await reader.ReadToEndAsync();
-            var testProfile = JsonConvert.DeserializeObject<TestProfile>(fileContent);
-            
-            return Result.Ok(testProfile)!;
-        }
-        catch (IOException e)
+        while (ids.Count < idCountLimit)
         {
+            var requestUrl = $"{url}?page={page}";
+            var apiResponse = await _requestService.GetApiResponse(requestUrl); 
             
-            _logger.LogError("Error encountered when reading from file");
-            _logger.LogError(e.Message);
-            return Result.Fail(e.Message);
+            if (apiResponse.IsFailed)
+                return Result.Fail(apiResponse.Errors);
+            
+            var jsonResponse = apiResponse.Value;
+            
+            var pageSize = jsonResponse["size"]!.GetValue<int>();
+            ids.Add(jsonResponse["contents"]![random.Next(0, pageSize - 1)]!["id"]!.GetValue<string>());
+            
+            var isLastPage = jsonResponse["last_page"]!.GetValue<bool>();
+
+            if (page == 1 && isLastPage && pageSize < idCountLimit)
+                break;
+            
+            var totalPages = jsonResponse["total_pages"]!.GetValue<int>();
+            page = random.Next(1, totalPages);
         }
-    } 
+        
+        return ids;
+    }
 }
