@@ -1,0 +1,29 @@
+{
+  "name": "api_details",
+  "description": "Information about this API and its relationship with HSDS",
+  "type": "object",
+  "properties" : {
+    "version": {
+      "type": "string",
+      "description": "HSDS version of this API.",
+      "example": "HSDS 3.0"
+    },
+    "profile": {
+      "type": "string",
+      "format": "uri",
+      "example": "https://docs.openreferral.org/en/3.0/hsds/overview.html",
+      "description": "URL of the information on the HSDS profile of this API."
+    },
+    "openapi_url": {
+      "type": "string",
+      "format": "uri",
+      "example": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/openapi.json",
+      "description": "URL of the openapi JSON file which defines this API."
+    }
+  },
+  "required": [
+    "version",
+    "profile",
+    "openapi_url"
+  ]
+}
