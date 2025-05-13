@@ -9,4 +9,5 @@ public class Issue
     public string ErrorAt { get; set; } = null!;
     public Dictionary<string, string>? Parameters { get; set; }
     public string? Endpoint { get; set; }
+    public string? Id { get; set; }
 }
