@@ -30,6 +30,7 @@ builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("D
 builder.Services.Configure<GithubSettings>(builder.Configuration.GetSection("Github")); 
 builder.Services.Configure<ValidatorSettings>(builder.Configuration.GetSection("Validator")); 
 builder.Services.AddSingleton<IDataRepository, DataRepository>();
+builder.Services.AddScoped<IPaginationTestingService, PaginationTestingService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IValidatorService, ValidatorService>();
 builder.Services.AddScoped<IRequestService, RequestService>();
