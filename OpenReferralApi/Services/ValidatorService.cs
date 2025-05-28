@@ -165,16 +165,14 @@ public class ValidatorService : IValidatorService
 
     public Result<List<Issue>> ValidateResponseSchema(JsonNode response, JSchema schema)
     {
-        IList<ValidationError> errors;
-        var rString = response.ToString();
-        var jstring = JToken.Parse(rString);
+        var responseJToken = JToken.Parse(response.ToString());
 
-        var isValid = jstring.IsValid(schema, out errors);
+        var isValid = responseJToken.IsValid(schema, out IList<ValidationError> errors);
 
         if (isValid)
             return new List<Issue>();
 
-        var issues = errors.Select(error => new Issue() 
+        return errors.Select(error => new Issue 
         {
             Description = "Schema validation issue", 
             Name = error.ErrorType.ToString(), 
@@ -182,8 +180,6 @@ public class ValidatorService : IValidatorService
             ErrorAt = $"{error.Path}, line {error.LineNumber}, position {error.LinePosition}",
             ErrorIn = error.SchemaId!.ToString()
         }).ToList();
-        
-        return issues;
     }
 
     public async Task<List<string>> FetchIds(string url)
