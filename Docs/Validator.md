@@ -30,6 +30,7 @@ The purpose of the validator is to assess an API feed against one of the ORUK st
 
 - A test profile exists for each schema 
 - A test is described for each endpoint and they are collected together within test groups
+- Further details and an example can be found in the [Test Profiles](TestProfiles.md) doc file
 
 #### Test groups
 
@@ -47,5 +48,4 @@ The purpose of the validator is to assess an API feed against one of the ORUK st
     - The endpoint to test
     - The schema that the response should be validated against
     - If the endpoint needs to be tested for pagination
-    - If an id of the returned items needs to be saved for testing another endpoint and the key that it should be saved under
-    - If an id is needed for the request and the key that it can be found under
+    - If an id is needed for the request and the endpoint it can be retrieved from
