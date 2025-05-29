@@ -12,8 +12,8 @@ namespace OpenReferralApi.Tests;
 public class PaginationTestingServiceShould
 {
     private readonly Mock<IRequestService> _requestServiceMock = new();
-    private JsonSerializerSettings serializerSettings;
     private const string Endpoint = "/test-endpoint";
+    private JsonSerializerSettings _serializerSettings;
     private JsonNode _pageTestData;
     private JsonNode _pageWithIssuesTestData;
     private JsonNode _firstPageTestData;
@@ -24,7 +24,7 @@ public class PaginationTestingServiceShould
     [SetUp]
     public async Task Setup()
     {
-        serializerSettings = new JsonSerializerSettings
+        _serializerSettings = new JsonSerializerSettings
         {
             ContractResolver = new DefaultContractResolver { NamingStrategy = new SnakeCaseNamingStrategy() }
         };
