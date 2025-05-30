@@ -54,3 +54,5 @@ riderModule.iml
 /.idea/**/sonarlint
 
 # End of https://www.toptal.com/developers/gitignore/api/dotnetcore,rider
+OpenReferralApi.sln.DotSettings.user
+*.user

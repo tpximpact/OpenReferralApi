@@ -4,6 +4,9 @@ using Jose;
 using Microsoft.Extensions.Options;
 using Octokit;
 using OpenReferralApi.Models;
+using OpenReferralApi.Models.Requests;
+using OpenReferralApi.Models.Responses;
+using OpenReferralApi.Models.Settings;
 using OpenReferralApi.Services.Interfaces;
 
 namespace OpenReferralApi.Services;
@@ -17,7 +20,7 @@ public class GithubService : IGithubService
         _githubSettings = githubSettings.Value;
     }
 
-    public async Task<Result<SubmissionResponse>> RaiseIssue(DashboardSubmission submission)
+    public async Task<Result<SubmissionResponse>> RaiseIssue(DashboardSubmissionRequest submission)
     {
         try
         {

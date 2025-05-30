@@ -1,0 +1,19 @@
+{
+  "total_items": 20,
+  "total_pages": 4,
+  "page_number": 4,
+  "size": 2,
+  "first_page": false,
+  "last_page": true,
+  "empty": false,
+  "contents": [
+    {
+      "id": "ac148810-d857-441c-9679-408f346de14b",
+      "status": "active"
+    },
+    {
+      "id": "b644a0d2-9e8a-4c33-9390-ae9ee93fc056",
+      "status": "active"
+    }
+  ]
+}

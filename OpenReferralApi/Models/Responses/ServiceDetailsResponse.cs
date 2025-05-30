@@ -1,19 +1,19 @@
-namespace OpenReferralApi.Models;
+namespace OpenReferralApi.Models.Responses;
 
-public class DashboardServiceDetails
+public class ServiceDetailsResponse
 {
-    public DashboardServiceDetails(ServiceData serviceData)
+    public ServiceDetailsResponse(ServiceData serviceData)
     {
-        Title = serviceData.Name;
-        Publisher = serviceData.Publisher;
-        ServiceUrl = serviceData.ServiceUrl;
-        IsValid = serviceData.StatusIsValid;
-        if (int.TryParse(IsValid.Value.ToString(), out var isValid))
+        Title = serviceData.Name!;
+        Publisher = serviceData.Publisher!;
+        ServiceUrl = serviceData.ServiceUrl!;
+        IsValid = serviceData.StatusIsValid!;
+        if (int.TryParse(IsValid.Value!.ToString(), out var isValid))
         {
             IsValid.Value = isValid == 1 ? "Pass" : "Fail";
             IsValid.Datatype = "oruk:dataType.string";
         }
-        LastTested = serviceData.LastTested;
+        LastTested = serviceData.LastTested!;
         Payload = new List<DashboardServiceDetailsPayload>
         {
             new ()

@@ -1,6 +1,6 @@
-namespace OpenReferralApi.Models;
+namespace OpenReferralApi.Models.Requests;
 
-public class DashboardSubmission
+public class DashboardSubmissionRequest
 {
     public string Name { get; set; } = null!;
     public string Publisher { get; set; } = null!;

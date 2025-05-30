@@ -1,4 +1,4 @@
-namespace OpenReferralApi.Models;
+namespace OpenReferralApi.Models.Responses;
 
 public class SubmissionResponse
 {

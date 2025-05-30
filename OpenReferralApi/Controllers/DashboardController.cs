@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using OpenReferralApi.Models;
+using OpenReferralApi.Models.Requests;
 using OpenReferralApi.Services.Interfaces;
 
 namespace OpenReferralApi.Controllers;
@@ -63,7 +64,7 @@ public class DashboardController : ControllerBase
     /// </summary>
     [HttpPost]
     [Route("submit")]
-    public async Task<IActionResult> SubmitDashboardService([FromBody] DashboardSubmission submission)
+    public async Task<IActionResult> SubmitDashboardService([FromBody] DashboardSubmissionRequest submission)
     {
         var submissionResult = await _dashboardService.SubmitService(submission);
 

@@ -1,6 +1,6 @@
-namespace OpenReferralApi.Models;
+namespace OpenReferralApi.Models.Responses;
 
-public class StatusResult
+public class StatusResponse
 {
     public bool Healthy { get; set; }
     public string? Message { get; set; }

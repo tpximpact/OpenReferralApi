@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using OpenReferralApi.Models.Requests;
 
 namespace OpenReferralApi.Models;
 
@@ -41,7 +42,7 @@ public class ServiceData
     [BsonElement("email")]
     public Field? Email { get; set; }
     
-    public ServiceData(DashboardSubmission submission)
+    public ServiceData(DashboardSubmissionRequest submission)
     {
         Active = false;
         Name = new Field()

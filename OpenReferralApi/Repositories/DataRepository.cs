@@ -2,6 +2,7 @@ using FluentResults;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using OpenReferralApi.Models;
+using OpenReferralApi.Models.Settings;
 using OpenReferralApi.Repositories.Interfaces;
 using Success = OpenReferralApi.Models.Success;
 

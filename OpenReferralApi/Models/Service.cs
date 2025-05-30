@@ -4,7 +4,7 @@ namespace OpenReferralApi.Models;
 
 public class Service
 {
-    public Service(ServiceData serviceData )
+    public Service(ServiceData serviceData)
     {
         Id = serviceData.Id;
         Name = serviceData.Name;
