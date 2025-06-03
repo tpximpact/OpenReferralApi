@@ -15,7 +15,7 @@ public class RequestService : IRequestService
     {
         _httpClient = httpClient;
         _cache = cache;
-        _cacheOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromSeconds(90));
+        _cacheOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromSeconds(20));
         _httpClient.Timeout = TimeSpan.FromSeconds(30);
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "oruk");
     }
