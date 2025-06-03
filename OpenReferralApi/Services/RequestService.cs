@@ -15,7 +15,8 @@ public class RequestService : IRequestService
     {
         _httpClient = httpClient;
         _cache = cache;
-        _cacheOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromSeconds(90));
+        _cacheOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromSeconds(20));
+        _httpClient.Timeout = TimeSpan.FromSeconds(30);
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "oruk");
     }
 
@@ -25,10 +26,10 @@ public class RequestService : IRequestService
         {
             if (_cache.TryGetValue(url, out JsonNode? cacheData))
                 return cacheData!;
-            
+
             var result = await _httpClient.GetAsync(url);
             var resultString = await result.Content.ReadAsStringAsync();
-            
+
             if (!result.IsSuccessStatusCode)
                 return Result.Fail(new Error(result.ReasonPhrase, new Error(resultString)));
 
@@ -38,10 +39,15 @@ public class RequestService : IRequestService
 
             return responseData!;
         }
+        catch (TaskCanceledException e)
+        {
+            Console.WriteLine(e);
+            return Result.Fail($"Request timed out after {_httpClient.Timeout.Seconds} seconds");
+        }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return Result.Fail(e.Message);
+            return Result.Fail("Encountered an error whilst trying to make the API request");
         }
     }
 }
