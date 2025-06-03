@@ -16,6 +16,7 @@ public class RequestService : IRequestService
         _httpClient = httpClient;
         _cache = cache;
         _cacheOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromSeconds(90));
+        _httpClient.Timeout = TimeSpan.FromSeconds(30);
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "oruk");
     }
 
@@ -25,10 +26,10 @@ public class RequestService : IRequestService
         {
             if (_cache.TryGetValue(url, out JsonNode? cacheData))
                 return cacheData!;
-            
+
             var result = await _httpClient.GetAsync(url);
             var resultString = await result.Content.ReadAsStringAsync();
-            
+
             if (!result.IsSuccessStatusCode)
                 return Result.Fail(new Error(result.ReasonPhrase, new Error(resultString)));
 
