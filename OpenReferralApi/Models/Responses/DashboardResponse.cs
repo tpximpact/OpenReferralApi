@@ -1,6 +1,6 @@
-namespace OpenReferralApi.Models;
+namespace OpenReferralApi.Models.Responses;
 
-public class DashboardOutput
+public class DashboardResponse
 {
     public Definitions Definitions { get; set; }
     public List<Service> Data { get; set; }

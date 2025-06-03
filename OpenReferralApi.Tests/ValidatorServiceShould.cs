@@ -3,6 +3,8 @@ using FluentAssertions;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+using OpenReferralApi.Models;
 using OpenReferralApi.Services;
 using OpenReferralApi.Services.Interfaces;
 
@@ -10,8 +12,10 @@ namespace OpenReferralApi.Tests;
 
 public class ValidatorServiceShould
 {
-    private IRequestService _requestServiceMock = new RequestServiceMock();
     private readonly ILogger<ValidatorService> _logger = new Logger<ValidatorService>(new NullLoggerFactory());
+    private IRequestService _requestServiceMock = new RequestServiceMock();
+    private Mock<ITestProfileService> _testProfileServiceMock = new Mock<ITestProfileService>();
+    private Mock<IPaginationTestingService> _paginationTestinServiceMock = new Mock<IPaginationTestingService>();
     private const string MockPath = "Mocks/V3.0-UK-";
 
     [SetUp]
@@ -25,10 +29,45 @@ public class ValidatorServiceShould
     public async Task Remove_trailing_slashes_from_urls(string inputUrl, string expectedUrl)
     {
         // Arrange
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        _testProfileServiceMock
+            .Setup(m => m.SelectTestSchema(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(("V3.0-UK-Test", "reason output"));
+
+        var testProfile = new TestProfile
+        {
+            Profile = "V3.0-UK-Test",
+            TestGroups = new List<TestCaseGroup>
+            {
+                new TestCaseGroup
+                {
+                    Name = "TestTestGroup",
+                    Description = "A description of a test test group",
+                    MessageLevel = "Error",
+                    Required = true,
+                    Tests = new List<TestCase>
+                    {
+                        new TestCase
+                        {
+                            Name = "TestTest",
+                            Description = "A description of a test tes case",
+                            Endpoint = "/",
+                            Pagination = false,
+                            Schema = "V3.0-UK/api_details.json"
+                        }
+                    }
+                }
+            }
+        };
+
+        _testProfileServiceMock
+            .Setup(m => m.ReadTestProfileFromFile("V3.0-UK-Test"))
+            .ReturnsAsync(testProfile);
+        
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileServiceMock.Object, 
+            _paginationTestinServiceMock.Object);
         
         // Act
-        var result = await validatorService.ValidateService(inputUrl, "V3-UK");
+        var result = await validatorService.ValidateService(inputUrl, "HSDS-UK-3.0-Test");
 
         // Assert
         result.Value.Service.IsValid.Should().BeTrue();
@@ -42,7 +81,8 @@ public class ValidatorServiceShould
     public async Task Reject_invalid_urls(string inputUrl)
     {
         // Arrange
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileServiceMock.Object, 
+            _paginationTestinServiceMock.Object);
         
         // Act
         var result = await validatorService.ValidateService(inputUrl, "V3-UK");
@@ -58,7 +98,42 @@ public class ValidatorServiceShould
     {
         // Arrange
         var url = "https://pass.org";
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        _testProfileServiceMock
+            .Setup(m => m.SelectTestSchema(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(("V3.0-UK-Test", "reason output"));
+
+        var testProfile = new TestProfile
+        {
+            Profile = "V3.0-UK-Test",
+            TestGroups = new List<TestCaseGroup>
+            {
+                new TestCaseGroup
+                {
+                    Name = "TestTestGroup",
+                    Description = "A description of a test test group",
+                    MessageLevel = "Error",
+                    Required = true,
+                    Tests = new List<TestCase>
+                    {
+                        new TestCase
+                        {
+                            Name = "TestTest",
+                            Description = "A description of a test tes case",
+                            Endpoint = "/",
+                            Pagination = false,
+                            Schema = "V3.0-UK/api_details.json"
+                        }
+                    }
+                }
+            }
+        };
+
+        _testProfileServiceMock
+            .Setup(m => m.ReadTestProfileFromFile("V3.0-UK-Test"))
+            .ReturnsAsync(testProfile);
+        
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileServiceMock.Object, 
+            _paginationTestinServiceMock.Object);
         
         // Act
         var result = await validatorService.ValidateService(url, "V3-UK");
@@ -66,9 +141,8 @@ public class ValidatorServiceShould
         // Assert
         result.Value.Service.Url.Should().Be(url);
         result.Value.Service.IsValid.Should().BeTrue();
-        result.Value.TestSuites.Count.Should().Be(2);
+        result.Value.TestSuites.Count.Should().Be(1);
         result.Value.TestSuites[0].Success.Should().BeTrue();
-        result.Value.TestSuites[1].Success.Should().BeTrue();
     }
 
     [Test]
@@ -76,7 +150,43 @@ public class ValidatorServiceShould
     {
         // Arrange
         var url = "https://fail.org";
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        
+        _testProfileServiceMock
+            .Setup(m => m.SelectTestSchema(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(("V3.0-UK-Test", "reason output"));
+
+        var testProfile = new TestProfile
+        {
+            Profile = "V3.0-UK-Test",
+            TestGroups = new List<TestCaseGroup>
+            {
+                new TestCaseGroup
+                {
+                    Name = "TestTestGroup",
+                    Description = "A description of a test test group",
+                    MessageLevel = "Error",
+                    Required = true,
+                    Tests = new List<TestCase>
+                    {
+                        new TestCase
+                        {
+                            Name = "TestTest",
+                            Description = "A description of a test tes case",
+                            Endpoint = "/",
+                            Pagination = false,
+                            Schema = "V3.0-UK/api_details.json"
+                        }
+                    }
+                }
+            }
+        };
+
+        _testProfileServiceMock
+            .Setup(m => m.ReadTestProfileFromFile("V3.0-UK-Test"))
+            .ReturnsAsync(testProfile);
+        
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileServiceMock.Object, 
+            _paginationTestinServiceMock.Object);
         
         // Act
         var result = await validatorService.ValidateService(url, "V3-UK");
@@ -84,17 +194,51 @@ public class ValidatorServiceShould
         // Assert
         result.Value.Service.Url.Should().Be(url);
         result.Value.Service.IsValid.Should().BeFalse();
-        result.Value.TestSuites.Count.Should().Be(2);
+        result.Value.TestSuites.Count.Should().Be(1);
         result.Value.TestSuites[0].Success.Should().BeFalse();
-        result.Value.TestSuites[1].Success.Should().BeFalse();
     }
 
     [Test]
     public async Task Warn_services_with_level2_issues()
     {
         // Arrange
-        var url = "https://warn.org";
-        var validatorService = new ValidatorService(_requestServiceMock, _logger);
+        var url = "https://fail.org";
+        
+        _testProfileServiceMock
+            .Setup(m => m.SelectTestSchema(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(("V3.0-UK-Test", "reason output"));
+
+        var testProfile = new TestProfile
+        {
+            Profile = "V3.0-UK-Test",
+            TestGroups = new List<TestCaseGroup>
+            {
+                new TestCaseGroup
+                {
+                    Name = "TestTestGroup",
+                    Description = "A description of a test test group",
+                    MessageLevel = "Warning",
+                    Required = false,
+                    Tests = new List<TestCase>
+                    {
+                        new TestCase
+                        {
+                            Name = "TestTest",
+                            Description = "A description of a test tes case",
+                            Endpoint = "/",
+                            Pagination = false,
+                            Schema = "V3.0-UK/api_details.json"
+                        }
+                    }
+                }
+            }
+        };
+
+        _testProfileServiceMock
+            .Setup(m => m.ReadTestProfileFromFile("V3.0-UK-Test"))
+            .ReturnsAsync(testProfile);
+        var validatorService = new ValidatorService(_logger, _requestServiceMock, _testProfileServiceMock.Object, 
+            _paginationTestinServiceMock.Object);
         
         // Act
         var result = await validatorService.ValidateService(url, "V3-UK");
@@ -102,9 +246,8 @@ public class ValidatorServiceShould
         // Assert
         result.Value.Service.Url.Should().Be(url);
         result.Value.Service.IsValid.Should().BeTrue();
-        result.Value.TestSuites.Count.Should().Be(2);
-        result.Value.TestSuites[0].Success.Should().BeTrue();
-        result.Value.TestSuites[1].Success.Should().BeFalse();
+        result.Value.TestSuites.Count.Should().Be(1);
+        result.Value.TestSuites[0].Success.Should().BeFalse();
     }
     
     private async Task<Result<JsonNode>> ReadJsonFile(string filePath)

@@ -1,0 +1,31 @@
+{
+  "total_items": 20,
+  "total_pages": 4,
+  "page_number": 1,
+  "size": 5,
+  "first_page": true,
+  "last_page": false,
+  "empty": false,
+  "contents": [
+    {
+      "id": "ac148810-d857-441c-9679-408f346de14b",
+      "status": "active"
+    },
+    {
+      "id": "b644a0d2-9e8a-4c33-9390-ae9ee93fc056",
+      "status": "active"
+    },
+    {
+      "id": "e85f5bb0-62f0-42cc-a08a-0c5c16273090",
+      "status": "active"
+    },
+    {
+      "id": "ac148810-d857-441c-9679-408f346de14b",
+      "status": "active"
+    },
+    {
+      "id": "dcdc194b-c2d6-4abe-8d3b-4339e552bc3d",
+      "status": "active"
+    }
+  ]
+}

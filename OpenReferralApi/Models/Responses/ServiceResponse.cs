@@ -1,6 +1,6 @@
-namespace OpenReferralApi.Models;
+namespace OpenReferralApi.Models.Responses;
 
-public class ServiceDetails
+public class ServiceResponse
 {
     public string Url { get; set; } = null!;
     public bool IsValid { get; set; }

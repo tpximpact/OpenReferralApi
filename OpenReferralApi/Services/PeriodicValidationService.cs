@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using OpenReferralApi.Models;
+using OpenReferralApi.Models.Settings;
 
 namespace OpenReferralApi.Services;
 
