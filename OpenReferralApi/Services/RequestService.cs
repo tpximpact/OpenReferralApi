@@ -39,6 +39,11 @@ public class RequestService : IRequestService
 
             return responseData!;
         }
+        catch (TaskCanceledException e)
+        {
+            Console.WriteLine(e);
+            return Result.Fail($"Request timed out after {_httpClient.Timeout.Seconds} seconds");
+        }
         catch (Exception e)
         {
             Console.WriteLine(e);
