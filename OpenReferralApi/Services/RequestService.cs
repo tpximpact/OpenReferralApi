@@ -47,7 +47,7 @@ public class RequestService : IRequestService
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return Result.Fail(e.Message);
+            return Result.Fail("Encountered an error whilst trying to make the API request");
         }
     }
 }
