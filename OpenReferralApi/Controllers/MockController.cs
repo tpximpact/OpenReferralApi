@@ -37,7 +37,8 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}Fail/service_list.json");
+            return new StatusCodeResult(500);
+            // return await ReadJsonFile($"{MockPath}Fail/service_list.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
             return await ReadJsonFile($"{MockPath}Warn/service_list.json");
         return await ReadJsonFile($"{MockPath}Default/service_list.json");
@@ -72,7 +73,8 @@ public class MockController : ControllerBase
     {
         var requestPath = Request.Path.ToString();
         if (requestPath.Contains("fail", StringComparison.CurrentCultureIgnoreCase))
-            return await ReadJsonFile($"{MockPath}Fail/taxonomy_list.json");
+            return new BadRequestResult();
+            // return await ReadJsonFile($"{MockPath}Fail/taxonomy_list.json");
         if (requestPath.Contains("warn", StringComparison.CurrentCultureIgnoreCase))
             return await ReadJsonFile($"{MockPath}Warn/taxonomy_list.json");
         return await ReadJsonFile($"{MockPath}Default/taxonomy_list.json");
