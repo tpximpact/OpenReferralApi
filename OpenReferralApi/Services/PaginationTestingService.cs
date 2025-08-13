@@ -2,6 +2,7 @@ using FluentResults;
 using Microsoft.AspNetCore.WebUtilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using OpenReferralApi.Constants;
 using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
 
@@ -23,7 +24,8 @@ public class PaginationTestingService : IPaginationTestingService
         };
     }
 
-    public async Task<Result<List<Issue>>> ValidatePagination(string baseUrl, string endpoint)
+    public async Task<Result<List<Issue>>> ValidatePagination(string baseUrl, string endpoint, string schemaVersion)
+                // Validate the pagination for the given endpoint
     {
         var issues = new List<Issue>();
         // var url = baseUrl + endpoint;
@@ -51,8 +53,11 @@ public class PaginationTestingService : IPaginationTestingService
             });
             return issues;
         }
-        
-        var firstPage = JsonConvert.DeserializeObject<Page>(response.Value.ToJsonString(), _serializerSettings);
+
+        IPage? firstPage = schemaVersion == HSDSUKVersions.V3
+            ? JsonConvert.DeserializeObject<PageV3>(response.ValueOrDefault.ToJsonString(), _serializerSettings)
+            : JsonConvert.DeserializeObject<PageV1>(response.ValueOrDefault.ToJsonString());
+
         var lastPageNumber = firstPage!.TotalPages;
         issues.AddRange(ValidatePageDetails(firstPage, parameters, endpoint, pageNumber, lastPageNumber));
 
@@ -84,8 +89,15 @@ public class PaginationTestingService : IPaginationTestingService
                 });
                 return issues;
             }
-            var page = JsonConvert.DeserializeObject<Page>(response.Value.ToJsonString(), _serializerSettings);
-            issues.AddRange(ValidatePageDetails(page!, parameters, endpoint, pageNumber, lastPageNumber));
+
+            IPage? page = schemaVersion == HSDSUKVersions.V3
+                ? JsonConvert.DeserializeObject<PageV3>(response.Value.ToJsonString(), _serializerSettings)
+                : JsonConvert.DeserializeObject<PageV1>(response.Value.ToJsonString());
+
+            if (page != null)
+            {
+                issues.AddRange(ValidatePageDetails(page, parameters, endpoint, pageNumber, lastPageNumber));
+            }
         }
         
         // Request last page
@@ -106,13 +118,19 @@ public class PaginationTestingService : IPaginationTestingService
             return issues;
         }
         
-        var lastPage = JsonConvert.DeserializeObject<Page>(response.Value.ToJsonString(), _serializerSettings);
-        issues.AddRange(ValidatePageDetails(lastPage!, parameters, endpoint, lastPageNumber, firstPage.TotalPages));
+        IPage? lastPage = schemaVersion == HSDSUKVersions.V3
+            ? JsonConvert.DeserializeObject<PageV3>(response.Value.ToJsonString(), _serializerSettings)
+            : JsonConvert.DeserializeObject<PageV1>(response.Value.ToJsonString());
+
+        if (lastPage != null)
+        {
+            issues.AddRange(ValidatePageDetails(lastPage, parameters, endpoint, lastPageNumber, firstPage.TotalPages));
+        }
         
         return Result.Ok(issues);
     }
 
-    public IEnumerable<Issue> ValidatePageDetails(Page currentPage, Dictionary<string, string> parameters, string endpoint, int page, int totalPages)
+    public IEnumerable<Issue> ValidatePageDetails(IPage currentPage, Dictionary<string, string> parameters, string endpoint, int page, int totalPages)
     {
         var issues = new List<Issue>();
         

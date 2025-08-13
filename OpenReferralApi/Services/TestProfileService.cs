@@ -1,5 +1,6 @@
 using FluentResults;
 using Newtonsoft.Json;
+using OpenReferralApi.Constants;
 using OpenReferralApi.Models;
 using OpenReferralApi.Services.Interfaces;
 
@@ -7,8 +8,6 @@ namespace OpenReferralApi.Services;
 
 public class TestProfileService : ITestProfileService
 {
-    private const string V3Profile = "HSDS-UK-3.0";
-    private const string V1Profile = "HSDS-UK-1.0";
     private readonly ILogger<TestProfileService> _logger;
     private readonly IRequestService _requestService;
 
@@ -29,21 +28,21 @@ public class TestProfileService : ITestProfileService
             {
                 return profileInput switch
                 {
-                    V1Profile => (V1Profile, "Standard version HSDS-UK-1.0 read from profile parameter"),
-                    V3Profile => (V3Profile, "Standard version HSDS-UK-3.0 read from profile parameter"),
-                    _ => (V3Profile, "Could not read standard version from profile parameter defaulting to HSDS-UK-3.0")
+                    HSDSUKVersions.V1 => (HSDSUKVersions.V1, "Standard version HSDS-UK-1.0 read from profile parameter"),
+                    HSDSUKVersions.V3 => (HSDSUKVersions.V3, "Standard version HSDS-UK-3.0 read from profile parameter"),
+                    _ => (HSDSUKVersions.V3, "Could not read standard version from profile parameter defaulting to HSDS-UK-3.0")
                 };
             }
 
             var apiResult = await _requestService.GetApiResponse(serviceUrl);
             if (apiResult.IsFailed) 
-                return (V1Profile, "Could not read response from '/' endpoint defaulting to HSDS-UK-1.0");
+                return (HSDSUKVersions.V1 , "Could not read response from '/' endpoint defaulting to HSDS-UK-1.0");
             
             return apiResult.Value["version"]!.ToString() switch
             {
-                V1Profile => (V1Profile, "Standard version HSDS-UK-1.0 read from '/' endpoint"),
-                V3Profile => (V3Profile, "Standard version HSDS-UK-3.0 read from '/' endpoint"),
-                _ => (V3Profile, defaultReason)
+                HSDSUKVersions.V1  => (HSDSUKVersions.V1 , "Standard version HSDS-UK-1.0 read from '/' endpoint"),
+                HSDSUKVersions.V3 => (HSDSUKVersions.V3, "Standard version HSDS-UK-3.0 read from '/' endpoint"),
+                _ => (HSDSUKVersions.V3, defaultReason)
             };
         }
         catch (Exception e)
@@ -52,7 +51,7 @@ public class TestProfileService : ITestProfileService
             _logger.LogError(e.Message);
         }
 
-        return (V3Profile, defaultReason);
+        return (HSDSUKVersions.V3, defaultReason);
     }
 
     public async Task<Result<TestProfile>> ReadTestProfileFromFile(string testSchema)
