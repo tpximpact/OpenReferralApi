@@ -20,7 +20,7 @@
           "name": "Service by id - API & schema validation",
           "description": "Does the service by id endpoint return the details of a service in the correct schema",
           "endpoint": "/services/",
-          "schema": "V1.0-UK/service_list.json",
+          "schema": "V1.0-UK/service.json",
           "pagination": true,
           "useIdFrom": "/services-id"
         }

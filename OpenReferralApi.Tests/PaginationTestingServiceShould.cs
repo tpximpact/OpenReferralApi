@@ -3,6 +3,7 @@ using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using OpenReferralApi.Constants;
 using OpenReferralApi.Models;
 using OpenReferralApi.Services;
 using OpenReferralApi.Services.Interfaces;
@@ -54,7 +55,7 @@ public class PaginationTestingServiceShould
         var service = new PaginationTestingService(_requestServiceMock.Object);
 
         // Act
-        var result = await service.ValidatePagination("test.com", "/test");
+        var result = await service.ValidatePagination("test.com", "/test", HSDSUKVersions.V3);
 
 
         // Assert
@@ -78,7 +79,7 @@ public class PaginationTestingServiceShould
         var service = new PaginationTestingService(_requestServiceMock.Object);
 
         // Act
-        var result = await service.ValidatePagination("test.com", "/test");
+        var result = await service.ValidatePagination("test.com", "/test", HSDSUKVersions.V3);
 
 
         // Assert
@@ -94,15 +95,15 @@ public class PaginationTestingServiceShould
         int totalItems, int size, bool empty, int itemCount, int issuesCount)
     {
         // Arrange
-        var page = new Page
+        var page = new PageV3
         {
             FirstPage = firstPage, LastPage = lastPage, PageNumber = pageNumber, TotalPages = totalPages, 
             TotalItems = totalItems, Size = size, Empty = empty,
-            Contents = new List<object>()
+            Contents = new List<ObjectWithId>()
         };
         for (int i = 0; i < itemCount; i++)
         {
-            page.Contents.Add(new object());
+            page.Contents.Add(new ObjectWithId { Id = i.ToString() });
         }
         
         var parameters = new Dictionary<string, string>();

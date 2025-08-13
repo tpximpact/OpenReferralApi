@@ -35,17 +35,27 @@
           "description": "The URL (website address) of the organization."
         },
         "logo": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "A URL to an image associated with the organization which can be presented alongside its name."
         },
         "uri": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "format": "uri",
-          "pattern": "^(https?|wss?|ftp)://",
+          "pattern": "^(https?|wss?|ftp)://|^$",
           "description": "A persistent identifier to uniquely identify the organization."
         }
       },
-      "required": ["id", "name", "description"]
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
     },
     "name": {
       "type": "string",
@@ -56,10 +66,24 @@
       "description": "A description of the service.  It can contain markup such as HTML or Markdown."
     },
     "url": {
-      "type": "string",
-      "format": "uri",
-      "pattern": "^(https?|wss?|ftp)://",
-      "description": "URL of the service"
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^(https?|wss?|ftp)://",
+          "description": "URL of the service"
+        },
+        {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "",
+            null
+          ]
+        }
+      ]
     },
     "email": {
       "type": "string",
@@ -69,18 +93,25 @@
     "status": {
       "type": "string",
       "description": "The current status of the service.",
-      "enum": ["active", "inactive", "defunct", "temporarily closed"]
+      "enum": [
+        "active",
+        "inactive",
+        "defunct",
+        "temporarily closed"
+      ]
     },
     "fees": {
       "type": "string",
       "description": "Details of any charges for service users to access this service.\r\n\r\nApplication Profile Notes: Use structured information where available in preference to this text field. LGA defines an extension table for 'cost_option'.  This 'fees' field can contain a single human-readable description of costs.  The 'cost_option' table can optionally add a further breakdown that can be filtered on."
     },
     "accreditations": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "Details of any accreditations. Accreditation is the formal evaluation of an organization or program against best practice standards set by an accrediting organization.\r\n\r\nApplication Profile Notes: Use structured information where available in preference to this text field. LGA defines an extension table for 'review'.  This 'accreditations' field can contain a single human-readable description of reviews.  The 'review' table can optionally add a further breakdown that can be filtered on."
     },
     "deliverable_type": {
-      "type": "string",
       "description": "A categorisation of the nature of the output of the Service.\r\n\r\nApplication Profile Notes: Expected to reference a taxonomy rather than an enueration in future versions",
       "enum": [
         "Advice",
@@ -90,7 +121,8 @@
         "Financial Support",
         "Information",
         "Permission",
-        "Training"
+        "Training",
+        null
       ]
     },
     "assured_date": {
@@ -98,15 +130,29 @@
       "description": "The date that the information about the service was last checked"
     },
     "attending_type": {
-      "type": "string",
       "description": "How to attend this service.\r\n\r\nApplication Profile Notes: Expected to reference a taxonomy ratehr than an enueration in future versions",
-      "enum": ["phone", "online", "venue", "home visit"]
+      "enum": [
+        "phone",
+        "online",
+        "venue",
+        "home visit",
+        null
+      ]
     },
     "attending_access": {
-      "type": "string",
       "description": "Access restrictions for this service.\r\n\r\nApplication Profile Notes: Expected to reference a taxonomy ratehr than an enueration in future versions",
-      "enum": ["referral", "appointment", "membership", "drop-in"]
+      "enum": [
+        "referral",
+        "appointment",
+        "membership",
+        "drop-in",
+        null
+      ]
     }
   },
-  "required": ["id", "organization", "name"]
+  "required": [
+    "id",
+    "organization",
+    "name"
+  ]
 }
