@@ -2,6 +2,6 @@ namespace OpenReferralApi.Models;
 
 public class TestProfile
 {
-    public string Profile { get; set; } = null!;
-    public List<TestCaseGroup> TestGroups { get; set; } = null!;
+    public required string Profile { get; set; }
+    public required List<TestCaseGroup> TestGroups { get; set; }
 }
