@@ -16,7 +16,7 @@ public class DashboardService : IDashboardService
     private readonly IRequestService _requestService;
     private readonly ILogger<DashboardService> _logger;
 
-    public DashboardService(IDataRepository dataRepository, IValidatorService validatorService, 
+    public DashboardService(IDataRepository dataRepository, IValidatorService validatorService,
         IGithubService githubService, IRequestService requestService, ILogger<DashboardService> logger)
     {
         _dataRepository = dataRepository;
@@ -32,7 +32,7 @@ public class DashboardService : IDashboardService
         {
             Definitions = new Definitions()
         };
-        
+
         var services = await _dataRepository.GetServices();
         response.Data = services.Value.Select(serviceData => new Service(serviceData)).ToList();
 
@@ -51,6 +51,7 @@ public class DashboardService : IDashboardService
         return new ServiceDetailsResponse(serviceDetails.Value);
     }
 
+
     public async Task<Result<SubmissionResponse>> SubmitService(DashboardSubmissionRequest submission)
     {
         var newServiceData = new ServiceData(submission);
@@ -66,32 +67,70 @@ public class DashboardService : IDashboardService
         var testingResult = new List<DashboardValidationResponse>();
         var services = await _dataRepository.GetServices();
 
-        foreach (var service in services.Value)
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        try
         {
-            _logger.LogInformation($"Dashboard validation for {service.Name!.Value} - Starting");
-            var testResult = new DashboardValidationResponse()
+
+            var validationResponses = await Task.WhenAll(services.Value.Select(service => ValidateOneService(service)).ToArray());
+            foreach (var validationResponse in validationResponses)
             {
-                Id = service.Id!,
-                Name = service.Name.Value!.ToString()!,
-                Version = service.SchemaVersion!.Value!.ToString()!,
-                Service = service.ServiceUrl!.Url!
-            };
-            
-            try
+                await _dataRepository.UpdateServiceTestStatus(validationResponse.Id, validationResponse.ServiceAvailable ? Success.Pass : Success.Fail, validationResponse.TestsPassed ? Success.Pass : Success.Fail);
+                testingResult.Add(validationResponse);
+            }
+
+            return Result.Ok(testingResult);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while validating dashboard services");
+            return Result.Fail("An error occurred while validating the dashboard services");
+        }
+        finally
+        {
+            stopwatch.Stop();
+            _logger.LogInformation($"Dashboard validation completed in {stopwatch.ElapsedMilliseconds} ms");
+        }
+    }
+
+    public async Task<Result<List<DashboardValidationResponse>>> ValidateDashboardService(string id)
+    {
+        var service = await _dataRepository.GetServiceById(id);
+        if (service.IsFailed)
+            return Result.Fail("Service not found");
+
+        var validationResult = await ValidateOneService(service.Value);
+        return Result.Ok(new List<DashboardValidationResponse> { validationResult });
+    }
+
+    private async Task<DashboardValidationResponse> ValidateOneService(ServiceData service)
+    {
+        _logger.LogInformation($"Dashboard validation for {service.Name!.Value} - Starting");
+
+        DashboardValidationResponse testResult = new DashboardValidationResponse()
+        {
+            Id = service.Id!,
+            Name = service.Name.Value!.ToString()!,
+            Version = service.SchemaVersion!.Value!.ToString()!,
+            Service = service.ServiceUrl!.Url!
+        };
+
+        try
+        {
+            if (testResult.Version == "1.0")
             {
-                if (testResult.Version == "1.0")
-                    testResult.Service = service.ServiceUrl.Value.ToString();
-                
-                var serviceAvailable = await IsServiceAvailable(testResult.Service);
-                if (serviceAvailable.IsFailed)
-                {
-                    testResult.TestsPassed = false;
-                    testResult.ServiceAvailable = false;
-                    testResult.Message = "Service unavailable";
-                    testingResult.Add(testResult);
-                    await _dataRepository.UpdateServiceTestStatus(service.Id!, Success.Fail, Success.Fail);
-                    continue;
-                }
+                testResult.Service = service.ServiceUrl?.Value?.ToString() ?? string.Empty;
+            }
+
+            var serviceAvailable = await IsServiceAvailable(testResult.Service);
+            if (serviceAvailable.IsFailed)
+            {
+                testResult.TestsPassed = false;
+                testResult.ServiceAvailable = false;
+                testResult.Message = "Service unavailable";
+            }
+            else
+            {
                 testResult.ServiceAvailable = true;
 
                 var validationResult = await _validatorService.ValidateService(testResult.Service, null);
@@ -100,47 +139,45 @@ public class DashboardService : IDashboardService
                 {
                     testResult.TestsPassed = false;
                     testResult.Message = "Tests failed";
-                    testingResult.Add(testResult);
-                    await _dataRepository.UpdateServiceTestStatus(service.Id!, Success.Pass, Success.Fail);
-                    continue;
+                    testResult.Results = validationResult.Value.TestSuites.SelectMany(ts => ts.Tests).ToList();
                 }
-                
-                await _dataRepository.UpdateServiceTestStatus(service.Id!, Success.Pass, Success.Pass);
-                testResult.TestsPassed = true;
-                testingResult.Add(testResult);
+                else
+                {
+                    testResult.TestsPassed = true;
+                }
             }
-            catch (Exception e)
-            {
-                _logger.LogError($"Dashboard validation for {service.Name.Value} - Failed with an error");
-                _logger.LogError(e.Message);
-                testResult.TestsPassed = false;
-                testResult.ServiceAvailable = false;
-                testResult.Message = "Critically failed with an error. Check the logs for more details";
-                testingResult.Add(testResult);
-            }
+
         }
-        
-        return Result.Ok(testingResult);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Validation for {service} - Failed with an error", service.Name.Value);
+
+            testResult.TestsPassed = false;
+            testResult.ServiceAvailable = false;
+            testResult.Message = "Critically failed with an error. Check the logs for more details";
+        }
+
+        return testResult;
     }
 
     private async Task<Result> IsServiceAvailable(string? serviceUrl)
     {
         if (string.IsNullOrEmpty(serviceUrl))
             return Result.Fail("Invalid URL provided");
-        
+
         serviceUrl = serviceUrl.TrimEnd('/');
         serviceUrl += "/services";
 
-        var isUrlValid = Uri.TryCreate(serviceUrl, UriKind.Absolute, out var uriResult) 
+        var isUrlValid = Uri.TryCreate(serviceUrl, UriKind.Absolute, out var uriResult)
                          && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
-        
+
         if (!isUrlValid)
             return Result.Fail("Invalid URL provided");
 
         var response = await _requestService.GetApiResponse(serviceUrl);
 
         return response.IsSuccess
-            ? Result.Ok() 
+            ? Result.Ok()
             : Result.Fail("Request failure");
     }
 }

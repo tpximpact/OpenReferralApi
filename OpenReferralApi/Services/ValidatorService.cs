@@ -93,17 +93,17 @@ public class ValidatorService : IValidatorService
 
     private async Task<Result<Test>> ValidateTestCase(TestCase testCase, string serviceUrl, string schemaVersion)
     {
+        var test = new Test
+        {
+            Name = testCase.Name,
+            Description = testCase.Description,
+            Endpoint = serviceUrl + testCase.Endpoint,
+            Success = true,
+            Messages = [],
+        };
+
         try
         {
-            var test = new Test
-            {
-                Name = testCase.Name,
-                Description = testCase.Description,
-                Endpoint = serviceUrl + testCase.Endpoint,
-                Success = true,
-                Messages = new List<Issue>()
-            };
-
             if (testCase.UseIdFrom != null)
             {
 
@@ -115,12 +115,12 @@ public class ValidatorService : IValidatorService
             if (apiResponse.IsFailed)
             {
                 test.Success = false;
-                test.Messages.Add(new Issue
+                test.Messages = [new Issue
                 {
                     Name = "API response issue",
                     Message = apiResponse.Errors.First().Message
-                }
-                );
+                }];
+
                 return test;
             }
 
@@ -138,24 +138,36 @@ public class ValidatorService : IValidatorService
             test.Messages.AddRange(issues.Value);
             return test;
         }
+        
+        catch (JsonSerializationException ex)
+        {
+            _logger.LogError(ex, "Error occurred while serializing JSON response for {endpoint}", testCase.Endpoint);
+
+            test.Success = false;
+            test.Messages = [
+                new Issue
+                {
+                    Name = testCase.Name,
+                    Description =  $"Error occurred while serializing JSON response for {testCase.Endpoint}",
+                    Message = ex.Message
+                }];
+
+            return test;
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "An error encountered when testing {endpoint} ", testCase.Endpoint);
 
-            return new Test()
-            {
-                Name = testCase.Name,
-                Description = testCase.Description,
-                Endpoint = testCase.Endpoint,
-                Success = false,
-                Messages = [
-                    new Issue
-                    {
-                        Name = testCase.Name,
-                        Description =  $"An error encountered when testing {testCase.Endpoint}",
-                        Message = e.Message
-                    }],
-            };
+            test.Success = false;
+            test.Messages = [
+                new Issue
+                {
+                    Name = testCase.Name,
+                    Description =  $"An error encountered when testing {testCase.Endpoint}",
+                    Message = e.Message
+                }];
+
+            return test;
         }
     }
 
