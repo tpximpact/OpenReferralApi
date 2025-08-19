@@ -35,46 +35,48 @@ public class TestProfileService : ITestProfileService
             }
 
             var apiResult = await _requestService.GetApiResponse(serviceUrl);
-            if (apiResult.IsFailed) 
-                return (HSDSUKVersions.V1 , "Could not read response from '/' endpoint defaulting to HSDS-UK-1.0");
-            
+            if (apiResult.IsFailed)
+                return (HSDSUKVersions.V1, "Could not read response from '/' endpoint defaulting to HSDS-UK-1.0");
+
             return apiResult.Value["version"]!.ToString() switch
             {
-                HSDSUKVersions.V1  => (HSDSUKVersions.V1 , "Standard version HSDS-UK-1.0 read from '/' endpoint"),
+                HSDSUKVersions.V1 => (HSDSUKVersions.V1, "Standard version HSDS-UK-1.0 read from '/' endpoint"),
                 HSDSUKVersions.V3 => (HSDSUKVersions.V3, "Standard version HSDS-UK-3.0 read from '/' endpoint"),
                 _ => (HSDSUKVersions.V3, defaultReason)
             };
         }
         catch (Exception e)
         {
-            _logger.LogError("Error encountered when selecting the test schema");
-            _logger.LogError(e.Message);
+            _logger.LogError(e, "Error encountered when selecting the test schema");
         }
 
         return (HSDSUKVersions.V3, defaultReason);
     }
 
-    public async Task<Result<TestProfile>> ReadTestProfileFromFile(string testSchema)
+    public async Task<TestProfile?> ReadTestProfileFromFile(string testSchema)
     {
         try
         {
             var filePath = $"TestProfiles/{testSchema}.json";
-            
+
             // Open the text file using a stream reader.
             using StreamReader reader = new(filePath);
 
             // Read the stream as a string.
             var fileContent = await reader.ReadToEndAsync();
             var testProfile = JsonConvert.DeserializeObject<TestProfile>(fileContent);
-            
-            return Result.Ok(testProfile)!;
+
+            if (testProfile == null)
+            {
+                throw new IOException("Deserialized TestProfile is null.");
+            }
+
+            return testProfile;
         }
-        catch (IOException e)
+        catch (Exception ex)
         {
-            
-            _logger.LogError("Error encountered when reading from file");
-            _logger.LogError(e.Message);
-            return Result.Fail(e.Message);
+            _logger.LogError(ex, "An unexpected error occurred while reading the test profile: {FileName}", testSchema);
+            return null;
         }
     }
 }

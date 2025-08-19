@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 using FluentResults;
 using Microsoft.Extensions.Caching.Memory;
 using OpenReferralApi.Services.Interfaces;
-
+using System.Text.Json;
 namespace OpenReferralApi.Services;
 
 public class RequestService : IRequestService
@@ -11,10 +11,13 @@ public class RequestService : IRequestService
     private readonly IMemoryCache _cache;
     private readonly MemoryCacheEntryOptions _cacheOptions;
 
-    public RequestService(HttpClient httpClient, IMemoryCache cache)
+    private readonly ILogger<RequestService> _logger;
+
+    public RequestService(HttpClient httpClient, IMemoryCache cache, ILogger<RequestService> logger)
     {
         _httpClient = httpClient;
         _cache = cache;
+        _logger = logger;
         _cacheOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromSeconds(20));
         _httpClient.Timeout = TimeSpan.FromSeconds(30);
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "oruk");
@@ -39,14 +42,19 @@ public class RequestService : IRequestService
 
             return responseData!;
         }
-        catch (TaskCanceledException e)
+        catch (TaskCanceledException ex)
         {
-            Console.WriteLine(e);
+            _logger.LogError(ex, "Request to {Url} timed out", url);
             return Result.Fail($"Request timed out after {_httpClient.Timeout.Seconds} seconds");
         }
-        catch (Exception e)
+        catch (JsonException ex)
         {
-            Console.WriteLine(e);
+            _logger.LogError(ex, "Error occurred while parsing JSON response from {Url}", url);
+            return Result.Fail("Failed to parse JSON response");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while making API request to {Url}", url);
             return Result.Fail("Encountered an error whilst trying to make the API request");
         }
     }

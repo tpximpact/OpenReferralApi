@@ -59,6 +59,25 @@ public class DashboardController : ControllerBase
             : BadRequest(result.Errors);
     }
 
+    /// Validates a dashboard service by its identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier of the dashboard service to validate.</param>
+    /// <returns>
+    /// An <see cref="IActionResult"/> containing the validation result. 
+    /// Returns <c>200 OK</c> with the validation value if successful, 
+    /// or <c>400 Bad Request</c> with error details if validation fails.
+    /// </returns>
+    [HttpGet]
+    [Route("validate/{id}")]
+    public async Task<IActionResult> ValidateDashboardService([FromRoute] string id)
+    {
+        var result = await _dashboardService.ValidateDashboardService(id);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : BadRequest(result.Errors);
+    }
+
     /// <summary>
     /// Submits a service to the dashboard
     /// </summary>

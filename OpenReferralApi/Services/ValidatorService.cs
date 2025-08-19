@@ -30,20 +30,34 @@ public class ValidatorService : IValidatorService
     {
         serviceUrl = serviceUrl.TrimEnd('/');
 
+        if (serviceUrl == null || string.IsNullOrWhiteSpace(serviceUrl))
+        {
+            _logger.LogError("Service URL cannot be null or empty");
+            return Result.Fail("Service URL cannot be null or empty");
+        }
+
         var isUrlValid = Uri.TryCreate(serviceUrl, UriKind.Absolute, out var uriResult)
-                         && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
 
         if (!isUrlValid)
+        {
+            _logger.LogError("Invalid service URL format: {Url}", serviceUrl);
             return Result.Fail("Invalid URL provided");
+        }
 
         var (testSchema, schemaReason) = await _testProfileService.SelectTestSchema(serviceUrl, profile);
         var testProfile = await _testProfileService.ReadTestProfileFromFile(testSchema);
 
-        var testProfileTasks = testProfile.Value.TestGroups.Select(testGroup =>
+        if (testProfile == null)
+        {
+            return Result.Fail("Failed to read test profile");
+        }
+
+        var testProfileTasks = testProfile.TestGroups.Select(testGroup =>
             TestTestGroup(serviceUrl, testSchema, testGroup));
         var testProfileResults = await Task.WhenAll(testProfileTasks);
 
-        return new ValidationResponse
+        return Result.Ok(new ValidationResponse
         {
             Service = new ServiceResponse
             {
@@ -51,11 +65,11 @@ public class ValidatorService : IValidatorService
                 IsValid = testProfileResults
                     .Where(tg => tg.Required)
                     .All(tg => tg.Success),
-                Profile = testProfile.Value.Profile,
+                Profile = testProfile.Profile,
                 ProfileReason = schemaReason
             },
             TestSuites = [.. testProfileResults],
-        };
+        });
     }
 
     private async Task<TestGroup> TestTestGroup(string serviceUrl, string testSchema, TestCaseGroup testGroup)
@@ -63,11 +77,6 @@ public class ValidatorService : IValidatorService
 
         var testGroupTasks = testGroup.Tests.Select(testCase => ValidateTestCase(testCase, serviceUrl, testSchema));
         var testGroupResults = await Task.WhenAll(testGroupTasks);
-
-        /* if (testGroupResults.Any(r => r.IsFailed))
-        {
-            return Result.Fail(testGroupResults.Where(r => r.IsFailed).SelectMany(r => r.Errors));
-        } */
 
         var testGroupResultTests = testGroupResults.Select(r => r.Value);
 
@@ -84,49 +93,34 @@ public class ValidatorService : IValidatorService
 
     private async Task<Result<Test>> ValidateTestCase(TestCase testCase, string serviceUrl, string schemaVersion)
     {
+        var test = new Test
+        {
+            Name = testCase.Name,
+            Description = testCase.Description,
+            Endpoint = serviceUrl + testCase.Endpoint,
+            Success = true,
+            Messages = [],
+        };
+
         try
         {
-            var test = new Test
-            {
-                Name = testCase.Name,
-                Description = testCase.Description,
-                Endpoint = serviceUrl + testCase.Endpoint,
-                Success = true,
-                Messages = new List<Issue>()
-            };
-
             if (testCase.UseIdFrom != null)
             {
-                try
-                {
-                    test.Ids = await FetchIds(serviceUrl + testCase.Endpoint, schemaVersion);
-                    test.Id = test.Ids.First();
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError("Error encountered when validating the test case");
-                    _logger.LogError(e.Message);
-                    test.Success = false;
-                    test.Messages.Add(new Issue
-                    {
-                        Name = "API issue",
-                        Message = "Could not get a valid `id` for the request"
-                    }
-                    );
-                    return test;
-                }
+
+                test.Ids = await FetchIds(serviceUrl + testCase.Endpoint, schemaVersion);
+                test.Id = test.Ids.First();
             }
 
             var apiResponse = await _requestService.GetApiResponse(serviceUrl + testCase.Endpoint + test.Id);
             if (apiResponse.IsFailed)
             {
                 test.Success = false;
-                test.Messages.Add(new Issue
+                test.Messages = [new Issue
                 {
                     Name = "API response issue",
                     Message = apiResponse.Errors.First().Message
-                }
-                );
+                }];
+
                 return test;
             }
 
@@ -144,27 +138,36 @@ public class ValidatorService : IValidatorService
             test.Messages.AddRange(issues.Value);
             return test;
         }
+        
+        catch (JsonSerializationException ex)
+        {
+            _logger.LogError(ex, "Error occurred while serializing JSON response for {endpoint}", testCase.Endpoint);
+
+            test.Success = false;
+            test.Messages = [
+                new Issue
+                {
+                    Name = testCase.Name,
+                    Description =  $"Error occurred while serializing JSON response for {testCase.Endpoint}",
+                    Message = ex.Message
+                }];
+
+            return test;
+        }
         catch (Exception e)
         {
-            _logger.LogError("Error encountered when testing endpoint " + testCase.Endpoint);
-            _logger.LogError(e.Message);
+            _logger.LogError(e, "An error encountered when testing {endpoint} ", testCase.Endpoint);
 
-            return new Test()
-            {
-                Name = testCase.Name,
-                Description = testCase.Description,
-                Endpoint = testCase.Endpoint,
-                Success = false,
-                Messages = new List<Issue>()
-                        {
-                            new Issue()
-                            {
-                                Name = "Critical failure",
-                                Description = "A critical failure occured whilst testing the endpoint",
-                                Message = "A critical failure occured whilst testing the endpoint"
-                            }
-                        }
-            };
+            test.Success = false;
+            test.Messages = [
+                new Issue
+                {
+                    Name = testCase.Name,
+                    Description =  $"An error encountered when testing {testCase.Endpoint}",
+                    Message = e.Message
+                }];
+
+            return test;
         }
     }
 
