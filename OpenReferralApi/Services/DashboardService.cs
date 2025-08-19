@@ -75,7 +75,7 @@ public class DashboardService : IDashboardService
             var validationResponses = await Task.WhenAll(services.Value.Select(service => ValidateOneService(service)).ToArray());
             foreach (var validationResponse in validationResponses)
             {
-                //await _dataRepository.UpdateServiceTestStatus(validationResponse.Id, validationResponse.TestsPassed ? Success.Pass : Success.Fail, validationResponse.ServiceAvailable ? Success.Pass : Success.Fail);
+                await _dataRepository.UpdateServiceTestStatus(validationResponse.Id, validationResponse.ServiceAvailable ? Success.Pass : Success.Fail, validationResponse.TestsPassed ? Success.Pass : Success.Fail);
                 testingResult.Add(validationResponse);
             }
 
