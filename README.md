@@ -17,3 +17,9 @@ If you would like to better understand how the Validator or Dashboard work pleas
 The Human Services Data Specification UK (HSDS-UK) and associated documentation are licensed under the Creative Commons Attribution Share-Alike 4.0 license.
 
 Please refer to the [LICENSE](/LICENSE) for full details.
+
+## BSD 3-Clause License
+
+The functional API code is licensed under the BSD 3-Clause License.
+
+Please refer to the [BSD-LICENSE](/LICENSE-BSD) or full details.
