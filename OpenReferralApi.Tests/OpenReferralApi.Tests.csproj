@@ -60,4 +60,12 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="Mocks\**\*">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>

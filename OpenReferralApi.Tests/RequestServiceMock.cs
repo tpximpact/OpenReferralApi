@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 using FluentResults;
 using OpenReferralApi.Services.Interfaces;
 
-namespace OpenReferralApi.Services;
+namespace OpenReferralApi.Tests;
 
 public class RequestServiceMock : IRequestService
 {
