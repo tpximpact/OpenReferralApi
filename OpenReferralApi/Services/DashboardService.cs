@@ -45,13 +45,6 @@ public class DashboardService : IDashboardService
         return response;
     }
 
-    public async Task<Result<ServiceDetailsResponse>> GetServiceById(string id)
-    {
-        var serviceDetails = await _dataRepository.GetServiceById(id);
-        return new ServiceDetailsResponse(serviceDetails.Value);
-    }
-
-
     public async Task<Result<SubmissionResponse>> SubmitService(DashboardSubmissionRequest submission)
     {
         var newServiceData = new ServiceData(submission);

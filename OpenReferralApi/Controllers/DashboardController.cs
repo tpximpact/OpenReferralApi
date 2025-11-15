@@ -36,25 +36,6 @@ public class DashboardController : ControllerBase
     }
 
     /// <summary>
-    /// Returns detailed data about a single HSDS-UK service and the details needed for the data to be understood &amp; displayed.
-    /// </summary>
-    /// <param name="id">The unique identifier of the dashboard service.</param>
-    /// <returns>
-    /// An <see cref="IActionResult"/> containing the service details if successful,
-    /// or <c>400 Bad Request</c> with error details if the operation fails.
-    /// </returns>
-    [HttpGet]
-    [Route("{id}")]
-    public async Task<IActionResult> GetDashboardServiceDetails([FromRoute] string id)
-    {
-        var result = await _dashboardService.GetServiceById(id);
-
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : BadRequest(result.Errors);
-    }
-
-    /// <summary>
     /// Runs validation testing against all the services on the dashboard.
     /// </summary>
     /// <returns>
