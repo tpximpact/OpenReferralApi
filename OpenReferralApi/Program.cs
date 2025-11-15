@@ -34,7 +34,6 @@ builder.Services.AddScoped<IPaginationTestingService, PaginationTestingService>(
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IValidatorService, ValidatorService>();
 builder.Services.AddScoped<IRequestService, RequestService>();
-builder.Services.AddScoped<IGithubService, GithubService>();
 builder.Services.AddScoped<ITestProfileService, TestProfileService>();
 
 builder.Services.AddScoped<DashboardService>();

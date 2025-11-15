@@ -1,6 +1,5 @@
 using FluentResults;
 using OpenReferralApi.Models;
-using OpenReferralApi.Models.Requests;
 using OpenReferralApi.Models.Responses;
 using OpenReferralApi.Repositories.Interfaces;
 using OpenReferralApi.Services.Interfaces;
@@ -12,47 +11,16 @@ public class DashboardService : IDashboardService
 {
     private readonly IDataRepository _dataRepository;
     private readonly IValidatorService _validatorService;
-    private readonly IGithubService _githubService;
     private readonly IRequestService _requestService;
     private readonly ILogger<DashboardService> _logger;
 
     public DashboardService(IDataRepository dataRepository, IValidatorService validatorService,
-        IGithubService githubService, IRequestService requestService, ILogger<DashboardService> logger)
+        IRequestService requestService, ILogger<DashboardService> logger)
     {
         _dataRepository = dataRepository;
         _validatorService = validatorService;
-        _githubService = githubService;
         _logger = logger;
         _requestService = requestService;
-    }
-
-    public async Task<Result<DashboardResponse>> GetServices()
-    {
-        var response = new DashboardResponse
-        {
-            Definitions = new Definitions()
-        };
-
-        var services = await _dataRepository.GetServices();
-        response.Data = services.Value.Select(serviceData => new Service(serviceData)).ToList();
-
-        var columnData = await _dataRepository.GetColumns();
-        response.Definitions.Columns = columnData.Value.ToDictionary(c => c.Name, c => c);
-
-        var viewData = await _dataRepository.GetViews();
-        response.Definitions.Views = viewData.Value.ToDictionary(v => v.Name, v => v);
-
-        return response;
-    }
-
-    public async Task<Result<SubmissionResponse>> SubmitService(DashboardSubmissionRequest submission)
-    {
-        var newServiceData = new ServiceData(submission);
-        var addServiceResult = await _dataRepository.AddService(newServiceData);
-        if (addServiceResult.IsFailed)
-            return Result.Fail("Failed to save submission details");
-
-        return await _githubService.RaiseIssue(submission);
     }
 
     public async Task<Result<List<DashboardValidationResponse>>> ValidateDashboardServices()

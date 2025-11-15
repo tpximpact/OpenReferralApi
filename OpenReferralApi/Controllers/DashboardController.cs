@@ -1,7 +1,4 @@
-using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
-using OpenReferralApi.Models;
-using OpenReferralApi.Models.Requests;
 using OpenReferralApi.Services.Interfaces;
 
 namespace OpenReferralApi.Controllers;
@@ -15,24 +12,6 @@ public class DashboardController : ControllerBase
     public DashboardController(IDashboardService dashboardService)
     {
         _dashboardService = dashboardService;
-    }
-
-    /// <summary>
-    /// Returns data about the known HSDS-UK services and the details needed for the data to be understood &amp; displayed.
-    /// </summary>
-    /// <returns>
-    /// An <see cref="IActionResult"/> containing a list of dashboard services if successful,
-    /// or <c>400 Bad Request</c> with error details if the operation fails.
-    /// </returns>
-    [HttpGet]
-    [Route("")]
-    public async Task<IActionResult> GetDashboardServices()
-    {
-        var result = await _dashboardService.GetServices();
-
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : BadRequest(result.Errors);
     }
 
     /// <summary>
@@ -70,25 +49,5 @@ public class DashboardController : ControllerBase
         return result.IsSuccess
             ? Ok(result.Value)
             : BadRequest(result.Errors);
-    }
-
-    /// <summary>
-    /// Submits a service to the dashboard.
-    /// </summary>
-    /// <param name="submission">The submission details for the dashboard service.</param>
-    /// <returns>
-    /// An <see cref="IActionResult"/> with <c>202 Accepted</c> and the submission result if successful,
-    /// or <c>400 Bad Request</c> with error details if the submission fails.
-    /// </returns>
-    [HttpPost]
-    [Route("submit")]
-    public async Task<IActionResult> SubmitDashboardService([FromBody] DashboardSubmissionRequest submission)
-    {
-        var submissionResult = await _dashboardService.SubmitService(submission);
-
-        if (submissionResult.IsSuccess)
-            return Accepted(submissionResult.Value);
-
-        return BadRequest(submissionResult.Value);
     }
 }
