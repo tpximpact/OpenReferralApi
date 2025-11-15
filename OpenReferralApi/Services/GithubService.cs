@@ -22,51 +22,43 @@ public class GithubService : IGithubService
 
     public async Task<Result<SubmissionResponse>> RaiseIssue(DashboardSubmissionRequest submission)
     {
-        try
+        var client = new GitHubClient(new ProductHeaderValue(_githubSettings.ClientHeader))
         {
-            var client = new GitHubClient(new ProductHeaderValue(_githubSettings.ClientHeader))
-            {
-                Credentials = new Credentials(GenerateToken(), AuthenticationType.Bearer)
-            };
+            Credentials = new Credentials(GenerateToken(), AuthenticationType.Bearer)
+        };
 
-            var installationToken = await client.GitHubApps.CreateInstallationToken(_githubSettings.InstallationId);
+        var installationToken = await client.GitHubApps.CreateInstallationToken(_githubSettings.InstallationId);
 
-            var installationClient = new GitHubClient(new ProductHeaderValue(_githubSettings.ClientHeader))
-            {
-                Credentials = new Credentials(installationToken.Token, AuthenticationType.Bearer)
-            };
-
-            var issue = new NewIssue("Review dashboard submission - " + submission.Name)
-            {
-                Body = "# Dashboard Submission \r\n" +
-                       $"Name: {submission.Name} \r\nService Url: {submission.ServiceUrl} \r\nDescription: {submission.Description} \r\n" +
-                       $"Contact Email: {submission.ContactEmail} \r\nPublisher: {submission.Publisher} \r\nPublisher Url: {submission.PublisherUrl} \r\n" +
-                       $"Developer: {submission.Developer} \r\nDeveloper Url: {submission.DeveloperUrl}"
-            };
-            
-            foreach (var assignee in _githubSettings.IssueAssignees.Split(','))
-            {
-                issue.Assignees.Add(assignee);
-            }
-            
-            foreach (var label in _githubSettings.Labels.Split(','))
-            {
-                issue.Labels.Add(label);
-            }
-
-            var issueResponse = await installationClient.Issue.Create(_githubSettings.RepoOwner, _githubSettings.RepoName, issue);
-
-            return new SubmissionResponse()
-            {
-                Message = "Submission Accepted",
-                UpdateLink = issueResponse.HtmlUrl
-            };
-        }
-        catch (Exception e)
+        var installationClient = new GitHubClient(new ProductHeaderValue(_githubSettings.ClientHeader))
         {
-            Console.WriteLine(e);
-            throw;
+            Credentials = new Credentials(installationToken.Token, AuthenticationType.Bearer)
+        };
+
+        var issue = new NewIssue("Review dashboard submission - " + submission.Name)
+        {
+            Body = "# Dashboard Submission \r\n" +
+                   $"Name: {submission.Name} \r\nService Url: {submission.ServiceUrl} \r\nDescription: {submission.Description} \r\n" +
+                   $"Contact Email: {submission.ContactEmail} \r\nPublisher: {submission.Publisher} \r\nPublisher Url: {submission.PublisherUrl} \r\n" +
+                   $"Developer: {submission.Developer} \r\nDeveloper Url: {submission.DeveloperUrl}"
+        };
+        
+        foreach (var assignee in _githubSettings.IssueAssignees.Split(','))
+        {
+            issue.Assignees.Add(assignee);
         }
+        
+        foreach (var label in _githubSettings.Labels.Split(','))
+        {
+            issue.Labels.Add(label);
+        }
+
+        var issueResponse = await installationClient.Issue.Create(_githubSettings.RepoOwner, _githubSettings.RepoName, issue);
+
+        return new SubmissionResponse()
+        {
+            Message = "Submission Accepted",
+            UpdateLink = issueResponse.HtmlUrl
+        };
     }
 
     private string GenerateToken()
