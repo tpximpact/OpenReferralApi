@@ -1,6 +1,8 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 using OpenReferralApi.Models.Settings;
+using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.OpenApi.Writers;
 using OpenReferralApi.Repositories;
 using OpenReferralApi.Repositories.Interfaces;
 using OpenReferralApi.Services;
@@ -44,10 +46,28 @@ builder.Services.AddHostedService(provider => provider.GetRequiredService<Period
 
 builder.Services.AddMemoryCache();
 
+
 var app = builder.Build();
 
 app.UseSwagger();
-app.UseSwaggerUI();
+
+// Serve raw Swagger JSON at the application root (/)
+app.MapGet("/", (HttpContext http, ISwaggerProvider swaggerProvider) =>
+{
+    var doc = swaggerProvider.GetSwagger("v1");
+    http.Response.ContentType = "application/json";
+    var stringWriter = new StringWriter();
+    var jsonWriter = new OpenApiJsonWriter(stringWriter);
+    doc.SerializeAsV3(jsonWriter);
+    return http.Response.WriteAsync(stringWriter.ToString());
+});
+
+// Serve Swagger UI at /swagger
+app.UseSwaggerUI(options =>
+{
+    options.RoutePrefix = "swagger"; // UI will be available at /swagger
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "OpenReferral API V1");
+});
 
 app.MapHealthChecks("/health-check");
 

@@ -1,4 +1,3 @@
-using FluentResults;
 using Newtonsoft.Json;
 using OpenReferralApi.Constants;
 using OpenReferralApi.Models;
