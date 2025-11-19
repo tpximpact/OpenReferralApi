@@ -6,5 +6,4 @@ namespace OpenReferralApi.Services.Interfaces;
 public interface IDashboardService
 {
     public Task<Result<List<DashboardValidationResponse>>> ValidateDashboardServices();
-    public Task<Result<List<DashboardValidationResponse>>> ValidateDashboardService(string id);
 }

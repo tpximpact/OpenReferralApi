@@ -54,15 +54,6 @@ public class DashboardService : IDashboardService
         }
     }
 
-    public async Task<Result<List<DashboardValidationResponse>>> ValidateDashboardService(string id)
-    {
-        var service = await _dataRepository.GetServiceById(id);
-        if (service.IsFailed)
-            return Result.Fail("Service not found");
-
-        var validationResult = await ValidateOneService(service.Value);
-        return Result.Ok(new List<DashboardValidationResponse> { validationResult });
-    }
 
     private async Task<DashboardValidationResponse> ValidateOneService(ServiceData service)
     {
