@@ -24,4 +24,8 @@
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.1" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\OpenReferralApi.Core\OpenReferralApi.Core.csproj" />
+    </ItemGroup>
+
 </Project>
