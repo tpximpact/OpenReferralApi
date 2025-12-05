@@ -1,5 +1,4 @@
 using FluentResults;
-using OpenReferralApi.Models;
 using OpenReferralApi.Models.Requests;
 using OpenReferralApi.Models.Responses;
 

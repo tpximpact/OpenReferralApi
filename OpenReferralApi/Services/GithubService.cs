@@ -3,7 +3,6 @@ using FluentResults;
 using Jose;
 using Microsoft.Extensions.Options;
 using Octokit;
-using OpenReferralApi.Models;
 using OpenReferralApi.Models.Requests;
 using OpenReferralApi.Models.Responses;
 using OpenReferralApi.Models.Settings;
