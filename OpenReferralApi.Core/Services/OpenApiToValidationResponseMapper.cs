@@ -23,10 +23,27 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
             testSuites.Add(MapSpecificationValidation(openApiResult.SpecificationValidation));
         }
 
-        // Map endpoint tests to test groups
+        // Map endpoint tests to test groups - separate required and optional endpoints
         if (openApiResult.EndpointTests != null && openApiResult.EndpointTests.Any())
         {
-            testSuites.Add(MapEndpointTests(openApiResult.EndpointTests, openApiResult.Metadata.BaseUrl));
+            var requiredEndpoints = openApiResult.EndpointTests.Where(e => !e.IsOptional).ToList();
+            var optionalEndpoints = openApiResult.EndpointTests.Where(e => e.IsOptional).ToList();
+
+            if (requiredEndpoints.Any())
+            {
+                testSuites.Add(MapEndpointTests(requiredEndpoints, openApiResult.Metadata.BaseUrl, 
+                    "Required Endpoint Testing", 
+                    "Tests all required API endpoints for availability and schema compliance", 
+                    true));
+            }
+
+            if (optionalEndpoints.Any())
+            {
+                testSuites.Add(MapEndpointTests(optionalEndpoints, openApiResult.Metadata.BaseUrl, 
+                    "Optional Endpoint Testing", 
+                    "Tests optional API endpoints for availability and schema compliance", 
+                    false));
+            }
         }
 
         // Determine overall validity
@@ -40,8 +57,8 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
             {
                 url = openApiResult.Metadata?.BaseUrl ?? "",
                 isValid = isValid,
-                profile = $"OpenAPI {openApiResult.SpecificationValidation?.OpenApiVersion ?? "Unknown"}",
-                profileReason = "Validated against OpenAPI specification"
+                profile = $"HSDS-UK-{openApiResult.SpecificationValidation?.OpenApiVersion ?? "Unknown"}",
+                profileReason = "Standard version HSDS-UK-3.0 read from '/' endpoint"
             },
             testSuites = testSuites
         };
@@ -106,7 +123,8 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
         };
     }
 
-    private object MapEndpointTests(List<EndpointTestResult> endpointTests, string baseUrl)
+    private object MapEndpointTests(List<EndpointTestResult> endpointTests, string baseUrl, 
+        string name, string description, bool required)
     {
         var tests = endpointTests.Select(endpoint => new
         {
@@ -119,10 +137,10 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
 
         return new
         {
-            name = "Endpoint Testing",
-            description = "Tests all API endpoints for availability and schema compliance",
-            messageLevel = "ERROR",
-            required = true,
+            name = name,
+            description = description,
+            messageLevel = required ? "ERROR" : "WARNING",
+            required = required,
             success = endpointTests.All(e => e.Status == "Success" || e.Status == "Warning"),
             tests = tests
         };
