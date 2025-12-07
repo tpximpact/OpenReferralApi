@@ -456,13 +456,13 @@ public class OpenApiValidationService : IOpenApiValidationService
             Method = method,
             OperationId = operation["operationId"]?.ToString(),
             Summary = operation["summary"]?.ToString(),
+            IsOptional = operation.IsOptionalEndpoint(),
             Status = "NotTested"
         };
 
         try
         {
             bool isOptional = operation.IsOptionalEndpoint();
-            result.IsOptional = isOptional;
             bool skipOptional = options.TestOptionalEndpoints == false && isOptional;
             if (skipOptional)
             {
@@ -1460,9 +1460,9 @@ public class OpenApiValidationService : IOpenApiValidationService
                 Method = method,
                 OperationId = operation["operationId"]?.ToString(),
                 Summary = operation["summary"]?.ToString(),
+                IsOptional = operation.IsOptionalEndpoint(),
                 Status = "NotTested",
-                IsTested = true,
-                IsOptional = operation.IsOptionalEndpoint()
+                IsTested = true
             };
 
             // Test each ID
@@ -1522,9 +1522,9 @@ public class OpenApiValidationService : IOpenApiValidationService
                 Method = method,
                 OperationId = operation["operationId"]?.ToString(),
                 Summary = operation["summary"]?.ToString(),
+                IsOptional = operation.IsOptionalEndpoint(),
                 Status = "NotTested",
                 IsTested = false,
-                IsOptional = operation.IsOptionalEndpoint(),
                 ValidationErrors = new List<ValidationError>
                 {
                     new ValidationError

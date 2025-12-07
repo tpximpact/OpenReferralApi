@@ -151,6 +151,7 @@
                 }
             ],
             "get": {
+                "tags": ["Optional"],
                 "description": "Full information on taxonomy.",
                 "summary": "Retrieves full information on a taxonomy by {id}.",
                 "operationId": "getTaxonomyById",
