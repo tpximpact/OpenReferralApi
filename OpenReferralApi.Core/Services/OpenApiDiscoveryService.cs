@@ -3,6 +3,15 @@ using Newtonsoft.Json.Linq;
 
 namespace OpenReferralApi.Core.Services;
 
+public interface IOpenApiDiscoveryService
+{
+    /// <summary>
+    /// Attempts to discover an OpenAPI schema URL from the provided base URL.
+    /// Returns the discovered URL or null if none found.
+    /// </summary>
+    Task<string?> DiscoverOpenApiUrlAsync(string baseUrl, CancellationToken cancellationToken = default);
+}
+
 public class OpenApiDiscoveryService : IOpenApiDiscoveryService
 {
     private readonly IHttpClientFactory _httpClientFactory;
@@ -52,7 +61,7 @@ public class OpenApiDiscoveryService : IOpenApiDiscoveryService
                         return versionedSpec;
                     }
                 }
-                
+
                 // Check for explicit openapi_url field first
                 var openapiUrlToken = j.SelectToken("openapi_url") ?? j.SelectToken("openapiUrl") ?? j.SelectToken("open_api_url");
                 var openapiUrl = openapiUrlToken?.ToString();

@@ -104,14 +104,18 @@ builder.Services.AddScoped<IValidatorService, ValidatorService>();
 builder.Services.AddScoped<IRequestService, RequestService>();
 builder.Services.AddScoped<IGithubService, GithubService>();
 builder.Services.AddScoped<ITestProfileService, TestProfileService>();
+builder.Services.AddScoped<IPathParsingService, PathParsingService>();
+builder.Services.AddSingleton<IRequestProcessingService, RequestProcessingService>();
+builder.Services.AddScoped<IJsonSchemaResolverService, JsonSchemaResolverService>();
+builder.Services.AddScoped<IJsonValidatorService, JsonValidatorService>();
 builder.Services.AddScoped<IOpenApiValidationService>(provider =>
 {
     var logger = provider.GetRequiredService<ILogger<OpenApiValidationService>>();
     var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
     var httpClient = httpClientFactory.CreateClient(nameof(OpenApiValidationService));
-    //var jsonValidatorService = provider.GetRequiredService<IJsonValidatorService>();
-    //var schemaResolverService = provider.GetRequiredService<IJsonSchemaResolverService>();
-    return new OpenApiValidationService(logger, httpClient);
+    var jsonValidatorService = provider.GetRequiredService<IJsonValidatorService>();
+    var schemaResolverService = provider.GetRequiredService<IJsonSchemaResolverService>();
+    return new OpenApiValidationService(logger, httpClient, jsonValidatorService, schemaResolverService);
 });
 
 // Register OpenAPI discovery service used by controller to discover openapi_url from BaseUrl
@@ -125,11 +129,15 @@ builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "JSON Validator API v1");
+        c.RoutePrefix = string.Empty; // Serve Swagger UI at root
+    });
 }
 
 // Health check endpoints with detailed responses
