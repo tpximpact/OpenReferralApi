@@ -598,7 +598,7 @@ public class OpenApiValidationMetadata : IMetadata
     /// Can be customized for different environments or identification purposes
     /// </summary>
     [JsonProperty("userAgent")]
-    public string UserAgent { get; set; } = "JsonValidator-OpenApiTester/1.0";
+    public string UserAgent { get; set; } = "OpenReferral-Validator/1.0";
 
     /// <summary>
     /// Implements IMetadata.Timestamp interface requirement

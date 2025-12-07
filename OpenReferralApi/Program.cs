@@ -41,7 +41,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpClient(nameof(OpenApiValidationService), client =>
 {
     // Set a standard user agent that most APIs accept
-    client.DefaultRequestHeaders.Add("User-Agent", "JsonValidator-OpenApiTester/1.0");
+    client.DefaultRequestHeaders.Add("User-Agent", "OpenReferral-Validator/1.0");
 
     // Set reasonable timeout
     client.Timeout = TimeSpan.FromMinutes(2);

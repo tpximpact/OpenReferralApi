@@ -83,7 +83,7 @@ public class OpenApiValidationService : IOpenApiValidationService
                 BaseUrl = request.BaseUrl,
                 TestTimestamp = DateTime.UtcNow,
                 TestDuration = stopwatch.Elapsed,
-                UserAgent = "JsonValidator-OpenApiTester/1.0"
+                UserAgent = "OpenReferral-Validator/1.0"
             };
 
             _logger.LogInformation("OpenAPI testing completed. IsValid: {IsValid}, Endpoints: {EndpointCount}",
