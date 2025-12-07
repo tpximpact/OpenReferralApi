@@ -266,6 +266,13 @@ public class EndpointTestResult
     public bool IsTested { get; set; }
 
     /// <summary>
+    /// Overall status of the endpoint test ("Success", "Failed", "Error", "NotTested")
+    /// Provides a quick summary of the testing outcome for dashboard/reporting purposes
+    /// </summary>
+    [JsonProperty("status")]
+    public string Status { get; set; } = "NotTested";
+    
+    /// <summary>
     /// Collection of HTTP test results for this endpoint, including request/response details
     /// May contain multiple results if the endpoint was tested with different parameters or conditions
     /// </summary>
@@ -280,19 +287,6 @@ public class EndpointTestResult
     [JsonProperty("validationErrors")]
     public List<ValidationError> ValidationErrors { get; set; } = new();
 
-    /// <summary>
-    /// Overall status of the endpoint test ("Success", "Failed", "Error", "NotTested")
-    /// Provides a quick summary of the testing outcome for dashboard/reporting purposes
-    /// </summary>
-    [JsonProperty("status")]
-    public string Status { get; set; } = "NotTested";
-
-    /// <summary>
-    /// Detailed schema validation results for request and response bodies
-    /// Provides granular information about data structure compliance and validation failures
-    /// </summary>
-    [JsonProperty("schemaValidationDetails")]
-    public List<SchemaValidationDetail> SchemaValidationDetails { get; set; } = new();
 }
 
 /// <summary>

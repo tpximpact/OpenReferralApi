@@ -524,14 +524,6 @@ public class OpenApiValidationService : IOpenApiValidationService
                     if (testResult.ValidationResult != null && !testResult.ValidationResult.IsValid)
                     {
                         result.Status = "Warning";
-                        // Clear errors, add as warnings by setting Severity
-                        result.ValidationErrors.Clear();
-                        result.SchemaValidationDetails.Add(new SchemaValidationDetail
-                        {
-                            Location = "response",
-                            Status = "Warning",
-                            Errors = testResult.ValidationResult.Errors.Select(e => new ValidationError { Path = e.Path, Message = e.Message, ErrorCode = e.ErrorCode, Severity = "Warning" }).ToList()
-                        });
                     }
                     else if (result.Status != "Warning")
                     {
@@ -541,10 +533,6 @@ public class OpenApiValidationService : IOpenApiValidationService
                 else if (result.Status != "Warning" && result.Status != "Failed")
                 {
                     result.Status = testResult.IsSuccess ? "Success" : "Failed";
-                    if (testResult.ValidationResult != null && !testResult.ValidationResult.IsValid)
-                    {
-                        result.ValidationErrors.AddRange(testResult.ValidationResult.Errors);
-                    }
                 }
             }
         }
@@ -1476,8 +1464,8 @@ public class OpenApiValidationService : IOpenApiValidationService
                 
                 // Aggregate the results
                 compositeResult.TestResults.AddRange(singleResult.TestResults);
-                compositeResult.ValidationErrors.AddRange(singleResult.ValidationErrors);
-                compositeResult.SchemaValidationDetails.AddRange(singleResult.SchemaValidationDetails);
+                //compositeResult.ValidationErrors.AddRange(singleResult.ValidationErrors);
+                //compositeResult.SchemaValidationDetails.AddRange(singleResult.SchemaValidationDetails);
 
                 if (singleResult.Status == "Failed" || singleResult.Status == "Error")
                 {
