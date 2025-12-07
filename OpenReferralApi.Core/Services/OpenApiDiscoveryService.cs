@@ -56,7 +56,7 @@ public class OpenApiDiscoveryService : IOpenApiDiscoveryService
                     var extractedVersion = ExtractVersionNumber(version);
                     if (extractedVersion.HasValue)
                     {
-                        var versionedSpec = $"{baseSpecificationUrl}{extractedVersion.Value:0.0}/openapi.json";
+                        var versionedSpec = $"{baseSpecificationUrl}V{extractedVersion.Value:0.0}-UK/open_api.json";
                         _logger.LogInformation("Detected version '{Version}'; using HSDS-UK {ExtractedVersion:0.0} spec: {OpenApiUrl}", version, extractedVersion.Value, versionedSpec);
                         return versionedSpec;
                     }
