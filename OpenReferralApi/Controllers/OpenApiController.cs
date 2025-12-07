@@ -12,22 +12,28 @@ public class OpenApiController : ControllerBase
     private readonly IOpenApiValidationService _openApiValidationService;
     private readonly ILogger<OpenApiController> _logger;
     private readonly IOpenApiDiscoveryService _discoveryService;
+    private readonly IOpenApiToValidationResponseMapper _mapper;
 
-    public OpenApiController(IOpenApiValidationService openApiValidationService, ILogger<OpenApiController> logger, IOpenApiDiscoveryService discoveryService)
+    public OpenApiController(
+        IOpenApiValidationService openApiValidationService, 
+        ILogger<OpenApiController> logger, 
+        IOpenApiDiscoveryService discoveryService,
+        IOpenApiToValidationResponseMapper mapper)
     {
         _openApiValidationService = openApiValidationService;
         _logger = logger;
         _discoveryService = discoveryService;
+        _mapper = mapper;
     }
 
     /// <summary>
     /// Validates an OpenAPI specification and optionally tests all defined endpoints
     /// </summary>
     [HttpPost("validate")]
-    [ProducesResponseType(typeof(OpenApiValidationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<OpenApiValidationResult>> ValidateOpenApiSpecificationAsync(
+    public async Task<ActionResult<object>> ValidateOpenApiSpecificationAsync(
         [FromBody] OpenApiValidationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -64,7 +70,11 @@ public class OpenApiController : ControllerBase
             }
 
             var result = await _openApiValidationService.ValidateOpenApiSpecificationAsync(request, cancellationToken);
-            return Ok(result);
+            
+            // Map to ValidationResponse format
+            var mappedResult = _mapper.MapToValidationResponse(result);
+            
+            return Ok(mappedResult);
         }
         catch (ArgumentException ex)
         {

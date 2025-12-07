@@ -121,6 +121,9 @@ builder.Services.AddScoped<IOpenApiValidationService>(provider =>
 // Register OpenAPI discovery service used by controller to discover openapi_url from BaseUrl
 builder.Services.AddScoped<IOpenApiDiscoveryService, OpenApiDiscoveryService>();
 
+// Register OpenAPI to ValidationResponse mapper
+builder.Services.AddScoped<IOpenApiToValidationResponseMapper, OpenApiToValidationResponseMapper>();
+
 // Background service
 builder.Services.AddSingleton<PeriodicValidationService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<PeriodicValidationService>());
