@@ -56,6 +56,7 @@
                 }
             ],
             "get": {
+                "name": "Service by id - API & schema validation",
                 "description": "Retrieve fully nested service with all related data with id.",
                 "summary": "Does the service by id endpoint return a fully nested service in the correct schema",
                 "operationId": "getFullyNestedServiceById",
@@ -75,6 +76,7 @@
         },
         "/services": {
             "get": {
+                "name": "Services list - API & schema validation",
                 "description": "Retrieves paginated listings of services that only have one-to-one fields in them.",
                 "summary": "Does the services list endpoint return a paginated list of services in the correct schema",
                 "operationId": "getPaginatedListOfServices",
@@ -153,6 +155,7 @@
             ],
             "get": {
                 "tags": ["Optional"],
+                "name": "Taxonomy by id - API & schema validation",
                 "description": "Full information on taxonomy.",
                 "summary": "Retrieves full information on a taxonomy by {id}.",
                 "operationId": "getTaxonomyById",
@@ -173,6 +176,7 @@
         "/taxonomies": {
             "get": {
                 "tags": ["Optional"],
+                "name": "Taxonomies list - API & schema validation",
                 "description": "Paginated listing of taxonomies.",
                 "summary": "Does the taxonomies list endpoint return a paginated list of taxonomies in the correct schema",
                 "operationId": "getPaginatedListOfTaxonomies",
@@ -231,6 +235,7 @@
             ],
             "get": {
                 "tags": ["Optional"],
+                "name": "Taxonomy term by id - API & schema validation",
                 "description": "Full information on a taxonomy term.",
                 "summary": "Full information on a taxonomy term.",
                 "operationId": "getPaginatedListOfTaxonomyTerms",
@@ -251,6 +256,7 @@
         "/taxonomy_terms": {
             "get": {
                 "tags": ["Optional"],
+                "name": "Taxonomy terms list - API & schema validation",
                 "description": "Paginated listing of taxonomy terms",
                 "summary": "Does the taxonomy terms list endpoint return a paginated list of taxonomy terms in the correct schema",
                 "operationId": "getTaxonomyTermById",
@@ -329,6 +335,7 @@
             ],
             "get": {
                 "tags": ["Optional"],
+                "name": "Organization by id - API & schema validation",
                 "description": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
                 "summary": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
                 "operationId": "getOrganizationById",
@@ -354,6 +361,7 @@
         "/organizations": {
             "get": {
                 "tags": ["Optional"],
+                "name": "Organizations list - API & schema validation",
                 "description": "Paginated list of basic Organization information.",
                 "summary": "Paginated list of basic Organization information",
                 "operationId": "getPaginatedListOfOrganizations",
@@ -418,6 +426,7 @@
             ],
             "get": {
                 "tags": ["Optional"],
+                "name": "Service at location by id - API & schema validation",
                 "description": "Retrieve fully nested service_at_location with all related data with specified id.",
                 "summary": "Does the service at location by id endpoint return a fully nested service at location in the correct schema",
                 "operationId": "getServiceAtLocationWithNestedDataById",
@@ -438,6 +447,7 @@
         "/service_at_locations": {
             "get": {
                 "tags": ["Optional"],
+                "name": "Service at locations list - API & schema validation",
                 "description": "Retrieve paginated listings of service_at_location that only have one-to-one fields in them.",
                 "summary": "Does the service at locations list endpoint return a paginated list of service at locations in the correct schema",
                 "operationId": "getPaginatedListOfServiceAtLocation",

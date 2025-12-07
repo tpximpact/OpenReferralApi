@@ -454,6 +454,7 @@ public class OpenApiValidationService : IOpenApiValidationService
         {
             Path = path,
             Method = method,
+            Name = operation["name"]?.ToString(),
             OperationId = operation["operationId"]?.ToString(),
             Summary = operation["summary"]?.ToString(),
             IsOptional = operation.IsOptionalEndpoint(),
@@ -1446,6 +1447,7 @@ public class OpenApiValidationService : IOpenApiValidationService
             {
                 Path = path,
                 Method = method,
+                Name = operation["name"]?.ToString(),
                 OperationId = operation["operationId"]?.ToString(),
                 Summary = operation["summary"]?.ToString(),
                 IsOptional = operation.IsOptionalEndpoint(),
@@ -1508,6 +1510,7 @@ public class OpenApiValidationService : IOpenApiValidationService
             {
                 Path = path,
                 Method = method,
+                Name = operation["name"]?.ToString(),
                 OperationId = operation["operationId"]?.ToString(),
                 Summary = operation["summary"]?.ToString(),
                 IsOptional = operation.IsOptionalEndpoint(),

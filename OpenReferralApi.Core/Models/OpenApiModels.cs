@@ -246,6 +246,12 @@ public class EndpointTestResult
     public string? OperationId { get; set; }
 
     /// <summary>
+    /// The name of the endpoint as defined in the OpenAPI specification
+    /// </summary>
+    [JsonProperty("name")]
+    public string? Name { get; internal set; }
+
+    /// <summary>
     /// Brief description of what this endpoint does, extracted from the OpenAPI specification
     /// Provides context for understanding the endpoint's purpose
     /// </summary>
@@ -271,7 +277,7 @@ public class EndpointTestResult
     /// </summary>
     [JsonProperty("status")]
     public string Status { get; set; } = "NotTested";
-    
+
     /// <summary>
     /// Collection of HTTP test results for this endpoint, including request/response details
     /// May contain multiple results if the endpoint was tested with different parameters or conditions
@@ -286,7 +292,6 @@ public class EndpointTestResult
     /// </summary>
     [JsonProperty("validationErrors")]
     public List<ValidationError> ValidationErrors { get; set; } = new();
-
 }
 
 /// <summary>

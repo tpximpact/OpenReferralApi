@@ -1,3 +1,4 @@
+using System.Net;
 using OpenReferralApi.Core.Models;
 
 namespace OpenReferralApi.Core.Services;
@@ -25,7 +26,7 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
         // Map endpoint tests to test groups
         if (openApiResult.EndpointTests != null && openApiResult.EndpointTests.Any())
         {
-            testSuites.Add(MapEndpointTests(openApiResult.EndpointTests));
+            testSuites.Add(MapEndpointTests(openApiResult.EndpointTests, openApiResult.Metadata.BaseUrl));
         }
 
         // Determine overall validity
@@ -105,12 +106,12 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
         };
     }
 
-    private object MapEndpointTests(List<EndpointTestResult> endpointTests)
+    private object MapEndpointTests(List<EndpointTestResult> endpointTests, string baseUrl)
     {
         var tests = endpointTests.Select(endpoint => new
         {
-            name = $"{endpoint.Method} {endpoint.Path}",
-            endpoint = endpoint.Path,
+            name = endpoint.Name ?? $"{endpoint.Method} {endpoint.Path}",
+            endpoint = $"{baseUrl}{endpoint.Path}",
             description = endpoint.Summary ?? endpoint.OperationId ?? "Endpoint test",
             success = endpoint.Status == "Success" || endpoint.Status == "Warning",
             messages = MapEndpointMessages(endpoint)
