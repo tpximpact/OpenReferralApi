@@ -1461,7 +1461,8 @@ public class OpenApiValidationService : IOpenApiValidationService
                 OperationId = operation["operationId"]?.ToString(),
                 Summary = operation["summary"]?.ToString(),
                 Status = "NotTested",
-                IsTested = true
+                IsTested = true,
+                IsOptional = operation.IsOptionalEndpoint()
             };
 
             // Test each ID
@@ -1523,6 +1524,7 @@ public class OpenApiValidationService : IOpenApiValidationService
                 Summary = operation["summary"]?.ToString(),
                 Status = "NotTested",
                 IsTested = false,
+                IsOptional = operation.IsOptionalEndpoint(),
                 ValidationErrors = new List<ValidationError>
                 {
                     new ValidationError
