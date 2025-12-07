@@ -282,13 +282,6 @@ public class EndpointTestResult
     public string Status { get; set; } = "NotTested";
 
     /// <summary>
-    /// Results of security-specific tests performed on this endpoint
-    /// Includes authentication tests, authorization checks, and security vulnerability assessments
-    /// </summary>
-    [JsonProperty("securityTests")]
-    public List<SecurityTestResult> SecurityTests { get; set; } = new();
-
-    /// <summary>
     /// Detailed schema validation results for request and response bodies
     /// Provides granular information about data structure compliance and validation failures
     /// </summary>

@@ -170,6 +170,7 @@
         },
         "/taxonomies": {
             "get": {
+                "tags": ["Optional"],
                 "description": "Paginated listing of taxonomies.",
                 "summary": "Paginated listing of taxonomies.",
                 "operationId": "getPaginatedListOfTaxonomies",
@@ -226,6 +227,7 @@
                 }
             ],
             "get": {
+                "tags": ["Optional"],
                 "description": "Full information on a taxonomy term.",
                 "summary": "Full information on a taxonomy term.",
                 "operationId": "getPaginatedListOfTaxonomyTerms",
@@ -245,6 +247,7 @@
         },
         "/taxonomy_terms": {
             "get": {
+                "tags": ["Optional"],
                 "description": "Full information on a taxonomy term",
                 "summary": "Paginated listing of taxonomy terms",
                 "operationId": "getTaxonomyTermById",
@@ -322,6 +325,7 @@
                 }
             ],
             "get": {
+                "tags": ["Optional"],
                 "description": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
                 "summary": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
                 "operationId": "getOrganizationById",
@@ -346,6 +350,7 @@
         },
         "/organizations": {
             "get": {
+                "tags": ["Optional"],
                 "description": "Paginated list of basic Organization information.",
                 "summary": "Paginated list of basic Organization information",
                 "operationId": "getPaginatedListOfOrganizations",
@@ -409,6 +414,7 @@
                 }
             ],
             "get": {
+                "tags": ["Optional"],
                 "description": "Retrieve fully nested service_at_location with all related data with specified id.",
                 "summary": "Retrieve fully nested service_at_location with all related data with specified id.",
                 "operationId": "getServiceAtLocationWithNestedDataById",
@@ -428,6 +434,7 @@
         },
         "/service_at_locations": {
             "get": {
+                "tags": ["Optional"],
                 "description": "Retrieve paginated listings of service_at_location that only have one-to-one fields in them.",
                 "summary": "Retrieve paginated listings of service_at_location that only have one-to-one fields in them.",
                 "operationId": "getPaginatedListOfServiceAtLocation",

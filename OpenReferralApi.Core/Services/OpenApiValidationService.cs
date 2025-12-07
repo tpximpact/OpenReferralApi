@@ -130,19 +130,18 @@ public class OpenApiValidationService : IOpenApiValidationService
     {
         var validation = new OpenApiSpecificationValidation();
         var errors = new List<ValidationError>();
-        var warnings = new List<ValidationError>();
 
         try
         {
             _logger.LogInformation("Validating OpenAPI specification");
 
             // We already have a JObject, so we can use it directly
-            await ValidateOpenApiSpecObjectAsync(openApiSpec, validation, errors, warnings, null, cancellationToken);
+            await ValidateOpenApiSpecObjectAsync(openApiSpec, validation, errors, null, cancellationToken);
 
             // Add detailed analysis
             validation.SchemaAnalysis = AnalyzeSchemaStructure(openApiSpec);
             validation.QualityMetrics = AnalyzeQualityMetrics(openApiSpec);
-            validation.Recommendations = GenerateRecommendations(openApiSpec, errors, warnings);
+            validation.Recommendations = GenerateRecommendations(openApiSpec, errors);
 
             return validation;
         }
@@ -159,7 +158,6 @@ public class OpenApiValidationService : IOpenApiValidationService
 
             validation.IsValid = false;
             validation.Errors = errors;
-            validation.Errors.AddRange(warnings); // Warnings are now ValidationError with Severity="Warning"
             return validation;
         }
     }
@@ -171,7 +169,6 @@ public class OpenApiValidationService : IOpenApiValidationService
         JObject specObject,
         OpenApiSpecificationValidation validation,
         List<ValidationError> errors,
-        List<ValidationError> warnings,
         JSchema? originalSchema = null,
         CancellationToken cancellationToken = default)
     {
@@ -216,7 +213,7 @@ public class OpenApiValidationService : IOpenApiValidationService
 
             if (string.IsNullOrEmpty(validation.Title))
             {
-                warnings.Add(new ValidationError
+                errors.Add(new ValidationError
                 {
                     Path = "info.title",
                     Message = "API title is recommended",
@@ -227,7 +224,7 @@ public class OpenApiValidationService : IOpenApiValidationService
 
             if (string.IsNullOrEmpty(validation.Version))
             {
-                warnings.Add(new ValidationError
+                errors.Add(new ValidationError
                 {
                     Path = "info.version",
                     Message = "API version is recommended",
@@ -257,7 +254,7 @@ public class OpenApiValidationService : IOpenApiValidationService
 
                 if (validation.EndpointCount == 0)
                 {
-                    warnings.Add(new ValidationError
+                    errors.Add(new ValidationError
                     {
                         Path = "paths",
                         Message = "No endpoints defined in paths section",
@@ -290,15 +287,6 @@ public class OpenApiValidationService : IOpenApiValidationService
                     }
                 }
 
-                // Add warnings from schema validation
-                if (schemaValidation.Warnings != null)
-                {
-                    foreach (var warning in schemaValidation.Warnings)
-                    {
-                        warnings.Add(warning);
-                    }
-                }
-
                 // Log which schema was used for validation
                 var dialectInfo = specObject.ContainsKey("jsonSchemaDialect")
                     ? $"using jsonSchemaDialect: {specObject["jsonSchemaDialect"]}"
@@ -311,7 +299,7 @@ public class OpenApiValidationService : IOpenApiValidationService
                     ? $"jsonSchemaDialect '{specObject["jsonSchemaDialect"]}' is not supported"
                     : $"version '{validation.OpenApiVersion}' is not supported";
 
-                warnings.Add(new ValidationError
+                errors.Add(new ValidationError
                 {
                     Path = "",
                     Message = $"No schema validation available: {dialectInfo}. Supported versions: OpenAPI 3.0.x, 3.1.x, Swagger 2.0, and common JSON Schema dialects (2020-12, 2019-09, draft-07, draft-06, draft-04)",
@@ -323,7 +311,7 @@ public class OpenApiValidationService : IOpenApiValidationService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Could not validate against OpenAPI schema");
-            warnings.Add(new ValidationError
+            errors.Add(new ValidationError
             {
                 Path = "",
                 Message = $"Could not validate against OpenAPI schema: {ex.Message}",
@@ -334,8 +322,7 @@ public class OpenApiValidationService : IOpenApiValidationService
 
         validation.IsValid = !errors.Any();
         validation.Errors = errors;
-        validation.Errors.AddRange(warnings); // Warnings are now ValidationError with Severity="Warning"
-
+    
         _logger.LogInformation("OpenAPI specification validation completed. IsValid: {IsValid}, Errors: {ErrorCount}",
             validation.IsValid, validation.Errors.Count);
     }
@@ -1166,7 +1153,7 @@ public class OpenApiValidationService : IOpenApiValidationService
     /// <summary>
     /// Generates recommendations based on analysis results
     /// </summary>
-    private List<OpenApiRecommendation> GenerateRecommendations(JObject specObject, List<ValidationError> errors, List<ValidationError> warnings)
+    private List<OpenApiRecommendation> GenerateRecommendations(JObject specObject, List<ValidationError> errors)
     {
         var recommendations = new List<OpenApiRecommendation>();
 
@@ -1188,15 +1175,15 @@ public class OpenApiValidationService : IOpenApiValidationService
             }
 
             // Convert warnings to recommendations
-            foreach (var warning in warnings.Where(w => w.Severity == "Warning"))
+            foreach (var error in errors.Where(e => e.Severity == "Warning"))
             {
                 recommendations.Add(new OpenApiRecommendation
                 {
                     Type = "Warning",
                     Category = "Best Practice",
                     Priority = "Medium",
-                    Message = warning.Message,
-                    Path = warning.Path,
+                    Message = error.Message,
+                    Path = error.Path,
                     ActionRequired = "Consider addressing this warning to improve spec quality",
                     Impact = "May affect usability or developer experience"
                 });
@@ -1489,7 +1476,6 @@ public class OpenApiValidationService : IOpenApiValidationService
                 // Aggregate the results
                 compositeResult.TestResults.AddRange(singleResult.TestResults);
                 compositeResult.ValidationErrors.AddRange(singleResult.ValidationErrors);
-                compositeResult.SecurityTests.AddRange(singleResult.SecurityTests);
                 compositeResult.SchemaValidationDetails.AddRange(singleResult.SchemaValidationDetails);
 
                 if (singleResult.Status == "Failed" || singleResult.Status == "Error")

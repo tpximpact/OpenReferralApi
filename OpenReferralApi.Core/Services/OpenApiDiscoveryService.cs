@@ -25,12 +25,12 @@ public class OpenApiDiscoveryService : IOpenApiDiscoveryService
 
     public async Task<string?> DiscoverOpenApiUrlAsync(string baseUrl, CancellationToken cancellationToken = default)
     {
-        const string baseSpecificationUrl = "https://raw.githubusercontent.com/tpximpact/mhclg-oruk/refs/heads/main/src/specifications/";
+        const string baseSpecificationUrl = "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/validate_using_openapi/OpenReferralApi/Schemas/";
 
         if (string.IsNullOrWhiteSpace(baseUrl)) return null;
 
         const float defaultSpecificationVersion = 1.0f;
-        var defaultSpec = $"{baseSpecificationUrl}{defaultSpecificationVersion:0.0}/openapi.json";
+        var defaultSpec = $"{baseSpecificationUrl}V{defaultSpecificationVersion:0.0}-UK/open_api.json";
         try
         {
             using var httpClient = _httpClientFactory?.CreateClient("OpenApiValidationService") ?? new HttpClient();

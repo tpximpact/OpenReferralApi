@@ -22,12 +22,6 @@ public abstract class ValidationResultBase
     [JsonProperty("errors")]
     public List<ValidationError> Errors { get; set; } = new();
 
-    /// <summary>
-    /// Gets warnings from the Errors collection (errors with Severity="Warning")
-    /// This is a computed property for backward compatibility
-    /// </summary>
-    [JsonProperty("warnings")]
-    public List<ValidationError> Warnings => Errors.Where(e => e.Severity == "Warning").ToList();
 }
 
 public class ValidationResult : ValidationResultBase

@@ -39,7 +39,7 @@
     },
     "/taxonomies/{id}": {
       "get": {
-        "tags": ["Taxonomies"],
+        "tags": ["Taxonomies", "Optional"],
         "summary": "Get a single taxonomy",
         "operationId": "getTaxonomy",
         "parameters": [
@@ -68,7 +68,7 @@
     },
     "/reviews/{id}": {
       "get": {
-        "tags": ["Reviews"],
+        "tags": ["Reviews", "Optional"],
         "summary": "Get a single review",
         "operationId": "getReview",
         "parameters": [
@@ -99,7 +99,7 @@
     },
     "/organizations/{id}": {
       "get": {
-        "tags": ["Organizations"],
+        "tags": ["Organizations", "Optional"],
         "summary": "Get a single organization",
         "operationId": "getOrganization",
         "parameters": [
@@ -130,7 +130,7 @@
     },
     "/locations/{id}": {
       "get": {
-        "tags": ["Locations"],
+        "tags": ["Locations", "Optional"],
         "summary": "Get a single location",
         "operationId": "getLocation",
         "parameters": [
@@ -161,7 +161,7 @@
     },
     "/taxonomies": {
       "get": {
-        "tags": ["Taxonomies"],
+        "tags": ["Taxonomies", "Optional"],
         "summary": "Get all taxonomies",
         "operationId": "getTaxonomies",
         "parameters": [
@@ -430,7 +430,7 @@
     },
     "/reviews": {
       "get": {
-        "tags": ["Reviews"],
+        "tags": ["Reviews", "Optional"],
         "summary": "Get all reviews",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getReviews",
@@ -466,7 +466,7 @@
     },
     "/organizations": {
       "get": {
-        "tags": ["Organizations"],
+        "tags": ["Organizations", "Optional"],
         "summary": "Get all organizations",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getOrganizations",
@@ -516,7 +516,7 @@
     },
     "/locations": {
       "get": {
-        "tags": ["Locations"],
+        "tags": ["Locations", "Optional"],
         "summary": "Get all locations",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getLocations",
@@ -552,7 +552,7 @@
     },
     "/vocabularies": {
       "get": {
-        "tags": ["Vocabularies"],
+        "tags": ["Vocabularies", "Optional"],
         "summary": "Get all vocabularies",
         "operationId": "getVocabularies",
         "responses": {

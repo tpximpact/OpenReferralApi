@@ -60,3 +60,5 @@ OpenReferralApi.sln.DotSettings.user
 appsettings.Development.json
 appsettings.Local.json
 appsettings.Testing.json
+
+results.json
