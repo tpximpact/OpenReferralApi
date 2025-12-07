@@ -66,7 +66,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/compiled/service.json"
+                                    "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/service.json"
                                 }
                             }
                         }
@@ -124,7 +124,7 @@
                                         "contents": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/compiled/service_list.json"
+                                                "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/service_list.json"
                                             }
                                         }
                                     },
@@ -154,7 +154,9 @@
                 }
             ],
             "get": {
-                "tags": ["Optional"],
+                "tags": [
+                    "Optional"
+                ],
                 "name": "Taxonomy by id - API & schema validation",
                 "description": "Full information on taxonomy.",
                 "summary": "Retrieves full information on a taxonomy by {id}.",
@@ -165,7 +167,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/taxonomy.json"
+                                    "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/taxonomy.json"
                                 }
                             }
                         }
@@ -175,7 +177,9 @@
         },
         "/taxonomies": {
             "get": {
-                "tags": ["Optional"],
+                "tags": [
+                    "Optional"
+                ],
                 "name": "Taxonomies list - API & schema validation",
                 "description": "Paginated listing of taxonomies.",
                 "summary": "Does the taxonomies list endpoint return a paginated list of taxonomies in the correct schema",
@@ -204,7 +208,7 @@
                                         "contents": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/taxonomy.json"
+                                                "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/taxonomy_list.json"
                                             }
                                         }
                                     },
@@ -234,7 +238,9 @@
                 }
             ],
             "get": {
-                "tags": ["Optional"],
+                "tags": [
+                    "Optional"
+                ],
                 "name": "Taxonomy term by id - API & schema validation",
                 "description": "Full information on a taxonomy term.",
                 "summary": "Full information on a taxonomy term.",
@@ -245,7 +251,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/taxonomy_term.json"
+                                    "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/taxonomy_term.json"
                                 }
                             }
                         }
@@ -255,7 +261,9 @@
         },
         "/taxonomy_terms": {
             "get": {
-                "tags": ["Optional"],
+                "tags": [
+                    "Optional"
+                ],
                 "name": "Taxonomy terms list - API & schema validation",
                 "description": "Paginated listing of taxonomy terms",
                 "summary": "Does the taxonomy terms list endpoint return a paginated list of taxonomy terms in the correct schema",
@@ -301,212 +309,184 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "contents": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/taxonomy_term.json"
-                                            }
-                                        }
-                                    },
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/Page"
-                                        }
-                                    ]
+                                    "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/taxonomy_term_list.json"
                                 }
                             }
                         }
                     }
                 }
             }
-        },
-        "/organizations/{id}": {
+        }
+    },
+    "/organizations/{id}": {
+        "parameters": [
+            {
+                "in": "path",
+                "name": "id",
+                "required": true,
+                "description": "The id of the organization that the request is intended to retrieve.",
+                "schema": {
+                    "type": "string"
+                }
+            }
+        ],
+        "get": {
+            "tags": [
+                "Optional"
+            ],
+            "name": "Organization by id - API & schema validation",
+            "description": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
+            "summary": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
+            "operationId": "getOrganizationById",
             "parameters": [
                 {
-                    "in": "path",
-                    "name": "id",
-                    "required": true,
-                    "description": "The id of the organization that the request is intended to retrieve.",
-                    "schema": {
-                        "type": "string"
-                    }
+                    "$ref": "#/components/parameters/full_service"
                 }
             ],
-            "get": {
-                "tags": ["Optional"],
-                "name": "Organization by id - API & schema validation",
-                "description": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
-                "summary": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
-                "operationId": "getOrganizationById",
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/full_service"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/compiled/organization.json"
-                                }
+            "responses": {
+                "200": {
+                    "description": "Fully nested organization with service array that contains simple information which could only contain the service.id.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/organization.json"
                             }
                         }
                     }
                 }
             }
-        },
-        "/organizations": {
-            "get": {
-                "tags": ["Optional"],
-                "name": "Organizations list - API & schema validation",
-                "description": "Paginated list of basic Organization information.",
-                "summary": "Paginated list of basic Organization information",
-                "operationId": "getPaginatedListOfOrganizations",
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/search"
-                    },
-                    {
-                        "$ref": "#/components/parameters/full_service"
-                    },
-                    {
-                        "description": "Contains full nested organization information",
-                        "$ref": "#/components/parameters/full"
-                    },
-                    {
-                        "$ref": "#/components/parameters/page"
-                    },
-                    {
-                        "$ref": "#/components/parameters/per_page"
-                    },
-                    {
-                        "$ref": "#/components/parameters/format"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Paginated list of basic Organization information.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "contents": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/compiled/organization_list.json"
-                                            }
-                                        }
-                                    },
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/Page"
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/service_at_locations/{id}": {
+        }
+    },
+    "/organizations": {
+        "get": {
+            "tags": [
+                "Optional"
+            ],
+            "name": "Organizations list - API & schema validation",
+            "description": "Paginated list of basic Organization information.",
+            "summary": "Paginated list of basic Organization information",
+            "operationId": "getPaginatedListOfOrganizations",
             "parameters": [
                 {
-                    "in": "path",
-                    "name": "id",
-                    "required": true,
-                    "description": "The id of the service that the request is intended to retrieve.",
-                    "schema": {
-                        "type": "string"
-                    }
+                    "$ref": "#/components/parameters/search"
+                },
+                {
+                    "$ref": "#/components/parameters/full_service"
+                },
+                {
+                    "description": "Contains full nested organization information",
+                    "$ref": "#/components/parameters/full"
+                },
+                {
+                    "$ref": "#/components/parameters/page"
+                },
+                {
+                    "$ref": "#/components/parameters/per_page"
+                },
+                {
+                    "$ref": "#/components/parameters/format"
                 }
             ],
-            "get": {
-                "tags": ["Optional"],
-                "name": "Service at location by id - API & schema validation",
-                "description": "Retrieve fully nested service_at_location with all related data with specified id.",
-                "summary": "Does the service at location by id endpoint return a fully nested service at location in the correct schema",
-                "operationId": "getServiceAtLocationWithNestedDataById",
-                "responses": {
-                    "200": {
-                        "description": "Retrieve fully nested service_at_location with all related data with specified id.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/compiled/service.json"
-                                }
+            "responses": {
+                "200": {
+                    "description": "Paginated list of basic Organization information.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/organization_list.json"
                             }
                         }
                     }
                 }
             }
-        },
-        "/service_at_locations": {
-            "get": {
-                "tags": ["Optional"],
-                "name": "Service at locations list - API & schema validation",
-                "description": "Retrieve paginated listings of service_at_location that only have one-to-one fields in them.",
-                "summary": "Does the service at locations list endpoint return a paginated list of service at locations in the correct schema",
-                "operationId": "getPaginatedListOfServiceAtLocation",
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/search"
-                    },
-                    {
-                        "$ref": "#/components/parameters/taxonomy_term_id"
-                    },
-                    {
-                        "$ref": "#/components/parameters/taxonomy_id"
-                    },
-                    {
-                        "$ref": "#/components/parameters/organization_id"
-                    },
-                    {
-                        "$ref": "#/components/parameters/modified_after"
-                    },
-                    {
-                        "description": "true, false return fully nested service_at_location.",
-                        "$ref": "#/components/parameters/full"
-                    },
-                    {
-                        "$ref": "#/components/parameters/page"
-                    },
-                    {
-                        "$ref": "#/components/parameters/per_page"
-                    },
-                    {
-                        "$ref": "#/components/parameters/format"
-                    },
-                    {
-                        "$ref": "#/components/parameters/postcode"
-                    },
-                    {
-                        "$ref": "#/components/parameters/proximity"
+        }
+    },
+    "/service_at_locations/{id}": {
+        "parameters": [
+            {
+                "in": "path",
+                "name": "id",
+                "required": true,
+                "description": "The id of the service that the request is intended to retrieve.",
+                "schema": {
+                    "type": "string"
+                }
+            }
+        ],
+        "get": {
+            "tags": [
+                "Optional"
+            ],
+            "name": "Service at location by id - API & schema validation",
+            "description": "Retrieve fully nested service_at_location with all related data with specified id.",
+            "summary": "Does the service at location by id endpoint return a fully nested service at location in the correct schema",
+            "operationId": "getServiceAtLocationWithNestedDataById",
+            "responses": {
+                "200": {
+                    "description": "Retrieve fully nested service_at_location with all related data with specified id.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/service_at_location.json"
+                            }
+                        }
                     }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Retrieve paginated listings of service_at_location that only have one-to-one fields in them.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "contents": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "https://raw.githubusercontent.com/openreferral/specification/3.0/schema/compiled/service_at_location_list.json"
-                                            }
-                                        }
-                                    },
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/Page"
-                                        }
-                                    ]
-                                }
+                }
+            }
+        }
+    },
+    "/service_at_locations": {
+        "get": {
+            "tags": [
+                "Optional"
+            ],
+            "name": "Service at locations list - API & schema validation",
+            "description": "Retrieve paginated listings of service_at_location that only have one-to-one fields in them.",
+            "summary": "Does the service at locations list endpoint return a paginated list of service at locations in the correct schema",
+            "operationId": "getPaginatedListOfServiceAtLocation",
+            "parameters": [
+                {
+                    "$ref": "#/components/parameters/search"
+                },
+                {
+                    "$ref": "#/components/parameters/taxonomy_term_id"
+                },
+                {
+                    "$ref": "#/components/parameters/taxonomy_id"
+                },
+                {
+                    "$ref": "#/components/parameters/organization_id"
+                },
+                {
+                    "$ref": "#/components/parameters/modified_after"
+                },
+                {
+                    "description": "true, false return fully nested service_at_location.",
+                    "$ref": "#/components/parameters/full"
+                },
+                {
+                    "$ref": "#/components/parameters/page"
+                },
+                {
+                    "$ref": "#/components/parameters/per_page"
+                },
+                {
+                    "$ref": "#/components/parameters/format"
+                },
+                {
+                    "$ref": "#/components/parameters/postcode"
+                },
+                {
+                    "$ref": "#/components/parameters/proximity"
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Retrieve paginated listings of service_at_location that only have one-to-one fields in them.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/main/OpenReferralApi/Schemas/V3.0-UK/service_at_location_list.json"
                             }
                         }
                     }

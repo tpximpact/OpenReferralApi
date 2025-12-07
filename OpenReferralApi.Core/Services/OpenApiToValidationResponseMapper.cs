@@ -113,7 +113,7 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
             name = endpoint.Name ?? $"{endpoint.Method} {endpoint.Path}",
             endpoint = $"{baseUrl}{endpoint.Path}",
             description = endpoint.Summary ?? endpoint.OperationId ?? "Endpoint test",
-            success = endpoint.Status == "Success" || endpoint.Status == "Warning",
+            success = endpoint.TestResults.All(tr => tr.ValidationResult != null && tr.ValidationResult.IsValid),
             messages = MapEndpointMessages(endpoint)
         }).ToList();
 
