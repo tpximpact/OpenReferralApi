@@ -32,16 +32,16 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
             if (requiredEndpoints.Any())
             {
                 testSuites.Add(MapEndpointTests(requiredEndpoints, openApiResult.Metadata.BaseUrl, 
-                    "Required Endpoint Testing", 
-                    "Tests all required API endpoints for availability and schema compliance", 
+                    "Level 1 Compliance - Basic checks", 
+                    "Will validate the required basic endpoints. Validation will fail if it does not pass all these checks.", 
                     true));
             }
 
             if (optionalEndpoints.Any())
             {
                 testSuites.Add(MapEndpointTests(optionalEndpoints, openApiResult.Metadata.BaseUrl, 
-                    "Optional Endpoint Testing", 
-                    "Tests optional API endpoints for availability and schema compliance", 
+                    "Level 2 Compliance - Extended checks", 
+                    "Will validate all other endpoints. Validation will not fail if it does not pass all these checks.", 
                     false));
             }
         }
@@ -116,7 +116,7 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
         {
             name = "OpenAPI Specification Validation",
             description = "Validates the structure, quality, and compliance of the OpenAPI specification",
-            messageLevel = "ERROR",
+            messageLevel = "error",
             required = true,
             success = specValidation.IsValid,
             tests = tests
@@ -139,7 +139,7 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
         {
             name = name,
             description = description,
-            messageLevel = required ? "ERROR" : "WARNING",
+            messageLevel = required ? "error" : "warning",
             required = required,
             success = endpointTests.All(e => e.Status == "Success" || e.Status == "Warning"),
             tests = tests
