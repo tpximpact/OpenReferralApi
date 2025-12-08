@@ -31,7 +31,7 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
 
             if (requiredEndpoints.Any())
             {
-                testSuites.Add(MapEndpointTests(requiredEndpoints, openApiResult.Metadata.BaseUrl, 
+                testSuites.Add(MapEndpointTests(requiredEndpoints, openApiResult?.Metadata?.BaseUrl ?? "", 
                     "Level 1 Compliance - Basic checks", 
                     "Will validate the required basic endpoints. Validation will fail if it does not pass all these checks.", 
                     true));
@@ -39,7 +39,7 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
 
             if (optionalEndpoints.Any())
             {
-                testSuites.Add(MapEndpointTests(optionalEndpoints, openApiResult.Metadata.BaseUrl, 
+                testSuites.Add(MapEndpointTests(optionalEndpoints, openApiResult?.Metadata?.BaseUrl ?? "", 
                     "Level 2 Compliance - Extended checks", 
                     "Will validate all other endpoints. Validation will not fail if it does not pass all these checks.", 
                     false));
@@ -47,17 +47,17 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
         }
 
         // Determine overall validity
-        bool isValid = openApiResult.IsValid && 
-                       openApiResult.Summary.FailedTests == 0 && 
-                       (openApiResult.SpecificationValidation?.IsValid ?? true);
+        bool isValid = openApiResult?.IsValid ?? false && 
+                       openApiResult?.Summary?.FailedTests == 0 && 
+                       (openApiResult?.SpecificationValidation?.IsValid ?? true);
 
         return new
         {
             service = new
             {
-                url = openApiResult.Metadata?.BaseUrl ?? "",
+                url = openApiResult?.Metadata?.BaseUrl ?? "",
                 isValid = isValid,
-                profile = $"HSDS-UK-{openApiResult.SpecificationValidation?.OpenApiVersion ?? "Unknown"}",
+                profile = $"HSDS-UK-{openApiResult?.SpecificationValidation?.OpenApiVersion ?? "Unknown"}",
                 profileReason = "Standard version HSDS-UK-3.0 read from '/' endpoint"
             },
             testSuites = testSuites
