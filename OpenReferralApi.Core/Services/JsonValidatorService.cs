@@ -61,7 +61,8 @@ public class JsonValidatorService : IJsonValidatorService
                 var schema = await schemaTask;
 
                 // Validate the JSON data
-                var jsonDataString = JsonConvert.SerializeObject(jsonData);
+                // Format with indentation so validation error line numbers are accurate
+                var jsonDataString = JsonConvert.SerializeObject(jsonData, Formatting.Indented);
                 var validationErrors = await ValidateJsonAgainstSchemaAsync(jsonDataString, schema, request.Options);
 
                 // Build result
