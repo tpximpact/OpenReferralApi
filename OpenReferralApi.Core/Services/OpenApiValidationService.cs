@@ -322,7 +322,7 @@ public class OpenApiValidationService : IOpenApiValidationService
 
         validation.IsValid = !errors.Any();
         validation.Errors = errors;
-    
+
         _logger.LogInformation("OpenAPI specification validation completed. IsValid: {IsValid}, Errors: {ErrorCount}",
             validation.IsValid, validation.Errors.Count);
     }
@@ -487,7 +487,19 @@ public class OpenApiValidationService : IOpenApiValidationService
                 if (isOptionalEndpoint)
                 {
                     // For optional endpoints, add validation warning instead of error
-                    result.ValidationErrors.Add(new ValidationError
+                    // For optional endpoints, add validation warning to the test result
+                    if (testResult.ValidationResult == null)
+                    {
+                        testResult.ValidationResult = new ValidationResult
+                        {
+                            IsValid = false,
+                            Errors = new List<ValidationError>(),
+                            SchemaVersion = string.Empty,
+                            Duration = TimeSpan.Zero
+                        };
+                    }
+
+                    testResult.ValidationResult.Errors.Add(new ValidationError
                     {
                         Path = path,
                         Message = $"Optional endpoint {method} {path} returned non-success status {statusCode}. This may indicate the endpoint is not implemented, which is acceptable for optional endpoints.",
@@ -499,7 +511,19 @@ public class OpenApiValidationService : IOpenApiValidationService
                 else
                 {
                     // For required endpoints, add validation error
-                    result.ValidationErrors.Add(new ValidationError
+                    // For required endpoints, add validation error to the test result
+                    if (testResult.ValidationResult == null)
+                    {
+                        testResult.ValidationResult = new ValidationResult
+                        {
+                            IsValid = false,
+                            Errors = new List<ValidationError>(),
+                            SchemaVersion = string.Empty,
+                            Duration = TimeSpan.Zero
+                        };
+                    }
+
+                    testResult.ValidationResult.Errors.Add(new ValidationError
                     {
                         Path = path,
                         Message = $"Required endpoint {method} {path} returned non-success status {statusCode}. Expected 2xx status code.",
@@ -1436,8 +1460,8 @@ public class OpenApiValidationService : IOpenApiValidationService
 
             // Test up to 10 random IDs from the available IDs
             var random = new Random();
-            var idsToTest = availableIds.Count <= 10 
-                ? availableIds.ToList() 
+            var idsToTest = availableIds.Count <= 10
+                ? availableIds.ToList()
                 : availableIds.OrderBy(_ => random.Next()).Take(10).ToList();
 
             _logger.LogInformation("🎯 Testing {Count} random IDs for endpoint {Path}", idsToTest.Count, path);
@@ -1463,7 +1487,7 @@ public class OpenApiValidationService : IOpenApiValidationService
                 _logger.LogInformation("Testing with ID '{Id}': {OriginalPath} → {SubstitutedPath}", id, path, substitutedPath);
 
                 var singleResult = await TestSingleEndpointAsync(substitutedPath, method, operation, baseUrl, options, semaphore, openApiDocument, documentUri, pathItem, cancellationToken);
-                
+
                 // Aggregate the results
                 compositeResult.TestResults.AddRange(singleResult.TestResults);
                 //compositeResult.ValidationErrors.AddRange(singleResult.ValidationErrors);
@@ -1482,7 +1506,7 @@ public class OpenApiValidationService : IOpenApiValidationService
                 {
                     compositeResult.Status = "Success";
                 }
-                else if (compositeResult.ValidationErrors.Any(e => e.Severity == "Warning") && !compositeResult.ValidationErrors.Any(e => e.Severity == "Error"))
+                else if (compositeResult.TestResults.Any(tr => tr.ValidationResult != null && tr.ValidationResult.Errors.Any(e => e.Severity == "Warning")) && !compositeResult.TestResults.Any(tr => tr.ValidationResult != null && tr.ValidationResult.Errors.Any(e => e.Severity == "Error")))
                 {
                     compositeResult.Status = "Warning";
                 }
@@ -1516,14 +1540,25 @@ public class OpenApiValidationService : IOpenApiValidationService
                 IsOptional = operation.IsOptionalEndpoint(),
                 Status = "NotTested",
                 IsTested = false,
-                ValidationErrors = new List<ValidationError>
-                {
-                    new ValidationError
-                    {
-                        Path = path,
-                        Message = $"No IDs were extracted from parent endpoint for root path '{rootPath}'. Unable to test parameterized endpoint without valid IDs.",
-                        ErrorCode = "NO_IDS_AVAILABLE",
-                        Severity = "Warning"
+                TestResults = new List<HttpTestResult>(){
+                    new() {
+                        IsSuccess = false,
+                        RequestUrl = $"{baseUrl}{path}",
+                        ErrorMessage = "No extracted IDs available for parameter substitution. Endpoint was not tested.",
+                        ValidationResult= new ValidationResult
+                        {
+                            IsValid = false,
+                            Errors = new List<ValidationError>
+                            {
+                                new ValidationError
+                                {
+                                    Path = path,
+                                    Message = "No extracted IDs available for parameter substitution. Endpoint was not tested.",
+                                    ErrorCode = "NO_IDS_AVAILABLE",
+                                    Severity = "Warning"
+                                }
+                            }
+                        }
                     }
                 }
             };

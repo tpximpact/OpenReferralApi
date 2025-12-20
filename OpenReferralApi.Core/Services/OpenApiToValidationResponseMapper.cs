@@ -150,32 +150,6 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
     {
         var messages = new List<object>();
 
-        // Add validation errors
-        foreach (var error in endpoint.ValidationErrors)
-        {
-            messages.Add(new
-            {
-                name = error.ErrorCode,
-                description = error.Severity,
-                message = error.Message,
-                errorIn = error.Path,
-                errorAt = ""
-            });
-        }
-
-        // Add HTTP test failures
-        foreach (var testResult in endpoint.TestResults.Where(tr => !tr.IsSuccess))
-        {
-            messages.Add(new
-            {
-                name = "HTTP Request Failed",
-                description = "Error",
-                message = testResult.ErrorMessage ?? $"Request returned status {testResult.ResponseStatusCode}",
-                errorIn = testResult.RequestUrl,
-                errorAt = ""
-            });
-        }
-
         // Add schema validation issues from test results
         foreach (var testResult in endpoint.TestResults.Where(tr => tr.ValidationResult != null && !tr.ValidationResult.IsValid))
         {

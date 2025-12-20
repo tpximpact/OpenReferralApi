@@ -285,13 +285,6 @@ public class EndpointTestResult
     [JsonProperty("testResults")]
     public List<HttpTestResult> TestResults { get; set; } = new();
 
-    /// <summary>
-    /// Validation errors specific to this endpoint's specification or testing
-    /// Includes schema validation failures, parameter mismatches, and other endpoint-specific issues
-    /// Use the Severity property on ValidationError to distinguish between errors ("Error") and warnings ("Warning")
-    /// </summary>
-    [JsonProperty("validationErrors")]
-    public List<ValidationError> ValidationErrors { get; set; } = new();
 }
 
 /// <summary>
