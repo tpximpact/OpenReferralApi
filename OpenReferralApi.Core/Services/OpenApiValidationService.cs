@@ -471,93 +471,102 @@ public class OpenApiValidationService : IOpenApiValidationService
                 return result;
             }
 
-            var fullUrl = BuildFullUrl(baseUrl, path, operation, options);
-            var testResult = await ExecuteHttpRequestAsync(fullUrl, method, operation, options, cancellationToken);
+            // Check if this endpoint has pagination support
+            bool hasPagination = method == "GET" && HasPageParameter(operation);
 
-            result.TestResults.Add(testResult);
-            result.IsTested = true;
-
-            // Check for non-success status codes and handle based on endpoint requirements
-            if (!testResult.IsSuccess)
+            if (hasPagination)
             {
-                var isOptionalEndpoint = pathItem.IsOptionalEndpoint();
-                var statusCode = testResult.ResponseStatusCode ?? 0;
-                var errorMessage = $"Endpoint returned {statusCode} status code";
-
-                if (isOptionalEndpoint)
-                {
-                    // For optional endpoints, add validation warning instead of error
-                    // For optional endpoints, add validation warning to the test result
-                    if (testResult.ValidationResult == null)
-                    {
-                        testResult.ValidationResult = new ValidationResult
-                        {
-                            IsValid = false,
-                            Errors = new List<ValidationError>(),
-                            SchemaVersion = string.Empty,
-                            Duration = TimeSpan.Zero
-                        };
-                    }
-
-                    testResult.ValidationResult.Errors.Add(new ValidationError
-                    {
-                        Path = path,
-                        Message = $"Optional endpoint {method} {path} returned non-success status {statusCode}. This may indicate the endpoint is not implemented, which is acceptable for optional endpoints.",
-                        ErrorCode = "OPTIONAL_ENDPOINT_NON_SUCCESS",
-                        Severity = "Warning"
-                    });
-                    result.Status = "Warning";
-                }
-                else
-                {
-                    // For required endpoints, add validation error
-                    // For required endpoints, add validation error to the test result
-                    if (testResult.ValidationResult == null)
-                    {
-                        testResult.ValidationResult = new ValidationResult
-                        {
-                            IsValid = false,
-                            Errors = new List<ValidationError>(),
-                            SchemaVersion = string.Empty,
-                            Duration = TimeSpan.Zero
-                        };
-                    }
-
-                    testResult.ValidationResult.Errors.Add(new ValidationError
-                    {
-                        Path = path,
-                        Message = $"Required endpoint {method} {path} returned non-success status {statusCode}. Expected 2xx status code.",
-                        ErrorCode = "REQUIRED_ENDPOINT_FAILED",
-                        Severity = "Error"
-                    });
-                    result.Status = "Failed";
-                }
+                // Test pagination: first page, middle page(s), last page
+                await TestPaginatedEndpointAsync(result, path, method, operation, baseUrl, options, openApiDocument, documentUri, pathItem, cancellationToken);
             }
-
-            // Validate response if schema is defined
-            if (testResult.IsSuccess && testResult.ResponseBody != null)
+            else
             {
-                await ValidateResponseAsync(testResult, operation, openApiDocument, documentUri, cancellationToken);
-            }
+                // Standard single-request testing
+                var fullUrl = BuildFullUrl(baseUrl, path, operation, options);
+                var testResult = await ExecuteHttpRequestAsync(fullUrl, method, operation, options, cancellationToken);
 
-            // Optional endpoint warning logic (only apply if status wasn't already set by non-success handling)
-            if (result.Status == "NotTested" || result.Status == "Success" || result.Status == "Failed")
-            {
-                if (isOptional && options.TestOptionalEndpoints && options.TreatOptionalEndpointsAsWarnings)
+                result.TestResults.Add(testResult);
+                result.IsTested = true;
+
+                // Check for non-success status codes and handle based on endpoint requirements
+                if (!testResult.IsSuccess)
                 {
-                    // If there are validation errors, report as warnings
-                    if (testResult.ValidationResult != null && !testResult.ValidationResult.IsValid)
+                    var isOptionalEndpoint = pathItem.IsOptionalEndpoint();
+                    var statusCode = testResult.ResponseStatusCode ?? 0;
+                    var errorMessage = $"Endpoint returned {statusCode} status code";
+
+                    if (isOptionalEndpoint)
                     {
+                        // For optional endpoints, add validation warning instead of error
+                        if (testResult.ValidationResult == null)
+                        {
+                            testResult.ValidationResult = new ValidationResult
+                            {
+                                IsValid = false,
+                                Errors = new List<ValidationError>(),
+                                SchemaVersion = string.Empty,
+                                Duration = TimeSpan.Zero
+                            };
+                        }
+                        testResult.ValidationResult.Errors.Add(new ValidationError
+                        {
+                            Path = path,
+                            Message = $"Optional endpoint {method} {path} returned non-success status {statusCode}. This may indicate the endpoint is not implemented, which is acceptable for optional endpoints.",
+                            ErrorCode = "OPTIONAL_ENDPOINT_NON_SUCCESS",
+                            Severity = "Warning"
+                        });
                         result.Status = "Warning";
                     }
-                    else if (result.Status != "Warning")
+                    else
                     {
-                        result.Status = testResult.IsSuccess ? "Success" : "Warning";
+                        // For required endpoints, add validation error
+                        if (testResult.ValidationResult == null)
+                        {
+                            testResult.ValidationResult = new ValidationResult
+                            {
+                                IsValid = false,
+                                Errors = new List<ValidationError>(),
+                                SchemaVersion = string.Empty,
+                                Duration = TimeSpan.Zero
+                            };
+                        }
+                        testResult.ValidationResult.Errors.Add(new ValidationError
+                        {
+                            Path = path,
+                            Message = $"Required endpoint {method} {path} returned non-success status {statusCode}. Expected 2xx status code.",
+                            ErrorCode = "REQUIRED_ENDPOINT_FAILED",
+                            Severity = "Error"
+                        });
+                        result.Status = "Failed";
                     }
                 }
-                else if (result.Status != "Warning" && result.Status != "Failed")
+
+                // Validate response if schema is defined
+                if (testResult.IsSuccess && testResult.ResponseBody != null)
                 {
-                    result.Status = testResult.IsSuccess ? "Success" : "Failed";
+                    await ValidateResponseAsync(testResult, operation, openApiDocument, documentUri, cancellationToken);
+                }
+
+
+                // Optional endpoint warning logic (only apply if status wasn't already set by non-success handling)
+                if (result.Status == "NotTested" || result.Status == "Success" || result.Status == "Failed")
+                {
+                    if (isOptional && options.TestOptionalEndpoints && options.TreatOptionalEndpointsAsWarnings)
+                    {
+                        // If there are validation errors, report as warnings
+                        if (testResult.ValidationResult != null && !testResult.ValidationResult.IsValid)
+                        {
+                            result.Status = "Warning";
+                        }
+                        else if (result.Status != "Warning")
+                        {
+                            result.Status = testResult.IsSuccess ? "Success" : "Warning";
+                        }
+                    }
+                    else if (result.Status != "Warning" && result.Status != "Failed")
+                    {
+                        result.Status = testResult.IsSuccess ? "Success" : "Failed";
+                    }
                 }
             }
         }
@@ -582,11 +591,225 @@ public class OpenApiValidationService : IOpenApiValidationService
         return result;
     }
 
-    private string BuildFullUrl(string baseUrl, string path, JObject operation, OpenApiValidationOptions options)
+    /// <summary>
+    /// Tests a paginated endpoint by requesting the first page, last page, and a page in the middle.
+    /// Validates pagination metadata and warns if the feed contains no data.
+    /// </summary>
+    private async Task TestPaginatedEndpointAsync(
+        EndpointTestResult result,
+        string path,
+        string method,
+        JObject operation,
+        string baseUrl,
+        OpenApiValidationOptions options,
+        JObject openApiDocument,
+        string? documentUri,
+        JObject pathItem,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Testing paginated endpoint: {Method} {Path}", method, path);
+
+        result.IsTested = true;
+
+        // Test first page (page=1)
+        _logger.LogDebug("Testing first page for {Path}", path);
+        var firstPageUrl = BuildFullUrl(baseUrl, path, operation, options, pageNumber: 1);
+        var firstPageResult = await ExecuteHttpRequestAsync(firstPageUrl, method, operation, options, cancellationToken);
+        result.TestResults.Add(firstPageResult);
+
+        if (!firstPageResult.IsSuccess)
+        {
+            var isOptionalEndpoint = pathItem.IsOptionalEndpoint();
+            var statusCode = firstPageResult.ResponseStatusCode ?? 0;
+
+            if (isOptionalEndpoint)
+            {
+                firstPageResult.ValidationResult!.Errors.Add(new ValidationError
+                {
+                    Path = path,
+                    Message = $"Optional endpoint {method} {path} returned non-success status {statusCode}. This may indicate the endpoint is not implemented, which is acceptable for optional endpoints.",
+                    ErrorCode = "OPTIONAL_ENDPOINT_NON_SUCCESS",
+                    Severity = "Warning"
+                });
+                result.Status = "Warning";
+            }
+            else
+            {
+                firstPageResult.ValidationResult!.Errors.Add(new ValidationError
+                {
+                    Path = path,
+                    Message = $"Required endpoint {method} {path} returned non-success status {statusCode}. Expected 2xx status code.",
+                    ErrorCode = "REQUIRED_ENDPOINT_FAILED",
+                    Severity = "Error"
+                });
+                result.Status = "Failed";
+            }
+            return;
+        }
+
+        // Validate first page response schema
+        if (firstPageResult.ResponseBody != null)
+        {
+            await ValidateResponseAsync(firstPageResult, operation, openApiDocument, documentUri, cancellationToken);
+        }
+
+        // Try to determine total pages and check for empty feed
+        var paginationInfo = ExtractPaginationInfo(firstPageResult.ResponseBody);
+
+        // Warn if feed returns no rows
+        if (paginationInfo.ItemCount == 0)
+        {
+            firstPageResult.ValidationResult!.Errors.Add(new ValidationError
+            {
+                Path = path,
+                Message = $"Paginated endpoint {method} {path} returned 0 items. Consider verifying if this is expected or if the feed should contain data.",
+                ErrorCode = "EMPTY_FEED_WARNING",
+                Severity = "Warning"
+            });
+            _logger.LogWarning("Paginated endpoint {Path} returned empty feed (0 items)", path);
+            return; // No further pagination testing needed for empty feeds
+        }
+
+        if (paginationInfo.TotalPages.HasValue && paginationInfo.TotalPages.Value > 1)
+        {
+            var totalPages = paginationInfo.TotalPages.Value;
+            _logger.LogInformation("Endpoint {Path} has {TotalPages} pages, testing pagination", path, totalPages);
+
+            // Test middle page if there are more than 2 pages
+            if (totalPages > 2)
+            {
+                var middlePage = totalPages / 2;
+                _logger.LogDebug("Testing middle page {PageNumber} for {Path}", middlePage, path);
+                var middlePageUrl = BuildFullUrl(baseUrl, path, operation, options, pageNumber: middlePage);
+                var middlePageResult = await ExecuteHttpRequestAsync(middlePageUrl, method, operation, options, cancellationToken);
+                result.TestResults.Add(middlePageResult);
+
+                if (middlePageResult.IsSuccess && middlePageResult.ResponseBody != null)
+                {
+                    await ValidateResponseAsync(middlePageResult, operation, openApiDocument, documentUri, cancellationToken);
+                }
+            }
+
+            // Test last page
+            _logger.LogDebug("Testing last page {PageNumber} for {Path}", totalPages, path);
+            var lastPageUrl = BuildFullUrl(baseUrl, path, operation, options, pageNumber: totalPages);
+            var lastPageResult = await ExecuteHttpRequestAsync(lastPageUrl, method, operation, options, cancellationToken);
+            result.TestResults.Add(lastPageResult);
+
+            if (lastPageResult.IsSuccess && lastPageResult.ResponseBody != null)
+            {
+                await ValidateResponseAsync(lastPageResult, operation, openApiDocument, documentUri, cancellationToken);
+            }
+        }
+        else
+        {
+            _logger.LogDebug("Endpoint {Path} has only 1 page or pagination info not available, skipping additional page tests", path);
+        }
+    }
+
+    /// <summary>
+    /// Extracts pagination information from a response body to determine total pages and item count
+    /// </summary>
+    private (int? TotalPages, int ItemCount) ExtractPaginationInfo(string? responseBody)
+    {
+        if (string.IsNullOrEmpty(responseBody))
+        {
+            return (null, 0);
+        }
+
+        try
+        {
+            var json = JToken.Parse(responseBody);
+            int? totalPages = null;
+            int itemCount = 0;
+
+            // Try to find total_pages field (common in paginated APIs)
+            var totalPagesToken = json.SelectToken("$.total_pages") ??
+                                  json.SelectToken("$.totalPages") ??
+                                  json.SelectToken("$.pagination.total_pages") ??
+                                  json.SelectToken("$.pagination.totalPages") ??
+                                  json.SelectToken("$.meta.total_pages") ??
+                                  json.SelectToken("$.meta.totalPages");
+
+            if (totalPagesToken != null && int.TryParse(totalPagesToken.ToString(), out var pages))
+            {
+                totalPages = pages;
+            }
+
+            // Count items in common collection properties
+            if (json is JArray array)
+            {
+                itemCount = array.Count;
+            }
+            else if (json is JObject obj)
+            {
+                // Check common collection property names
+                foreach (var propName in new[] { "data", "items", "results", "content", "contents" })
+                {
+                    if (obj[propName] is JArray items)
+                    {
+                        itemCount = items.Count;
+                        break;
+                    }
+                }
+
+                // Also check for size/count fields
+                if (itemCount == 0)
+                {
+                    var sizeToken = obj["size"] ?? obj["count"] ?? obj["length"];
+                    if (sizeToken != null && int.TryParse(sizeToken.ToString(), out var size))
+                    {
+                        itemCount = size;
+                    }
+                }
+            }
+
+            return (totalPages, itemCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to extract pagination info from response");
+            return (null, 0);
+        }
+    }
+
+    private string BuildFullUrl(string baseUrl, string path, JObject operation, OpenApiValidationOptions options, int? pageNumber = null)
     {
         var url = $"{baseUrl.TrimEnd('/')}{path}";
 
+        // Add page parameter if specified
+        if (pageNumber.HasValue && HasPageParameter(operation))
+        {
+            var separator = url.Contains('?') ? "&" : "?";
+            url += $"{separator}page={pageNumber.Value}";
+        }
+
         return url;
+    }
+
+    /// <summary>
+    /// Checks if an operation defines a 'page' query parameter in its OpenAPI specification
+    /// </summary>
+    private bool HasPageParameter(JObject operation)
+    {
+        if (operation["parameters"] is JArray parameters)
+        {
+            foreach (var param in parameters)
+            {
+                if (param is JObject paramObj)
+                {
+                    var name = paramObj["name"]?.ToString();
+                    var inLocation = paramObj["in"]?.ToString();
+
+                    if (name?.Equals("page", StringComparison.OrdinalIgnoreCase) == true &&
+                        inLocation?.Equals("query", StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private async Task<HttpTestResult> ExecuteHttpRequestAsync(string url, string method, JObject operation, OpenApiValidationOptions options, CancellationToken cancellationToken)
@@ -594,7 +817,8 @@ public class OpenApiValidationService : IOpenApiValidationService
         var testResult = new HttpTestResult
         {
             RequestUrl = url,
-            RequestMethod = method
+            RequestMethod = method,
+            ValidationResult = new ValidationResult()
         };
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
