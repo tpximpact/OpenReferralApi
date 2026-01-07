@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
-using OpenReferralApi.Models;
 using OpenReferralApi.Models.Responses;
 
 namespace OpenReferralApi.Controllers;

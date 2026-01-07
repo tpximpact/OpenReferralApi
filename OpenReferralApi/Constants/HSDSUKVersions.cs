@@ -1,5 +1,3 @@
-using System;
-
 namespace OpenReferralApi.Constants;
 
 public static class HSDSUKVersions
