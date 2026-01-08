@@ -126,13 +126,21 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
     private object MapEndpointTests(List<EndpointTestResult> endpointTests, string baseUrl, 
         string name, string description, bool required)
     {
-        var tests = endpointTests.Select(endpoint => new
+        var tests = endpointTests.Select(endpoint => 
         {
-            name = endpoint.Name ?? $"{endpoint.Method} {endpoint.Path}",
-            endpoint = $"{baseUrl}{endpoint.Path}",
-            description = endpoint.Summary ?? endpoint.OperationId ?? "Endpoint test",
-            success = endpoint.TestResults.All(tr => tr.ValidationResult != null && tr.ValidationResult.IsValid),
-            messages = MapEndpointMessages(endpoint)
+            // Find the first failed test if any
+            var firstFailedTest = endpoint.TestResults.FirstOrDefault(tr => tr.ValidationResult != null && !tr.ValidationResult.IsValid);
+            var testToUse = firstFailedTest ?? endpoint.TestResults.FirstOrDefault();
+            
+            return new
+            {
+                name = endpoint.Name ?? $"{endpoint.Method} {endpoint.Path}",
+                endpoint = $"{baseUrl}{endpoint.Path}",
+                description = endpoint.Summary ?? endpoint.OperationId ?? "Endpoint test",
+                id = testToUse?.TestedId,
+                success = firstFailedTest == null && endpoint.TestResults.Any(tr => tr.ValidationResult != null && tr.ValidationResult.IsValid),
+                messages = MapEndpointMessages(endpoint, firstFailedTest)
+            };
         }).ToList();
 
         return new
@@ -146,23 +154,31 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
         };
     }
 
-    private List<object> MapEndpointMessages(EndpointTestResult endpoint)
+    private List<object> MapEndpointMessages(EndpointTestResult endpoint, HttpTestResult? specificTest = null)
     {
         var messages = new List<object>();
 
         // Add schema validation issues from test results
-        foreach (var testResult in endpoint.TestResults.Where(tr => tr.ValidationResult != null && !tr.ValidationResult.IsValid))
+        // If a specific test is provided (first failed), use only that one
+        var testsToProcess = specificTest != null 
+            ? new[] { specificTest } 
+            : endpoint.TestResults.Where(tr => tr.ValidationResult != null && !tr.ValidationResult.IsValid).Take(1);
+            
+        foreach (var testResult in testsToProcess)
         {
-            foreach (var validationError in testResult.ValidationResult!.Errors)
+            if (testResult.ValidationResult != null && !testResult.ValidationResult.IsValid)
             {
-                messages.Add(new
+                foreach (var validationError in testResult.ValidationResult.Errors.Take(1))
                 {
-                    name = validationError.ErrorCode,
-                    description = validationError.Severity,
-                    message = validationError.Message,
-                    errorIn = validationError.Path,
-                    errorAt = ""
-                });
+                    messages.Add(new
+                    {
+                        name = validationError.ErrorCode,
+                        description = validationError.Severity,
+                        message = validationError.Message,
+                        errorIn = validationError.Path,
+                        errorAt = ""
+                    });
+                }
             }
         }
 

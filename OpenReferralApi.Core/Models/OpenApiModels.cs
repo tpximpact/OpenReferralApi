@@ -355,6 +355,13 @@ public class HttpTestResult
     public string? ErrorMessage { get; set; }
 
     /// <summary>
+    /// The specific ID value used for testing parameterized endpoints
+    /// Only populated when testing endpoints with path parameters like /services/{id}
+    /// </summary>
+    [JsonProperty("testedId")]
+    public string? TestedId { get; set; }
+
+    /// <summary>
     /// Results from validating the response against the OpenAPI specification
     /// Includes schema compliance and data structure validation
     /// </summary>

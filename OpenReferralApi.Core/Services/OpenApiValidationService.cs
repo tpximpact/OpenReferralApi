@@ -446,7 +446,7 @@ public class OpenApiValidationService : IOpenApiValidationService
         };
     }
 
-    private async Task<EndpointTestResult> TestSingleEndpointAsync(string path, string method, JObject operation, string baseUrl, OpenApiValidationOptions options, SemaphoreSlim semaphore, JObject openApiDocument, string? documentUri, JObject pathItem, CancellationToken cancellationToken)
+    private async Task<EndpointTestResult> TestSingleEndpointAsync(string path, string method, JObject operation, string baseUrl, OpenApiValidationOptions options, SemaphoreSlim semaphore, JObject openApiDocument, string? documentUri, JObject pathItem, CancellationToken cancellationToken, string? testedId = null)
     {
         await semaphore.WaitAsync(cancellationToken);
 
@@ -483,7 +483,7 @@ public class OpenApiValidationService : IOpenApiValidationService
             {
                 // Standard single-request testing
                 var fullUrl = BuildFullUrl(baseUrl, path, operation, options);
-                var testResult = await ExecuteHttpRequestAsync(fullUrl, method, operation, options, cancellationToken);
+                var testResult = await ExecuteHttpRequestAsync(fullUrl, method, operation, options, cancellationToken, testedId);
 
                 result.TestResults.Add(testResult);
                 result.IsTested = true;
@@ -812,12 +812,13 @@ public class OpenApiValidationService : IOpenApiValidationService
         return false;
     }
 
-    private async Task<HttpTestResult> ExecuteHttpRequestAsync(string url, string method, JObject operation, OpenApiValidationOptions options, CancellationToken cancellationToken)
+    private async Task<HttpTestResult> ExecuteHttpRequestAsync(string url, string method, JObject operation, OpenApiValidationOptions options, CancellationToken cancellationToken, string? testedId = null)
     {
         var testResult = new HttpTestResult
         {
             RequestUrl = url,
             RequestMethod = method,
+            TestedId = testedId,
             ValidationResult = new ValidationResult()
         };
 
@@ -1710,7 +1711,7 @@ public class OpenApiValidationService : IOpenApiValidationService
                 var substitutedPath = SubstitutePathParametersWithSpecificId(path, id);
                 _logger.LogInformation("Testing with ID '{Id}': {OriginalPath} → {SubstitutedPath}", id, path, substitutedPath);
 
-                var singleResult = await TestSingleEndpointAsync(substitutedPath, method, operation, baseUrl, options, semaphore, openApiDocument, documentUri, pathItem, cancellationToken);
+                var singleResult = await TestSingleEndpointAsync(substitutedPath, method, operation, baseUrl, options, semaphore, openApiDocument, documentUri, pathItem, cancellationToken, testedId: id);
 
                 // Aggregate the results
                 compositeResult.TestResults.AddRange(singleResult.TestResults);
