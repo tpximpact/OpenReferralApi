@@ -107,6 +107,15 @@ public class OpenApiValidationOptions
     /// </summary>
     [JsonProperty("includeTestResults")]
     public bool IncludeTestResults { get; set; } = true;
+
+    /// <summary>
+    /// Whether to return the raw OpenApiValidationResult format or map to the standard ValidationResponse format.
+    /// When true, returns the raw OpenApiValidationResult with comprehensive details.
+    /// When false (default), maps to the ValidationResponse format for consistency with other validation endpoints.
+    /// The raw format provides more detailed OpenAPI-specific analysis and metrics.
+    /// </summary>
+    [JsonProperty("returnRawResult")]
+    public bool ReturnRawResult { get; set; } = false;
 }
 
 /// <summary>

@@ -71,10 +71,16 @@ public class OpenApiController : ControllerBase
 
             var result = await _openApiValidationService.ValidateOpenApiSpecificationAsync(request, cancellationToken);
             
-            // Map to ValidationResponse format
-            var mappedResult = _mapper.MapToValidationResponse(result);
-            
-            return Ok(mappedResult);
+            // Return raw result or mapped to ValidationResponse format based on option
+            if (request.Options?.ReturnRawResult == true)
+            {
+                return Ok(result);
+            }
+            else
+            {
+                var mappedResult = _mapper.MapToValidationResponse(result);
+                return Ok(mappedResult);
+            }
         }
         catch (ArgumentException ex)
         {
