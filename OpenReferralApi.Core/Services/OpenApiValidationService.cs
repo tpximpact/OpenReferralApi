@@ -450,6 +450,9 @@ public class OpenApiValidationService : IOpenApiValidationService
     {
         await semaphore.WaitAsync(cancellationToken);
 
+        // Resolve all parameter references upfront (includes path-level and operation-level params)
+        var resolvedParams = ResolveOperationParameters(operation, pathItem, openApiDocument);
+
         var result = new EndpointTestResult
         {
             Path = path,
@@ -472,17 +475,19 @@ public class OpenApiValidationService : IOpenApiValidationService
             }
 
             // Check if this endpoint has pagination support
-            bool hasPagination = method == "GET" && HasPageParameter(operation);
+            _logger.LogDebug("Checking pagination support for {Method} {Path}", method, path);
+            bool hasPagination = method == "GET" && HasPageParameter(resolvedParams);
+            _logger.LogInformation("{Method} {Path}: hasPagination={HasPagination}", method, path, hasPagination);
 
             if (hasPagination)
             {
                 // Test pagination: first page, middle page(s), last page
-                await TestPaginatedEndpointAsync(result, path, method, operation, baseUrl, options, openApiDocument, documentUri, pathItem, cancellationToken);
+                await TestPaginatedEndpointAsync(result, path, method, operation, baseUrl, options, resolvedParams, openApiDocument, documentUri, pathItem, cancellationToken);
             }
             else
             {
                 // Standard single-request testing
-                var fullUrl = BuildFullUrl(baseUrl, path, operation, options);
+                var fullUrl = BuildFullUrl(baseUrl, path, resolvedParams, options);
                 var testResult = await ExecuteHttpRequestAsync(fullUrl, method, operation, options, cancellationToken, testedId);
 
                 result.TestResults.Add(testResult);
@@ -602,6 +607,7 @@ public class OpenApiValidationService : IOpenApiValidationService
         JObject operation,
         string baseUrl,
         OpenApiValidationOptions options,
+        JArray resolvedParams,
         JObject openApiDocument,
         string? documentUri,
         JObject pathItem,
@@ -613,7 +619,7 @@ public class OpenApiValidationService : IOpenApiValidationService
 
         // Test first page (page=1)
         _logger.LogDebug("Testing first page for {Path}", path);
-        var firstPageUrl = BuildFullUrl(baseUrl, path, operation, options, pageNumber: 1);
+        var firstPageUrl = BuildFullUrl(baseUrl, path, resolvedParams, options, pageNumber: 1);
         var firstPageResult = await ExecuteHttpRequestAsync(firstPageUrl, method, operation, options, cancellationToken);
         result.TestResults.Add(firstPageResult);
 
@@ -666,6 +672,7 @@ public class OpenApiValidationService : IOpenApiValidationService
                 ErrorCode = "EMPTY_FEED_WARNING",
                 Severity = "Warning"
             });
+            firstPageResult.ValidationResult.IsValid = false;
             _logger.LogWarning("Paginated endpoint {Path} returned empty feed (0 items)", path);
             return; // No further pagination testing needed for empty feeds
         }
@@ -680,7 +687,7 @@ public class OpenApiValidationService : IOpenApiValidationService
             {
                 var middlePage = totalPages / 2;
                 _logger.LogDebug("Testing middle page {PageNumber} for {Path}", middlePage, path);
-                var middlePageUrl = BuildFullUrl(baseUrl, path, operation, options, pageNumber: middlePage);
+                var middlePageUrl = BuildFullUrl(baseUrl, path, resolvedParams, options, pageNumber: middlePage);
                 var middlePageResult = await ExecuteHttpRequestAsync(middlePageUrl, method, operation, options, cancellationToken);
                 result.TestResults.Add(middlePageResult);
 
@@ -692,7 +699,7 @@ public class OpenApiValidationService : IOpenApiValidationService
 
             // Test last page
             _logger.LogDebug("Testing last page {PageNumber} for {Path}", totalPages, path);
-            var lastPageUrl = BuildFullUrl(baseUrl, path, operation, options, pageNumber: totalPages);
+            var lastPageUrl = BuildFullUrl(baseUrl, path, resolvedParams, options, pageNumber: totalPages);
             var lastPageResult = await ExecuteHttpRequestAsync(lastPageUrl, method, operation, options, cancellationToken);
             result.TestResults.Add(lastPageResult);
 
@@ -773,12 +780,12 @@ public class OpenApiValidationService : IOpenApiValidationService
         }
     }
 
-    private string BuildFullUrl(string baseUrl, string path, JObject operation, OpenApiValidationOptions options, int? pageNumber = null)
+    private string BuildFullUrl(string baseUrl, string path, JArray resolvedParams, OpenApiValidationOptions options, int? pageNumber = null)
     {
         var url = $"{baseUrl.TrimEnd('/')}{path}";
 
         // Add page parameter if specified
-        if (pageNumber.HasValue && HasPageParameter(operation))
+        if (pageNumber.HasValue && HasPageParameter(resolvedParams))
         {
             var separator = url.Contains('?') ? "&" : "?";
             url += $"{separator}page={pageNumber.Value}";
@@ -788,28 +795,89 @@ public class OpenApiValidationService : IOpenApiValidationService
     }
 
     /// <summary>
-    /// Checks if an operation defines a 'page' query parameter in its OpenAPI specification
+    /// Checks if the resolved parameters array contains a 'page' query parameter.
+    /// Parameters should already be resolved (references expanded, path and operation params merged).
     /// </summary>
-    private bool HasPageParameter(JObject operation)
+    private bool HasPageParameter(JArray resolvedParams)
     {
-        if (operation["parameters"] is JArray parameters)
+        _logger.LogDebug("Checking {Count} parameters for 'page' parameter", resolvedParams.Count);
+        foreach (var param in resolvedParams)
         {
-            foreach (var param in parameters)
+            if (param is JObject paramObj)
             {
-                if (param is JObject paramObj)
-                {
-                    var name = paramObj["name"]?.ToString();
-                    var inLocation = paramObj["in"]?.ToString();
+                var name = paramObj["name"]?.ToString();
+                var inLocation = paramObj["in"]?.ToString();
+                _logger.LogDebug("Checking param: name={Name}, in={In}", name, inLocation);
 
-                    if (name?.Equals("page", StringComparison.OrdinalIgnoreCase) == true &&
-                        inLocation?.Equals("query", StringComparison.OrdinalIgnoreCase) == true)
-                    {
-                        return true;
-                    }
+                if (name?.Equals("page", StringComparison.OrdinalIgnoreCase) == true &&
+                    inLocation?.Equals("query", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    _logger.LogInformation("Found 'page' query parameter - endpoint supports pagination");
+                    return true;
                 }
             }
         }
+        _logger.LogDebug("No 'page' parameter found - endpoint does not support pagination");
         return false;
+    }
+
+    /// <summary>
+    /// Resolves all parameter references for an operation, merging path-level and operation-level parameters.
+    /// Returns a JArray of fully resolved parameter objects (no $ref references).
+    /// </summary>
+    private JArray ResolveOperationParameters(JObject operation, JObject pathItem, JObject openApiDocument)
+    {
+        var resolvedParams = new JArray();
+
+        // Add path-level parameters first (these are inherited by all operations)
+        if (pathItem["parameters"] is JArray pathParams)
+        {
+            _logger.LogDebug("Found {Count} path-level parameters", pathParams.Count);
+            foreach (var param in pathParams)
+            {
+                var resolved = ResolveParameter(param, openApiDocument);
+                resolvedParams.Add(resolved);
+                _logger.LogDebug("Path-level param: {Param}", resolved.ToString());
+            }
+        }
+
+        // Add operation-level parameters (these can override path-level params)
+        if (operation["parameters"] is JArray operationParams)
+        {
+            _logger.LogDebug("Found {Count} operation-level parameters", operationParams.Count);
+            foreach (var param in operationParams)
+            {
+                var resolved = ResolveParameter(param, openApiDocument);
+                resolvedParams.Add(resolved);
+                _logger.LogDebug("Operation-level param: {Param}", resolved.ToString());
+            }
+        }
+
+        _logger.LogDebug("Total resolved parameters: {Count}", resolvedParams.Count);
+        return resolvedParams;
+    }
+
+    /// <summary>
+    /// Resolves a single parameter, expanding $ref if present.
+    /// Returns the fully resolved parameter object.
+    /// </summary>
+    private JToken ResolveParameter(JToken param, JObject openApiDocument)
+    {
+        if (param is JObject paramObj && paramObj.ContainsKey("$ref"))
+        {
+            var refValue = paramObj["$ref"]?.ToString();
+            if (!string.IsNullOrEmpty(refValue) && refValue.StartsWith("#/"))
+            {
+                // Remove the #/ prefix before passing to GetSchemaFromPath
+                var pathWithoutPrefix = refValue.Substring(2);
+                var referencedParam = GetSchemaFromPath(openApiDocument, pathWithoutPrefix);
+                if (referencedParam != null)
+                {
+                    return referencedParam;
+                }
+            }
+        }
+        return param;
     }
 
     private async Task<HttpTestResult> ExecuteHttpRequestAsync(string url, string method, JObject operation, OpenApiValidationOptions options, CancellationToken cancellationToken, string? testedId = null)
@@ -1519,6 +1587,7 @@ public class OpenApiValidationService : IOpenApiValidationService
     private List<EndpointGroup> GroupEndpointsByDependencies(JObject pathsObject, OpenApiValidationOptions options)
     {
         var endpoints = new List<EndpointInfo>();
+        var validHttpMethods = new HashSet<string> { "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE" };
 
         // Extract all endpoints
         foreach (var pathProperty in pathsObject.Properties())
@@ -1531,6 +1600,13 @@ public class OpenApiValidationService : IOpenApiValidationService
                 foreach (var methodProperty in pathItemObject.Properties())
                 {
                     var method = methodProperty.Name.ToUpperInvariant();
+                    
+                    // Skip non-HTTP method properties like "parameters", "summary", "$ref", "servers", etc.
+                    if (!validHttpMethods.Contains(method))
+                    {
+                        continue;
+                    }
+
                     var operation = methodProperty.Value;
                     if (operation is JObject operationObject)
                     {
