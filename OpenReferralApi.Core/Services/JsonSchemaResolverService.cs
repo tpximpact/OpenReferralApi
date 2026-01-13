@@ -68,8 +68,10 @@ public class JsonSchemaResolverService : IJsonSchemaResolverService
                 settings.BaseUri = new Uri(documentUri);
             }
 
-            var schema = await Task.Run(() => JSchema.Load(reader, settings), cancellationToken);
+            var schema = await Task.Run(() => JSchema.Parse(schemaJson, settings), cancellationToken);
+
             _logger.LogDebug("Successfully created schema with Newtonsoft.Json.Schema resolver");
+
 
             return schema;
         }

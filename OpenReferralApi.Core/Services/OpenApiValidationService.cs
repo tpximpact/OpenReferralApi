@@ -83,7 +83,8 @@ public class OpenApiValidationService : IOpenApiValidationService
                 BaseUrl = request.BaseUrl,
                 TestTimestamp = DateTime.UtcNow,
                 TestDuration = stopwatch.Elapsed,
-                UserAgent = "OpenReferral-Validator/1.0"
+                UserAgent = "OpenReferral-Validator/1.0",
+                ProfileReason = request.ProfileReason
             };
 
             _logger.LogInformation("OpenAPI testing completed. IsValid: {IsValid}, Endpoints: {EndpointCount}",
@@ -550,6 +551,7 @@ public class OpenApiValidationService : IOpenApiValidationService
                 if (testResult.IsSuccess && testResult.ResponseBody != null)
                 {
                     await ValidateResponseAsync(testResult, operation, openApiDocument, documentUri, cancellationToken);
+                    result.Status = testResult.ValidationResult != null && testResult.ValidationResult.IsValid ? "Success" : "Failed";
                 }
 
 

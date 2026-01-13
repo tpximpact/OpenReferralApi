@@ -18,10 +18,10 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
         var testSuites = new List<object>();
 
         // Map specification validation to a test group
-        if (openApiResult.SpecificationValidation != null)
-        {
-            testSuites.Add(MapSpecificationValidation(openApiResult.SpecificationValidation));
-        }
+        // if (openApiResult.SpecificationValidation != null)
+        // {
+        //     testSuites.Add(MapSpecificationValidation(openApiResult.SpecificationValidation));
+        // }
 
         // Map endpoint tests to test groups - separate required and optional endpoints
         if (openApiResult.EndpointTests != null && openApiResult.EndpointTests.Any())
@@ -57,8 +57,8 @@ public class OpenApiToValidationResponseMapper : IOpenApiToValidationResponseMap
             {
                 url = openApiResult?.Metadata?.BaseUrl ?? "",
                 isValid = isValid,
-                profile = $"HSDS-UK-{openApiResult?.SpecificationValidation?.OpenApiVersion ?? "Unknown"}",
-                profileReason = "Standard version HSDS-UK-3.0 read from '/' endpoint"
+                profile = $"{openApiResult?.SpecificationValidation?.Version ?? "Unknown"}",
+                profileReason = openApiResult?.Metadata?.ProfileReason ?? "Unknown"
             },
             testSuites = testSuites
         };

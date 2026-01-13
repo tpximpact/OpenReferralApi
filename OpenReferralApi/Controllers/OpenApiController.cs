@@ -46,10 +46,11 @@ public class OpenApiController : ControllerBase
             {
                 if (!string.IsNullOrEmpty(request.BaseUrl))
                 {
-                    var discovered = await _discoveryService.DiscoverOpenApiUrlAsync(request.BaseUrl, cancellationToken);
-                    if (!string.IsNullOrEmpty(discovered))
+                    var (discoveredUrl, reason) = await _discoveryService.DiscoverOpenApiUrlAsync(request.BaseUrl, cancellationToken);
+                    if (!string.IsNullOrEmpty(discoveredUrl))
                     {
-                        request.OpenApiSchemaUrl = discovered;
+                        request.OpenApiSchemaUrl = discoveredUrl;
+                        request.ProfileReason = reason;
                     }
                 }
                 else

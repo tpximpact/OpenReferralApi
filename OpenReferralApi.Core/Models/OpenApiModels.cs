@@ -33,6 +33,13 @@ public class OpenApiValidationRequest
     /// </summary>
     [JsonProperty("options")]
     public OpenApiValidationOptions? Options { get; set; }
+
+    /// <summary>
+    /// Internal property to pass the profile discovery reason from discovery to validation.
+    /// This is not part of the public API request and should not be set by clients.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string? ProfileReason { get; set; }
 }
 
 /// <summary>
@@ -607,6 +614,12 @@ public class OpenApiValidationMetadata : IMetadata
     /// </summary>
     [JsonProperty("userAgent")]
     public string UserAgent { get; set; } = "OpenReferral-Validator/1.0";
+
+    /// <summary>
+    /// Describes how the profile version was discovered (e.g., from version field, openapi_url field, or defaulted)
+    /// Provides transparency about the source of the profile determination
+    /// </summary>
+    internal string? ProfileReason { get; set; }
 
     /// <summary>
     /// Implements IMetadata.Timestamp interface requirement

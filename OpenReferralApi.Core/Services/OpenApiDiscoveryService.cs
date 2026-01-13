@@ -7,9 +7,9 @@ public interface IOpenApiDiscoveryService
 {
     /// <summary>
     /// Attempts to discover an OpenAPI schema URL from the provided base URL.
-    /// Returns the discovered URL or null if none found.
+    /// Returns the discovered URL and the reason for how it was discovered, or null if none found.
     /// </summary>
-    Task<string?> DiscoverOpenApiUrlAsync(string baseUrl, CancellationToken cancellationToken = default);
+    Task<(string? url, string? reason)> DiscoverOpenApiUrlAsync(string baseUrl, CancellationToken cancellationToken = default);
 }
 
 public class OpenApiDiscoveryService : IOpenApiDiscoveryService
@@ -23,11 +23,11 @@ public class OpenApiDiscoveryService : IOpenApiDiscoveryService
         _logger = logger;
     }
 
-    public async Task<string?> DiscoverOpenApiUrlAsync(string baseUrl, CancellationToken cancellationToken = default)
+    public async Task<(string? url, string? reason)> DiscoverOpenApiUrlAsync(string baseUrl, CancellationToken cancellationToken = default)
     {
         const string baseSpecificationUrl = "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/validate_using_openapi/OpenReferralApi/Schemas/";
 
-        if (string.IsNullOrWhiteSpace(baseUrl)) return null;
+        if (string.IsNullOrWhiteSpace(baseUrl)) return (null, null);
 
         const float defaultSpecificationVersion = 1.0f;
         var defaultSpec = $"{baseSpecificationUrl}V{defaultSpecificationVersion:0.0}-UK/open_api.json";
@@ -40,7 +40,7 @@ public class OpenApiDiscoveryService : IOpenApiDiscoveryService
             if (!resp.IsSuccessStatusCode)
             {
                 _logger.LogInformation("BaseUrl request returned {Status}; defaulting to HSDS-UK 1.0 spec: {DefaultSpec}", resp.StatusCode, defaultSpec);
-                return defaultSpec;
+                return (defaultSpec, "Defaulted to HSDS-UK 1.0 (base URL request failed)");
             }
 
             var content = await resp.Content.ReadAsStringAsync(cancellationToken);
@@ -58,7 +58,7 @@ public class OpenApiDiscoveryService : IOpenApiDiscoveryService
                     {
                         var versionedSpec = $"{baseSpecificationUrl}V{extractedVersion.Value:0.0}-UK/open_api.json";
                         _logger.LogInformation("Detected version '{Version}'; using HSDS-UK {ExtractedVersion:0.0} spec: {OpenApiUrl}", version, extractedVersion.Value, versionedSpec);
-                        return versionedSpec;
+                        return (versionedSpec, $"Standard version {version} read from '/' endpoint");
                     }
                 }
 
@@ -68,22 +68,22 @@ public class OpenApiDiscoveryService : IOpenApiDiscoveryService
                 if (!string.IsNullOrEmpty(openapiUrl))
                 {
                     _logger.LogInformation("Discovered openapi_url: {OpenApiUrl}", openapiUrl);
-                    return openapiUrl;
+                    return (openapiUrl, "OpenAPI URL read from '/' endpoint (openapi_url field)");
                 }
 
                 _logger.LogInformation("No openapi_url or version in BaseUrl response; defaulting to HSDS-UK 1.0 spec: {DefaultSpec}", defaultSpec);
-                return defaultSpec;
+                return (defaultSpec, "Defaulted to HSDS-UK 1.0 (no version or openapi_url found)");
             }
             catch (Exception jex)
             {
                 _logger.LogWarning(jex, "Failed to parse JSON from BaseUrl response; defaulting to HSDS-UK 1.0 spec: {DefaultSpec}", defaultSpec);
-                return defaultSpec;
+                return (defaultSpec, "Defaulted to HSDS-UK 1.0 (failed to parse base URL response)");
             }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error requesting BaseUrl to discover openapi_url; defaulting to HSDS-UK 1.0 spec: {DefaultSpec}", defaultSpec);
-            return defaultSpec;
+            return (defaultSpec, "Defaulted to HSDS-UK 1.0 (error requesting base URL)");
         }
     }
 
