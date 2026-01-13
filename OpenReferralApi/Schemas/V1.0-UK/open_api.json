@@ -9,7 +9,8 @@
     "/services/{id}": {
       "get": {
         "tags": ["Services"],
-        "summary": "Get a single service",
+        "summary": "Does the service by id endpoint return the details of a service in the correct schema",
+        "description": "Get a single service",
         "operationId": "getService",
         "parameters": [
           {
@@ -40,7 +41,8 @@
     "/taxonomies/{id}": {
       "get": {
         "tags": ["Taxonomies", "Optional"],
-        "summary": "Get a single taxonomy",
+        "summary": "Does the taxonomy by id endpoint return the details of a taxonomy in the correct schema",
+        "description": "Get a single taxonomy",
         "operationId": "getTaxonomy",
         "parameters": [
           {
@@ -162,7 +164,8 @@
     "/taxonomies": {
       "get": {
         "tags": ["Taxonomies", "Optional"],
-        "summary": "Get all taxonomies",
+        "summary": "Does the taxonomies list endpoint return a paginated list of taxonomies in the correct schema",
+        "description": "Get all taxonomies",
         "operationId": "getTaxonomies",
         "parameters": [
           {
@@ -247,7 +250,7 @@
     "/services": {
       "get": {
         "tags": ["Services"],
-        "summary": "Get all services",
+        "summary": "Does the services list endpoint return a paginated list of services in the correct schema",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getServices",
         "parameters": [
@@ -431,7 +434,7 @@
     "/reviews": {
       "get": {
         "tags": ["Reviews", "Optional"],
-        "summary": "Get all reviews",
+        "summary": "Does the reviews list endpoint return a paginated list of reviews in the correct schema",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getReviews",
         "responses": {
@@ -467,7 +470,7 @@
     "/organizations": {
       "get": {
         "tags": ["Organizations", "Optional"],
-        "summary": "Get all organizations",
+        "summary": "Does the organizations list endpoint return a paginated list of organizations in the correct schema",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getOrganizations",
         "parameters": [
@@ -517,7 +520,7 @@
     "/locations": {
       "get": {
         "tags": ["Locations", "Optional"],
-        "summary": "Get all locations",
+        "summary": "Does the locations list endpoint return a paginated list of locations in the correct schema",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getLocations",
         "responses": {
