@@ -5,14 +5,7 @@ using System.Text.Json.Serialization;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Options;
-using MongoDB.Driver;
 using OpenReferralApi.Core.Services;
-using OpenReferralApi.Models.Settings;
-using OpenReferralApi.Repositories;
-using OpenReferralApi.Repositories.Interfaces;
-using OpenReferralApi.Services;
-using OpenReferralApi.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,39 +64,11 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
-// Configuration
-builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("Database"));
-builder.Services.Configure<GithubSettings>(builder.Configuration.GetSection("Github"));
-builder.Services.Configure<ValidatorSettings>(builder.Configuration.GetSection("Validator"));
-
-// MongoDB Client
-var mongoConnectionString = builder.Configuration.GetSection("Database:ConnectionString").Value;
-if (!string.IsNullOrEmpty(mongoConnectionString))
-{
-    builder.Services.AddSingleton<IMongoClient>(sp => new MongoClient(mongoConnectionString));
-}
-
 // Health Checks
 builder.Services.AddHealthChecks()
-    .AddMongoDb(
-        name: "mongodb",
-        failureStatus: HealthStatus.Unhealthy,
-        tags: new[] { "db", "mongodb", "ready" })
-    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "ready" })
-    .AddCheck<PeriodicValidationService>("background-service", 
-        failureStatus: HealthStatus.Degraded, 
-        tags: new[] { "services", "background" });
-
-// Repository
-builder.Services.AddSingleton<IDataRepository, DataRepository>();
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "ready" });
 
 // Services
-builder.Services.AddScoped<IPaginationTestingService, PaginationTestingService>();
-builder.Services.AddScoped<IDashboardService, DashboardService>();
-builder.Services.AddScoped<IValidatorService, ValidatorService>();
-builder.Services.AddScoped<IRequestService, RequestService>();
-builder.Services.AddScoped<IGithubService, GithubService>();
-builder.Services.AddScoped<ITestProfileService, TestProfileService>();
 builder.Services.AddScoped<IPathParsingService, PathParsingService>();
 builder.Services.AddSingleton<IRequestProcessingService, RequestProcessingService>();
 builder.Services.AddScoped<IJsonSchemaResolverService, JsonSchemaResolverService>();
@@ -123,10 +88,6 @@ builder.Services.AddScoped<IOpenApiDiscoveryService, OpenApiDiscoveryService>();
 
 // Register OpenAPI to ValidationResponse mapper
 builder.Services.AddScoped<IOpenApiToValidationResponseMapper, OpenApiToValidationResponseMapper>();
-
-// Background service
-builder.Services.AddSingleton<PeriodicValidationService>();
-builder.Services.AddHostedService(provider => provider.GetRequiredService<PeriodicValidationService>());
 
 builder.Services.AddMemoryCache();
 
