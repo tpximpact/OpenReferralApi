@@ -2,7 +2,7 @@
     "openapi": "3.0",
     "info": {
         "title": "REQUIRED -- TITLE OF YOUR API HERE",
-        "version": "REQUIRED -- The version of this document. This is distinct from the OpenAPI Schema version and the version of your API.",
+        "version": "HSDS-UK-3.0",
         "summary": "SUMMARY HERE",
         "description": "DESCRIPTION HERE",
         "contact": {
