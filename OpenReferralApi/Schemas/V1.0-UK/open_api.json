@@ -225,7 +225,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/taxonomy"
@@ -409,7 +409,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/service"
@@ -445,7 +445,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/review"
@@ -495,7 +495,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/organization"
@@ -531,7 +531,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/location"
