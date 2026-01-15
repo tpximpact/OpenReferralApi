@@ -993,7 +993,8 @@ public class OpenApiValidationService : IOpenApiValidationService
                                             schemaJson, openApiDocument, documentUri, cancellationToken);
                                         // Validate directly with the resolved schema
                                         var jsonData = JsonConvert.DeserializeObject(testResult.ResponseBody ?? "{}");
-                                        var jsonDataString = JsonConvert.SerializeObject(jsonData);
+                                        // Format JSON with indentation before validation so error line numbers are accurate
+                                        var jsonDataString = JsonConvert.SerializeObject(jsonData, Formatting.Indented);
                                         var validationErrors = ValidateJsonAgainstSchema(jsonDataString, resolvedSchema);
                                         testResult.ValidationResult = new ValidationResult
                                         {
