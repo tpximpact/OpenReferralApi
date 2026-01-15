@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
 
@@ -7,6 +8,7 @@ namespace OpenReferralApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[EnableRateLimiting("fixed")]
 public class OpenApiController : ControllerBase
 {
     private readonly IOpenApiValidationService _openApiValidationService;
@@ -29,76 +31,71 @@ public class OpenApiController : ControllerBase
     /// <summary>
     /// Validates an OpenAPI specification and optionally tests all defined endpoints
     /// </summary>
+    /// <param name="request">The validation request containing OpenAPI URL and base URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Validation results with endpoint test outcomes</returns>
+    /// <response code="200">Validation completed successfully</response>
+    /// <response code="400">Invalid request parameters</response>
+    /// <response code="429">Rate limit exceeded</response>
+    /// <response code="500">Internal server error</response>
     [HttpPost("validate")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<object>> ValidateOpenApiSpecificationAsync(
         [FromBody] OpenApiValidationRequest request,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            _logger.LogInformation("Received OpenAPI validation request");
+        _logger.LogInformation("Received OpenAPI validation request for BaseUrl: {BaseUrl}", request.BaseUrl);
 
-            // If OpenApiSchemaUrl not provided, try to discover it from BaseUrl response's `openapi_url`.
-            if (string.IsNullOrEmpty(request.OpenApiSchemaUrl))
+        // If OpenApiSchemaUrl not provided, try to discover it from BaseUrl response's `openapi_url`.
+        if (string.IsNullOrEmpty(request.OpenApiSchemaUrl))
+        {
+            if (!string.IsNullOrEmpty(request.BaseUrl))
             {
-                if (!string.IsNullOrEmpty(request.BaseUrl))
+                var (discoveredUrl, reason) = await _discoveryService.DiscoverOpenApiUrlAsync(request.BaseUrl, cancellationToken);
+                if (!string.IsNullOrEmpty(discoveredUrl))
                 {
-                    var (discoveredUrl, reason) = await _discoveryService.DiscoverOpenApiUrlAsync(request.BaseUrl, cancellationToken);
-                    if (!string.IsNullOrEmpty(discoveredUrl))
-                    {
-                        request.OpenApiSchemaUrl = discoveredUrl;
-                        request.ProfileReason = reason;
-                    }
+                    request.OpenApiSchemaUrl = discoveredUrl;
+                    request.ProfileReason = reason;
+                    _logger.LogInformation("Discovered OpenAPI URL: {OpenApiUrl}", discoveredUrl);
                 }
                 else
                 {
-                    return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
-                    {
-                        ["request"] = new[] { "OpenApiSchemaUrl must be provided" }
-                    }));
+                    _logger.LogWarning("Could not discover OpenAPI URL from BaseUrl: {BaseUrl}", request.BaseUrl);
                 }
-            }
-
-            if (string.IsNullOrEmpty(request.BaseUrl))
-            {
-                return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
-                {
-                    ["baseUrl"] = new[] { "BaseUrl is required when testing endpoints" }
-                }));
-            }
-
-            var result = await _openApiValidationService.ValidateOpenApiSpecificationAsync(request, cancellationToken);
-            
-            // Return raw result or mapped to ValidationResponse format based on option
-            if (request.Options?.ReturnRawResult == true)
-            {
-                return Ok(result);
             }
             else
             {
-                var mappedResult = _mapper.MapToValidationResponse(result);
-                return Ok(mappedResult);
+                return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    ["request"] = new[] { "OpenApiSchemaUrl must be provided" }
+                }));
             }
         }
-        catch (ArgumentException ex)
+
+        if (string.IsNullOrEmpty(request.BaseUrl))
         {
-            _logger.LogWarning(ex, "Invalid OpenAPI validation request");
             return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
             {
-                ["request"] = new[] { ex.Message }
+                ["baseUrl"] = new[] { "BaseUrl is required when testing endpoints" }
             }));
         }
-        catch (Exception ex)
+
+        var result = await _openApiValidationService.ValidateOpenApiSpecificationAsync(request, cancellationToken);
+        
+        _logger.LogInformation("Validation completed for BaseUrl: {BaseUrl}", request.BaseUrl);
+
+        // Return raw result or mapped to ValidationResponse format based on option
+        if (request.Options?.ReturnRawResult == true)
         {
-            _logger.LogError(ex, "Error during OpenAPI validation");
-            return StatusCode(StatusCodes.Status500InternalServerError, new
-            {
-                error = "An error occurred during OpenAPI validation",
-                message = ex.Message
-            });
+            return Ok(result);
+        }
+        else
+        {
+            var mappedResult = _mapper.MapToValidationResponse(result);
+            return Ok(mappedResult);
         }
     }
 }
