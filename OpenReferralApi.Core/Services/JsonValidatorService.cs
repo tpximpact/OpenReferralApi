@@ -40,77 +40,10 @@ public class JsonValidatorService : IJsonValidatorService
 
     public async Task<ValidationResult> ValidateAsync(ValidationRequest request, CancellationToken cancellationToken = default)
     {
-        return await _requestProcessingService.ExecuteWithConcurrencyControlAsync(async (ct) =>
-        {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            var result = new ValidationResult();
-
-            try
-            {
-                _logger.LogInformation("Starting JSON validation for request");
-
-                // Create timeout token
-                using var timeoutCts = _requestProcessingService.CreateTimeoutToken(request.Options, ct);
-                var effectiveToken = timeoutCts.Token;
-
-                // Get JSON data and schema concurrently if possible
-                var dataTask = GetJsonDataAsync(request, effectiveToken);
-                var schemaTask = GetSchemaAsync(request, effectiveToken);
-
-                var jsonData = await dataTask;
-                var schema = await schemaTask;
-
-                // Validate the JSON data
-                // Format with indentation so validation error line numbers are accurate
-                var jsonDataString = JsonConvert.SerializeObject(jsonData, Formatting.Indented);
-                var validationErrors = await ValidateJsonAgainstSchemaAsync(jsonDataString, schema, request.Options);
-
-                // Build result
-                result.IsValid = !validationErrors.Any();
-                result.Errors = validationErrors;
-                result.SchemaVersion = "2020-12";
-                result.Metadata = new ValidationMetadata
-                {
-                    SchemaTitle = GetSchemaTitle(request, schema),
-                    SchemaDescription = GetSchemaDescription(request, schema),
-                    DataSize = jsonDataString.Length,
-                    ValidationTimestamp = DateTime.UtcNow,
-                    DataSource = !string.IsNullOrEmpty(request.DataUrl) ? request.DataUrl : "direct"
-                };
-
-                _logger.LogInformation("JSON validation completed. IsValid: {IsValid}, Errors: {ErrorCount}",
-                    result.IsValid, result.Errors.Count);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogError(ex, "Invalid argument during JSON validation");
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogError(ex, "Invalid operation during JSON validation");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error during JSON validation");
-                result.IsValid = false;
-                result.Errors.Add(new ValidationError
-                {
-                    Path = "",
-                    Message = $"Validation failed: {ex.Message}",
-                    ErrorCode = "VALIDATION_ERROR",
-                    Severity = "Error"
-                });
-            }
-            finally
-            {
-                stopwatch.Stop();
-                result.Duration = stopwatch.Elapsed;
-            }
-
-            return result;
-        }, request.Options, cancellationToken);
+        return await _requestProcessingService.ExecuteWithConcurrencyControlAsync(
+            ct => ValidateCoreAsync(request, ct),
+            request.Options,
+            cancellationToken);
     }
 
     public async Task<ValidationResult> ValidateWithSchemaUriAsync(object jsonData, string schemaUri, ValidationOptions? options = null, CancellationToken cancellationToken = default)
@@ -122,13 +55,91 @@ public class JsonValidatorService : IJsonValidatorService
             Options = options
         };
 
-        return await ValidateAsync(request, cancellationToken);
+        return await _requestProcessingService.ExecuteWithConcurrencyControlAsync(
+            ct => ValidateCoreAsync(request, ct),
+            options,
+            cancellationToken);
     }
 
     public async Task<bool> IsValidAsync(ValidationRequest request, CancellationToken cancellationToken = default)
     {
-        var result = await ValidateAsync(request, cancellationToken);
+        var result = await _requestProcessingService.ExecuteWithConcurrencyControlAsync(
+            ct => ValidateCoreAsync(request, ct),
+            request.Options,
+            cancellationToken);
         return result.IsValid;
+    }
+
+    private async Task<ValidationResult> ValidateCoreAsync(ValidationRequest request, CancellationToken cancellationToken)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = new ValidationResult();
+
+        try
+        {
+            _logger.LogInformation("Starting JSON validation for request");
+
+            // Create timeout token
+            using var timeoutCts = _requestProcessingService.CreateTimeoutToken(request.Options, cancellationToken);
+            var effectiveToken = timeoutCts.Token;
+
+            // Get JSON data and schema concurrently if possible
+            var dataTask = GetJsonDataAsync(request, effectiveToken);
+            var schemaTask = GetSchemaAsync(request, effectiveToken);
+
+            var jsonData = await dataTask;
+            var schema = await schemaTask;
+
+            // Validate the JSON data
+            // Format with indentation so validation error line numbers are accurate
+            var jsonDataString = JsonConvert.SerializeObject(jsonData, Formatting.Indented);
+            var validationErrors = await ValidateJsonAgainstSchemaAsync(jsonDataString, schema, request.Options);
+
+            // Build result
+            result.IsValid = !validationErrors.Any();
+            result.Errors = validationErrors;
+            result.SchemaVersion = "2020-12";
+            result.Metadata = new ValidationMetadata
+            {
+                SchemaTitle = GetSchemaTitle(request, schema),
+                SchemaDescription = GetSchemaDescription(request, schema),
+                DataSize = jsonDataString.Length,
+                ValidationTimestamp = DateTime.UtcNow,
+                DataSource = !string.IsNullOrEmpty(request.DataUrl) ? request.DataUrl : "direct"
+            };
+
+            _logger.LogInformation("JSON validation completed. IsValid: {IsValid}, Errors: {ErrorCount}",
+                result.IsValid, result.Errors.Count);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError(ex, "Invalid argument during JSON validation");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Invalid operation during JSON validation");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during JSON validation");
+            result.IsValid = false;
+            result.Errors.Add(new ValidationError
+            {
+                Path = "",
+                Message = $"Validation failed: {ex.Message}",
+                ErrorCode = "VALIDATION_ERROR",
+                Severity = "Error"
+            });
+        }
+        finally
+        {
+            stopwatch.Stop();
+            result.Duration = stopwatch.Elapsed;
+        }
+
+        return result;
     }
 
     public async Task<ValidationResult> ValidateSchemaAsync(object schema, CancellationToken cancellationToken = default)
