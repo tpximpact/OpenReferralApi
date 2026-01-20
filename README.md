@@ -8,23 +8,27 @@ For more information about the Open Referral UK project please check out [openre
 
 ### Purpose
 
-This solution provides a comprehensive API validation and dashboard service for Open Referral UK data feeds. It enables organizations to:
+This solution provides a comprehensive validation service for Open Referral UK (ORUK) API implementations. It enables organizations to:
 
-- **Validate** their API implementations against HSDS-UK (Human Services Data Specification UK) schemas
-- **Monitor** the health and compliance of registered data feeds through an automated dashboard
-- **Test** endpoint responses, pagination, and data quality against defined test profiles
-- **Ensure** consistency and interoperability across Open Referral UK implementations
+- **Validate OpenAPI Specifications**: Verify OpenAPI/Swagger specifications comply with ORUK and HSDS-UK standards
+- **Test Live Endpoints**: Execute automated tests against live API endpoints to verify functionality
+- **Schema Compliance**: Validate API responses against HSDS-UK (Human Services Data Specification UK) JSON schemas
+- **Quality Analysis**: Assess API documentation quality, security configuration, and best practices adherence
+- **Performance Metrics**: Measure endpoint response times and performance characteristics
+- **Ensure Interoperability**: Help organizations build consistent, standards-compliant service directory APIs
 
 ### Key Features
 
-- **Multi-version Schema Validation**: Supports HSDS-UK v1.0, v3.0, and v3.1 standards
-- **Automated Testing**: Regular validation runs for all registered services with configurable intervals
-- **Flexible Test Profiles**: Customizable test profiles defining required and optional endpoints
-- **Pagination Testing**: Validates proper implementation of paginated endpoints
-- **RESTful API**: Clean, well-documented API endpoints for validation and dashboard services
-- **Dashboard Service Registration**: Public registration system for data feed providers
-- **Real-time Health Monitoring**: Track validation status and service availability
-- **OpenAPI Documentation**: Interactive Swagger/OpenAPI documentation for all endpoints
+- **OpenAPI Validation**: Validates OpenAPI 2.0 (Swagger) and 3.x specifications for structural correctness
+- **Multi-version Schema Support**: Supports HSDS-UK v1.0, v3.0, and v3.1 standards
+- **Automated Endpoint Testing**: Tests all endpoints defined in OpenAPI specs against live APIs
+- **Comprehensive Analysis**: Provides quality metrics, security analysis, and actionable recommendations
+- **Optional Endpoint Support**: Intelligently handles optional endpoints with configurable warning levels
+- **Mock Data Service**: Built-in mock endpoints for testing validation logic
+- **RESTful API**: Clean, well-documented API with OpenAPI/Swagger documentation
+- **Rate Limiting**: Configurable rate limiting to protect against excessive requests
+- **Health Checks**: Kubernetes-ready liveness and readiness probes
+- **OpenTelemetry Integration**: Distributed tracing and metrics for observability
 
 ## Technical Architecture
 
@@ -32,53 +36,77 @@ This solution is built as a modern, cloud-native application with the following 
 
 ### Backend (ASP.NET Core API)
 
-- **Framework**: .NET 9.0 with ASP.NET Core
-- **Language**: C# with nullable reference types enabled
-- **API Documentation**: Swagger/OpenAPI with XML documentation
-- **Database**: MongoDB for storing service registrations and validation results
+- **Framework**: .NET 10.0 with ASP.NET Core
+- **Language**: C# 13+ with nullable reference types enabled
+- **API Documentation**: Swagger/OpenAPI with XML documentation comments
+- **Database**: MongoDB (optional) for storing service registrations and validation history
 - **Validation Engine**: 
-  - JSON Schema validation using Newtonsoft.Json.Schema and JsonSchema.Net
-  - Custom test profile execution engine
-  - Pagination testing service
-- **Health Checks**: ASP.NET Core Health Checks with MongoDB integration
-- **External Integrations**: 
-  - GitHub API (Octokit) for issue management and service registration
-  - HTTP client factory for resilient API calls
+  - JSON Schema validation using Newtonsoft.Json.Schema (v4.0.1) and JsonSchema.Net (v8.0.5)
+  - OpenAPI specification parsing and validation
+  - Automated endpoint discovery and testing
+  - Response schema validation against HSDS-UK standards
+- **Observability**: OpenTelemetry integration with OTLP export for metrics and distributed tracing
+- **Health Checks**: ASP.NET Core Health Checks with MongoDB and external URL monitoring
+- **Security**: Rate limiting, CORS configuration, configurable SSL validation
 
 ### Key Projects
 
 - **OpenReferralApi**: Main ASP.NET Core Web API application
-- **OpenReferralApi.Core**: Core business logic and shared models
-- **OpenReferralApi.Tests**: Unit and integration tests
+- **OpenReferralApi.Core**: Core business logic, models, and shared services
+- **OpenReferralApi.Tests**: Comprehensive unit and integration tests
 
-### Services
+### Core Services
 
-- **ValidatorService**: Core validation logic against HSDS-UK schemas
-- **DashboardService**: Dashboard data aggregation and presentation
-- **TestProfileService**: Test profile management and execution
-- **PaginationTestingService**: Validates paginated endpoint implementations
-- **PeriodicValidationService**: Scheduled background validation runs
-- **GithubService**: Integration with GitHub for service registration workflow
+- **OpenApiValidationService**: Orchestrates OpenAPI spec validation and endpoint testing
+- **OpenApiDiscoveryService**: Discovers and parses OpenAPI specifications from URLs
+- **JsonValidatorService**: Validates JSON responses against HSDS-UK schemas
+- **JsonSchemaResolverService**: Loads and resolves JSON schema definitions
+- **RequestProcessingService**: HTTP client management with caching and timeout handling
+- **PathParsingService**: URL and path parameter parsing utilities
+- **OpenApiToValidationResponseMapper**: Maps validation results to response formats
 
 ### Deployment
 
-- **Containerization**: Docker support with Linux-based images
-- **Cloud Platform**: Heroku deployment configuration
+- **Containerization**: Multi-stage Docker builds with Linux-based images
+- **Cloud Platform**: Heroku-ready with dynamic port configuration
+- **Orchestration**: Kubernetes-compatible health check endpoints
 - **CORS**: Configurable cross-origin resource sharing for frontend integration
 
 ## Documentation
 
 For detailed information about specific components:
 
-- [Validator Documentation](/Docs/Validator.md) - How the validation engine works
-- [Dashboard Documentation](/Docs/Dashboard.md) - Dashboard service and registration
-- [Test Profiles](/Docs/TestProfiles.md) - Creating and managing test profiles
-- [Build & Deploy](/Docs/Build&Deploy.md) - Deployment instructions
+- [Technical Architecture](docs/ARCHITECTURE.md) - Comprehensive technical documentation
+- [Development Setup](docs/DEVELOPMENT%20SETUP.md) - Local development environment setup
+- [Contributing Guide](docs/CONTRIBUTING.md) - How to contribute to the project
+- [Developer Walkthrough](docs/DEVELOPER_WALKTHROUGH.md) - Step-by-step guide for developers
 
-### How-To Guides
+### API Documentation
 
-- [Add a Dashboard Service](/Docs/HowTo/AddDashboardService.md)
-- [Add a New Schema](/Docs/HowTo/AddSchema.md)
+When running locally in development mode, interactive API documentation is available at:
+- **Swagger UI**: `http://localhost:5000/` (or your configured port)
+- **OpenAPI Spec**: `http://localhost:5000/swagger/v1/swagger.json`
+
+### Quick Start
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/tpximpact/mhclg-oruk.git
+   cd OpenReferralApi
+   ```
+
+2. **Run with Docker**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml up
+   ```
+
+3. **Or run with .NET CLI**:
+   ```bash
+   dotnet restore
+   dotnet run --project OpenReferralApi/OpenReferralApi.csproj
+   ```
+
+4. **Access Swagger UI**: Open `http://localhost:5000` in your browser
 
 ## Community & Support
 
@@ -96,11 +124,11 @@ For questions, discussions, and contributions related to ORUK or the HSDS standa
 
 We welcome contributions from the community! The Open Referral network is built on collaboration and shared expertise.
 
-**For issues specific to this API or website**, please use the [issues page](https://github.com/tpximpact/mhclg-oruk/issues) of the website's repository. Consolidating issues in one place helps us track and respond more efficiently.
+**For issues specific to this API**, please use the [issues page](https://github.com/tpximpact/mhclg-oruk/issues). Consolidating issues in one place helps us track and respond more efficiently.
 
 **For broader HSDS/ORUK standard discussions**, please post to the [community forums](https://forum.openreferral.org/) where the active community can provide support and guidance.
 
-**For broader HSDS/ORUK standard discussions**, please post to the [community forums](https://forum.openreferral.org/) where the active community can provide support and guidance.
+See our [Contributing Guide](docs/CONTRIBUTING.md) for detailed information on how to get started.
 
 ## License
 
