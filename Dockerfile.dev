@@ -1,0 +1,20 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+WORKDIR /app
+
+# Copy csproj files and restore dependencies
+COPY OpenReferralApi/OpenReferralApi.csproj OpenReferralApi/
+COPY OpenReferralApi.Core/OpenReferralApi.Core.csproj OpenReferralApi.Core/
+RUN dotnet restore OpenReferralApi/OpenReferralApi.csproj
+
+# Copy everything else
+COPY . .
+
+# Set working directory to the main project
+WORKDIR /app/OpenReferralApi
+
+# Expose ports
+EXPOSE 80
+EXPOSE 443
+
+# Use dotnet watch for hot reload
+ENTRYPOINT ["dotnet", "watch", "run", "--no-restore", "--urls", "http://0.0.0.0:80"]

@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace OpenReferralApi.Controllers;
 
@@ -8,6 +9,12 @@ namespace OpenReferralApi.Controllers;
 public class MockController : ControllerBase
 {
     private const string MockPath = "Mocks/V3.0-UK-";
+    private readonly ILogger<MockController> _logger;
+
+    public MockController(ILogger<MockController> logger)
+    {
+        _logger = logger;
+    }
     
     /// <summary>
     /// A MOCK endpoint that returns an example of the expected response from the V3 API details GET / endpoint  
@@ -16,6 +23,7 @@ public class MockController : ControllerBase
     [Route("")]
     [Route("fail")]
     [Route("warn")]
+    [OutputCache(PolicyName = "MockEndpoints")]
     public async Task<IActionResult> GetServiceMetadata()
     {
         var requestPath = Request.Path.ToString();
@@ -32,6 +40,7 @@ public class MockController : ControllerBase
     [HttpGet]
     [Route("services")]
     [Route("fail/services")]
+    [OutputCache(PolicyName = "MockEndpoints")]
     [Route("warn/services")]
     public async Task<IActionResult> GetServices()
     {
@@ -51,6 +60,7 @@ public class MockController : ControllerBase
     [Route("services/{id}")]
     [Route("fail/services/{id}")]
     [Route("warn/services/{id}")]
+    [OutputCache(PolicyName = "MockEndpoints")]
     public async Task<IActionResult> GetServicesById()
     {
         var requestPath = Request.Path.ToString();
@@ -68,6 +78,7 @@ public class MockController : ControllerBase
     [Route("taxonomies")]
     [Route("fail/taxonomies")]
     [Route("warn/taxonomies")]
+    [OutputCache(PolicyName = "MockEndpoints")]
     public async Task<IActionResult> GetTaxonomies()
     {
         var requestPath = Request.Path.ToString();
@@ -86,6 +97,7 @@ public class MockController : ControllerBase
     [Route("taxonomies/{id}")]
     [Route("fail/taxonomies/{id}")]
     [Route("warn/taxonomies/{id}")]
+    [OutputCache(PolicyName = "MockEndpoints")]
     public async Task<IActionResult> GetTaxonomiesById()
     {
         var requestPath = Request.Path.ToString();
@@ -103,6 +115,7 @@ public class MockController : ControllerBase
     [Route("taxonomy_terms")]
     [Route("fail/taxonomy_terms")]
     [Route("warn/taxonomy_terms")]
+    [OutputCache(PolicyName = "MockEndpoints")]
     public async Task<IActionResult> GetTaxonomyTerms()
     {
         var requestPath = Request.Path.ToString();
@@ -121,6 +134,7 @@ public class MockController : ControllerBase
     [Route("taxonomy_terms/{id}")]
     [Route("fail/taxonomy_terms/{id}")]
     [Route("warn/taxonomy_terms/{id}")]
+    [OutputCache(PolicyName = "MockEndpoints")]
     public async Task<IActionResult> GetTaxonomyTermsById()
     {
         var requestPath = Request.Path.ToString();
@@ -138,6 +152,7 @@ public class MockController : ControllerBase
     [Route("service_at_locations")]
     [Route("fail/service_at_locations")]
     [Route("warn/service_at_locations")]
+    [OutputCache(PolicyName = "MockEndpoints")]
     public async Task<IActionResult> GetServiceAtLocations()
     {
         var requestPath = Request.Path.ToString();
@@ -156,6 +171,7 @@ public class MockController : ControllerBase
     [Route("service_at_locations/{id}")]
     [Route("fail/service_at_locations/{id}")]
     [Route("warn/service_at_locations/{id}")]
+    [OutputCache(PolicyName = "MockEndpoints")]
     public async Task<IActionResult> GetServiceAtLocationsById()
     {
         var requestPath = Request.Path.ToString();
@@ -192,6 +208,8 @@ public class MockController : ControllerBase
     {
         try
         {
+            _logger.LogDebug("Reading mock JSON file: {FilePath}", filePath);
+            
             // Open the text file using a stream reader.
             using StreamReader reader = new(filePath);
 
@@ -202,12 +220,20 @@ public class MockController : ControllerBase
 
             return Ok(mockResponse);
         }
-        catch (IOException e)
+        catch (FileNotFoundException ex)
         {
-            Console.WriteLine("The file could not be read:");
-            Console.WriteLine(e.Message);
+            _logger.LogError(ex, "Mock file not found: {FilePath}", filePath);
+            return NotFound(new { error = "Mock file not found", file = filePath });
         }
-
-        return StatusCode(500, "Sorry, something went wrong when trying to return the mock");
+        catch (IOException ex)
+        {
+            _logger.LogError(ex, "Error reading mock file: {FilePath}", filePath);
+            return StatusCode(500, new { error = "Error reading mock file", message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error reading mock file: {FilePath}", filePath);
+            return StatusCode(500, new { error = "An unexpected error occurred", message = ex.Message });
+        }
     } 
 }
