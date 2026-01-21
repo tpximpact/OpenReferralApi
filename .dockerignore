@@ -27,9 +27,6 @@
 # CI/CD
 .github/
 
-# Tests
-**/*.Tests/
-
 # Development config files
 **/appsettings.Development.json
 **/appsettings.Local.json
