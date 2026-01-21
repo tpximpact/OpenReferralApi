@@ -7,6 +7,7 @@ using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
 using OpenReferralApi.Middleware;
 using OpenReferralApi.Telemetry;
@@ -17,6 +18,10 @@ using OpenTelemetry.Trace;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables("ORUK_API_");
+
+// Configure strongly-typed options
+builder.Services.Configure<SpecificationOptions>(
+    builder.Configuration.GetSection(SpecificationOptions.SectionName));
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();

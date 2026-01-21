@@ -1,5 +1,8 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using OpenReferralApi.Core.Models;
 
 namespace OpenReferralApi.Core.Services;
 
@@ -16,21 +19,21 @@ public class OpenApiDiscoveryService : IOpenApiDiscoveryService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<OpenApiDiscoveryService> _logger;
+    private readonly string _baseSpecificationUrl;
 
-    public OpenApiDiscoveryService(IHttpClientFactory httpClientFactory, ILogger<OpenApiDiscoveryService> logger)
+    public OpenApiDiscoveryService(IHttpClientFactory httpClientFactory, ILogger<OpenApiDiscoveryService> logger, IOptions<SpecificationOptions> specificationOptions)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _baseSpecificationUrl = specificationOptions.Value.BaseUrl;
     }
 
     public async Task<(string? url, string? reason)> DiscoverOpenApiUrlAsync(string baseUrl, CancellationToken cancellationToken = default)
     {
-        const string baseSpecificationUrl = "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/validate_using_openapi/OpenReferralApi/Schemas/";
-
         if (string.IsNullOrWhiteSpace(baseUrl)) return (null, null);
 
         const float defaultSpecificationVersion = 1.0f;
-        var defaultSpec = $"{baseSpecificationUrl}V{defaultSpecificationVersion:0.0}-UK/open_api.json";
+        var defaultSpec = $"{_baseSpecificationUrl}V{defaultSpecificationVersion:0.0}-UK/open_api.json";
         try
         {
             using var httpClient = _httpClientFactory?.CreateClient("OpenApiValidationService") ?? new HttpClient();
@@ -56,7 +59,7 @@ public class OpenApiDiscoveryService : IOpenApiDiscoveryService
                     var extractedVersion = ExtractVersionNumber(version);
                     if (extractedVersion.HasValue)
                     {
-                        var versionedSpec = $"{baseSpecificationUrl}V{extractedVersion.Value:0.0}-UK/open_api.json";
+                        var versionedSpec = $"{_baseSpecificationUrl}V{extractedVersion.Value:0.0}-UK/open_api.json";
                         _logger.LogInformation("Detected version '{Version}'; using HSDS-UK {ExtractedVersion:0.0} spec: {OpenApiUrl}", version, extractedVersion.Value, versionedSpec);
                         return (versionedSpec, $"Standard version {version} read from '/' endpoint");
                     }
