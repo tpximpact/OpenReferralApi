@@ -134,11 +134,15 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+    
+    - name: Lowercase repository name
+      id: repo
+      run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
         
     - name: Scan Docker image
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ghcr.io/${{ github.repository }}:${{ github.sha }}
+        image-ref: ghcr.io/${{ steps.repo.outputs.name }}:${{ github.sha }}
         format: 'sarif'
         output: 'docker-trivy-results.sarif'
         
