@@ -138,11 +138,15 @@ jobs:
     - name: Lowercase repository name
       id: repo
       run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+    
+    - name: Get short SHA
+      id: sha
+      run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
         
     - name: Scan Docker image
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ghcr.io/${{ steps.repo.outputs.name }}:${{ github.sha }}
+        image-ref: ghcr.io/${{ steps.repo.outputs.name }}:sha-${{ steps.sha.outputs.short }}
         format: 'sarif'
         output: 'docker-trivy-results.sarif'
         
