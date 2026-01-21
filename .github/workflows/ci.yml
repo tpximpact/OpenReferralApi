@@ -165,6 +165,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
+    - name: Install Heroku CLI
+      run: curl https://cli-assets.heroku.com/install.sh | sh
       
     - name: Deploy to Heroku Staging
       uses: akhileshns/heroku-deploy@v3.13.15
