@@ -45,7 +45,7 @@ jobs:
       if: always()
       with:
         name: test-results
-        path: '**/TestResults/**/*'
+        path: ./coverage/**/*
 
   security-scan:
     name: Security Scan
