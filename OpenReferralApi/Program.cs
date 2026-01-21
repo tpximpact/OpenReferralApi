@@ -237,17 +237,16 @@ app.UseExceptionHandler();
 // Middleware
 app.UseMiddleware<CorrelationIdMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger in all environments
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Open Referral UK API v1");
-        c.RoutePrefix = string.Empty;
-        c.DisplayRequestDuration();
-    });
-}
-else
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Open Referral UK API v1");
+    c.RoutePrefix = string.Empty;
+    c.DisplayRequestDuration();
+});
+
+if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
