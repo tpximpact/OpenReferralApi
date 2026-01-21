@@ -65,7 +65,7 @@ jobs:
         output: 'trivy-results.sarif'
         
     - name: Upload Trivy results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
@@ -168,6 +168,11 @@ jobs:
     
     - name: Install Heroku CLI
       run: curl https://cli-assets.heroku.com/install.sh | sh
+      
+    - name: Set Heroku stack to container
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      run: heroku stack:set container --app staging-oruk-api
       
     - name: Deploy to Heroku Staging
       uses: akhileshns/heroku-deploy@v3.13.15
