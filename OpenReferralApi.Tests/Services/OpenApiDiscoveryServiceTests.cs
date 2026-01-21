@@ -1,7 +1,9 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
+using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
 using System.Net;
 
@@ -13,6 +15,7 @@ public class OpenApiDiscoveryServiceTests
     private Mock<IHttpClientFactory> _httpClientFactoryMock;
     private Mock<ILogger<OpenApiDiscoveryService>> _loggerMock;
     private Mock<HttpMessageHandler> _httpMessageHandlerMock;
+    private Mock<IOptions<SpecificationOptions>> _specificationOptionsMock;
     private HttpClient _httpClient;
     private OpenApiDiscoveryService _service;
 
@@ -22,13 +25,21 @@ public class OpenApiDiscoveryServiceTests
         _httpClientFactoryMock = new Mock<IHttpClientFactory>();
         _loggerMock = new Mock<ILogger<OpenApiDiscoveryService>>();
         _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
+        _specificationOptionsMock = new Mock<IOptions<SpecificationOptions>>();
         _httpClient = new HttpClient(_httpMessageHandlerMock.Object);
         
         _httpClientFactoryMock
             .Setup(f => f.CreateClient("OpenApiValidationService"))
             .Returns(_httpClient);
 
-        _service = new OpenApiDiscoveryService(_httpClientFactoryMock.Object, _loggerMock.Object);
+        _specificationOptionsMock
+            .Setup(o => o.Value)
+            .Returns(new SpecificationOptions
+            {
+                BaseUrl = "https://raw.githubusercontent.com/tpximpact/OpenReferralApi/refs/heads/staging/OpenReferralApi/Schemas/"
+            });
+
+        _service = new OpenApiDiscoveryService(_httpClientFactoryMock.Object, _loggerMock.Object, _specificationOptionsMock.Object);
     }
 
     [TearDown]
