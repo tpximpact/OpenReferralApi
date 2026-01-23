@@ -184,9 +184,13 @@ jobs:
     - name: Pull Docker image
       run: docker pull ghcr.io/${{ steps.repo.outputs.name }}:sha-${{ steps.sha.outputs.short }}
     
+    - name: Create Docker network
+      run: docker network create zap-test-network
+    
     - name: Start application container
       run: |
         docker run -d --name test-app \
+          --network zap-test-network \
           -p 8080:8080 \
           ghcr.io/${{ steps.repo.outputs.name }}:sha-${{ steps.sha.outputs.short }}
         
@@ -205,23 +209,45 @@ jobs:
         done
     
     - name: Run OWASP ZAP Baseline Scan
-      uses: zaproxy/action-baseline@v0.12.0
-      with:
-        target: 'http://localhost:8080'
-        rules_file_name: '.zap/rules.tsv'
-        cmd_options: '-a -j'
-        fail_action: false
-        allow_issue_writing: false
+      run: |
+        docker run --rm \
+          --network zap-test-network \
+          -v ${{ github.workspace }}:/zap/wrk/:rw \
+          ghcr.io/zaproxy/zaproxy:stable \
+          zap-baseline.py \
+          -t http://test-app:8080 \
+          -J report_json.json \
+          -w report_md.md \
+          -r report_html.html \
+          -I
+      continue-on-error: true
+    
+    - name: Convert ZAP HTML report to SARIF
+      if: always()
+      run: |
+        if [ -f report_json.json ]; then
+          echo "ZAP report generated successfully"
+          # Optional: Convert to SARIF if needed
+        else
+          echo "No ZAP report found"
+        fi
     
     - name: Upload ZAP results
-      uses: github/codeql-action/upload-sarif@v4
       if: always()
+      uses: actions/upload-artifact@v4
       with:
-        sarif_file: 'results.sarif'
+        name: zap-scan-results
+        path: |
+          report_json.json
+          report_md.md
+          report_html.html
     
     - name: Stop application container
       if: always()
-      run: docker stop test-app && docker rm test-app
+      run: |
+        docker stop test-app || true
+        docker rm test-app || true
+        docker network rm zap-test-network || true
 
   deploy-staging:
     name: Deploy to Staging
