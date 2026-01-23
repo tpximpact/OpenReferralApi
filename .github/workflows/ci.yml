@@ -196,23 +196,45 @@ jobs:
         
         # Wait for application to be ready
         echo "Waiting for application to start..."
-        sleep 15
+        sleep 10
         
-        # Health check
+        # Show container logs for debugging
+        echo "Container logs:"
+        docker logs test-app
+        
+        # Health check with better error reporting
+        echo "Starting health check..."
         for i in {1..30}; do
           if curl -f http://localhost:8080 > /dev/null 2>&1; then
-            echo "Application is ready"
+            echo "✓ Application is ready and responding on port 8080"
             break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "✗ Application failed to become ready after 60 seconds"
+            echo "Final container logs:"
+            docker logs test-app
+            exit 1
           fi
           echo "Waiting for application... ($i/30)"
           sleep 2
         done
+        
+        # Test from within the network
+        docker run --rm --network zap-test-network curlimages/curl:latest \
+          curl -f http://test-app:8080 -I || echo "Warning: Cannot reach app from Docker network"
+    
+    - name: Prepare ZAP workspace
+      run: |
+        # Create a temporary directory for ZAP reports with proper permissions
+        mkdir -p ${{ github.workspace }}/zap-reports
+        chmod 777 ${{ github.workspace }}/zap-reports
     
     - name: Run OWASP ZAP Baseline Scan
       run: |
         docker run --rm \
           --network zap-test-network \
-          -v ${{ github.workspace }}:/zap/wrk/:rw \
+          --user $(id -u):$(id -g) \
+          -v ${{ github.workspace }}/zap-reports:/zap/wrk/:rw \
           ghcr.io/zaproxy/zaproxy:stable \
           zap-baseline.py \
           -t http://test-app:8080 \
@@ -222,14 +244,14 @@ jobs:
           -I
       continue-on-error: true
     
-    - name: Convert ZAP HTML report to SARIF
+    - name: Check ZAP results
       if: always()
       run: |
-        if [ -f report_json.json ]; then
-          echo "ZAP report generated successfully"
-          # Optional: Convert to SARIF if needed
+        if [ -f ${{ github.workspace }}/zap-reports/report_json.json ]; then
+          echo "✓ ZAP report generated successfully"
+          ls -lah ${{ github.workspace }}/zap-reports/
         else
-          echo "No ZAP report found"
+          echo "✗ No ZAP report found"
         fi
     
     - name: Upload ZAP results
@@ -238,9 +260,9 @@ jobs:
       with:
         name: zap-scan-results
         path: |
-          report_json.json
-          report_md.md
-          report_html.html
+          zap-reports/report_json.json
+          zap-reports/report_md.md
+          zap-reports/report_html.html
     
     - name: Stop application container
       if: always()
