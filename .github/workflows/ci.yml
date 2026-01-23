@@ -191,7 +191,7 @@ jobs:
       run: |
         docker run -d --name test-app \
           --network zap-test-network \
-          -p 8080:8080 \
+          -p 8080:80 \
           ghcr.io/${{ steps.repo.outputs.name }}:sha-${{ steps.sha.outputs.short }}
         
         # Wait for application to be ready
@@ -221,7 +221,7 @@ jobs:
         
         # Test from within the network
         docker run --rm --network zap-test-network curlimages/curl:latest \
-          curl -f http://test-app:8080 -I || echo "Warning: Cannot reach app from Docker network"
+          curl -f http://test-app:80 -I || echo "Warning: Cannot reach app from Docker network"
     
     - name: Prepare ZAP workspace
       run: |
@@ -237,7 +237,7 @@ jobs:
           -v ${{ github.workspace }}/zap-reports:/zap/wrk/:rw \
           ghcr.io/zaproxy/zaproxy:stable \
           zap-baseline.py \
-          -t http://test-app:8080 \
+          -t http://test-app:80 \
           -J report_json.json \
           -w report_md.md \
           -r report_html.html \
