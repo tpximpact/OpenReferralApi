@@ -160,7 +160,7 @@ jobs:
     name: OWASP ZAP Security Test
     runs-on: ubuntu-latest
     needs: docker-build
-    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main') && github.event_name == 'push'
 
     steps:
       - name: Checkout code
@@ -283,7 +283,7 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [docker-build, zap-scan]
+    needs: [docker-build, security-scan, code-quality, zap-scan]
     if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
 
     steps:
@@ -309,7 +309,7 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: docker-build
+    needs: [docker-build, security-scan, code-quality, zap-scan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
