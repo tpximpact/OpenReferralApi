@@ -233,7 +233,6 @@ jobs:
         run: |
           docker run --rm \
             --network zap-test-network \
-            --user $(id -u):$(id -g) \
             -v ${{ github.workspace }}/zap-reports:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
@@ -241,17 +240,29 @@ jobs:
             -J report_json.json \
             -w report_md.md \
             -r report_html.html \
-            -I
+            -I || echo "ZAP scan completed with findings"
         continue-on-error: true
 
       - name: Check ZAP results
         if: always()
         run: |
+          echo "=== ZAP Reports Directory ==="
+          ls -lah ${{ github.workspace }}/zap-reports/ || echo "Directory does not exist or is empty"
+          echo ""
           if [ -f ${{ github.workspace }}/zap-reports/report_json.json ]; then
-            echo "✓ ZAP report generated successfully"
-            ls -lah ${{ github.workspace }}/zap-reports/
+            echo "✓ ZAP JSON report found"
           else
-            echo "✗ No ZAP report found"
+            echo "✗ ZAP JSON report missing"
+          fi
+          if [ -f ${{ github.workspace }}/zap-reports/report_md.md ]; then
+            echo "✓ ZAP Markdown report found"
+          else
+            echo "✗ ZAP Markdown report missing"
+          fi
+          if [ -f ${{ github.workspace }}/zap-reports/report_html.html ]; then
+            echo "✓ ZAP HTML report found"
+          else
+            echo "✗ ZAP HTML report missing"
           fi
 
       - name: Upload ZAP results
@@ -259,10 +270,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-results
-          path: |
-            zap-reports/report_json.json
-            zap-reports/report_md.md
-            zap-reports/report_html.html
+          path: zap-reports/
+          if-no-files-found: warn
 
       - name: Stop application container
         if: always()
