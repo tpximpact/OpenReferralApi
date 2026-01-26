@@ -112,6 +112,6 @@ public class OpenApiToValidationResponseMapperTests
         // Assert
         response.Should().NotBeNull();
         var json = JObject.FromObject(response);
-        json["service"]["url"].ToString().Should().Be("");
+        json["service"]!["url"]!.ToString().Should().Be("");
     }
 }
