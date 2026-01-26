@@ -1,0 +1,347 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+    branches: [staging, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: Generate coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./coverage
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ./coverage/**/*
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run code analysis
+        run: dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=false
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [build-and-test, security-scan]
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+          flavor: |
+            latest=auto
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Lowercase repository name
+        id: repo
+        run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Scan Docker image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ steps.repo.outputs.name }}:sha-${{ steps.sha.outputs.short }}
+          format: "sarif"
+          output: "docker-trivy-results.sarif"
+
+      - name: Upload Docker scan results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: "docker-trivy-results.sarif"
+
+  zap-scan:
+    name: OWASP ZAP Security Test
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main') && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lowercase repository name
+        id: repo
+        run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull Docker image
+        run: docker pull ghcr.io/${{ steps.repo.outputs.name }}:sha-${{ steps.sha.outputs.short }}
+
+      - name: Create Docker network
+        run: docker network create zap-test-network
+
+      - name: Start application container
+        run: |
+          docker run -d --name test-app \
+            --network zap-test-network \
+            -p 8080:80 \
+            ghcr.io/${{ steps.repo.outputs.name }}:sha-${{ steps.sha.outputs.short }}
+
+          # Wait for application to be ready
+          echo "Waiting for application to start..."
+          sleep 10
+
+          # Show container logs for debugging
+          echo "Container logs:"
+          docker logs test-app
+
+          # Health check with better error reporting
+          echo "Starting health check..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8080 > /dev/null 2>&1; then
+              echo "✓ Application is ready and responding on port 8080"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "✗ Application failed to become ready after 60 seconds"
+              echo "Final container logs:"
+              docker logs test-app
+              exit 1
+            fi
+            echo "Waiting for application... ($i/30)"
+            sleep 2
+          done
+
+          # Test from within the network
+          docker run --rm --network zap-test-network curlimages/curl:latest \
+            curl -f http://test-app:80 -I || echo "Warning: Cannot reach app from Docker network"
+
+      - name: Prepare ZAP workspace
+        run: |
+          # Create a temporary directory for ZAP reports with proper permissions
+          mkdir -p ${{ github.workspace }}/zap-reports
+          chmod 777 ${{ github.workspace }}/zap-reports
+
+      - name: Run OWASP ZAP Baseline Scan
+        run: |
+          docker run --rm \
+            --network zap-test-network \
+            -v ${{ github.workspace }}/zap-reports:/zap/wrk/:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://test-app:80 \
+            -J report_json.json \
+            -w report_md.md \
+            -r report_html.html \
+            -I || echo "ZAP scan completed with findings"
+        continue-on-error: true
+
+      - name: Check ZAP results
+        if: always()
+        run: |
+          echo "=== ZAP Reports Directory ==="
+          ls -lah ${{ github.workspace }}/zap-reports/ || echo "Directory does not exist or is empty"
+          echo ""
+          if [ -f ${{ github.workspace }}/zap-reports/report_json.json ]; then
+            echo "✓ ZAP JSON report found"
+          else
+            echo "✗ ZAP JSON report missing"
+          fi
+          if [ -f ${{ github.workspace }}/zap-reports/report_md.md ]; then
+            echo "✓ ZAP Markdown report found"
+          else
+            echo "✗ ZAP Markdown report missing"
+          fi
+          if [ -f ${{ github.workspace }}/zap-reports/report_html.html ]; then
+            echo "✓ ZAP HTML report found"
+          else
+            echo "✗ ZAP HTML report missing"
+          fi
+
+      - name: Upload ZAP results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-scan-results
+          path: zap-reports/
+          if-no-files-found: warn
+
+      - name: Stop application container
+        if: always()
+        run: |
+          docker stop test-app || true
+          docker rm test-app || true
+          docker network rm zap-test-network || true
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [docker-build, security-scan, code-quality, zap-scan]
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Set Heroku stack to container
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku stack:set container --app staging-oruk-api
+
+      - name: Deploy to Heroku Staging
+        uses: akhileshns/heroku-deploy@v3.13.15
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: staging-oruk-api
+          heroku_email: ${{ vars.HEROKU_EMAIL }}
+          usedocker: true
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [docker-build, security-scan, code-quality, zap-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Deploy to Heroku Production
+        uses: akhileshns/heroku-deploy@v3.13.15
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ vars.HEROKU_APP_NAME }}
+          heroku_email: ${{vars.HEROKU_EMAIL }}
+          usedocker: true
+
+      - name: Health check
+        uses: jtalk/url-health-check-action@v4
+        with:
+          # Check the following URLs one by one sequentially
+          url: ${{vars.HEALTH_ENDPOINT}}|${{vars.API_BASE_ENDPOINT}}/api/dashboard
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2.5.0
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}

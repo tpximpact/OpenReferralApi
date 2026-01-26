@@ -7,7 +7,6 @@ using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
 using OpenReferralApi.Middleware;
 using OpenReferralApi.Telemetry;
@@ -18,10 +17,6 @@ using OpenTelemetry.Trace;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables("ORUK_API_");
-
-// Configure strongly-typed options
-builder.Services.Configure<SpecificationOptions>(
-    builder.Configuration.GetSection(SpecificationOptions.SectionName));
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
@@ -86,67 +81,87 @@ var validateSslCertificates = builder.Configuration.GetValue<bool>("Security:Val
 
 builder.Services.AddHttpClient(nameof(OpenApiValidationService), client =>
 {
+    // Set a standard user agent that most APIs accept
     client.DefaultRequestHeaders.Add("User-Agent", "OpenReferral-Validator/1.0");
+
+    // Set reasonable timeout
     client.Timeout = TimeSpan.FromMinutes(2);
 })
 .ConfigurePrimaryHttpMessageHandler(() =>
 {
     var handler = new HttpClientHandler();
 
+    // Configure SSL/TLS settings based on environment
     if (!validateSslCertificates)
     {
+        var logger = builder.Services.BuildServiceProvider()
+            .GetRequiredService<ILogger<Program>>();
+        logger.LogWarning("SSL certificate validation is DISABLED. This should only be used in development.");
+        
         handler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
     }
 
+    // Enable automatic decompression for better compatibility
     handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
     return handler;
 });
 
 builder.Services.AddHttpClient();
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-    });
+builder
 
 // Response Caching
-builder.Services.AddResponseCaching();
-builder.Services.AddOutputCache(options =>
-{
-    options.AddBasePolicy(builder => builder.Cache());
-    options.AddPolicy("MockEndpoints", builder => 
-        builder.Expire(TimeSpan.FromMinutes(5)));
-});
-
-// Health Checks
+var mongoConnectionString = builder.Configuration.GetValue<string>("Database:ConnectionString");
 var healthChecksBuilder = builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "ready" });
 
-var mongoConnectionString = builder.Configuration.GetValue<string>("Database:ConnectionString");
 if (!string.IsNullOrEmpty(mongoConnectionString))
 {
-    // Register MongoDB client for health checks
-    builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp =>
-    {
-        return new MongoDB.Driver.MongoClient(mongoConnectionString);
-    });
-    
     healthChecksBuilder.AddMongoDb(
+        mongoConnectionString,
         name: "mongodb",
+        timeout: TimeSpan.FromSeconds(3),
         tags: new[] { "ready", "db" });
 }
 
+// Add HTTP endpoint health check for external API validation
 healthChecksBuilder.AddUrlGroup(
     new Uri("https://openreferraluk.org"),
     name: "openreferral-website",
     timeout: TimeSpan.FromSeconds(5),
-    tags: new[] { "external" });
+    tags: new[] { "external
+{
+    options.AddBasePolicy(builder => builder.Cache());
+    options.AddPolicy("MockEndpoints", builder => 
+        builder.Expire(TimeSpan.FromMinutes(5)));
+});.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+// Exception Handlers
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
-// Services
-builder.Services.AddScoped<IPathParsingService, PathParsingService>();
-builder.Services.AddSingleton<IRequestProcessingService, RequestProcessingService>();
-builder.Services.AddScoped<IJsonSchemaResolverService, JsonSchemaResolverService>();
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
+
+app.UseExceptionHandler();
+
+// Middleware
+app.UseMiddleware<CorrelationIdMiddleware>();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Open Referral UK API v1");
+        c.RoutePrefix = string.Empty; // Serve Swagger UI at root
+        c.DisplayRequestDuration();
+    });
+}
+else
+{
+    app.UseHsts(er.Services.AddScoped<IJsonSchemaResolverService, JsonSchemaResolverService>();
 builder.Services.AddScoped<IJsonValidatorService, JsonValidatorService>();
 builder.Services.AddScoped<IOpenApiValidationService>(provider =>
 {
@@ -158,105 +173,31 @@ builder.Services.AddScoped<IOpenApiValidationService>(provider =>
     return new OpenApiValidationService(logger, httpClient, jsonValidatorService, schemaResolverService);
 });
 
+// Register OpenAPI discovery service used by controller to discover openapi_url from BaseUrl
 builder.Services.AddScoped<IOpenApiDiscoveryService, OpenApiDiscoveryService>();
+
+// Register OpenAPI to ValidationResponse mapper
 builder.Services.AddScoped<IOpenApiToValidationResponseMapper, OpenApiToValidationResponseMapper>();
 
 builder.Services.AddMemoryCache();
 
-// Exception Handlers
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails();
-
-// OpenTelemetry Configuration
-var otelEnabled = builder.Configuration.GetValue<bool>("OpenTelemetry:Enabled", false);
-if (otelEnabled)
-{
-    var resourceBuilder = ResourceBuilder.CreateDefault()
-        .AddService(
-            serviceName: Instrumentation.ServiceName,
-            serviceVersion: Instrumentation.ServiceVersion)
-        .AddAttributes(new Dictionary<string, object>
-        {
-            ["deployment.environment"] = builder.Environment.EnvironmentName
-        });
-
-    builder.Services.AddOpenTelemetry()
-        .WithMetrics(metrics =>
-        {
-            metrics
-                .SetResourceBuilder(resourceBuilder)
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                .AddMeter(Instrumentation.ServiceName);
-
-            var otlpEndpoint = builder.Configuration.GetValue<string>("OpenTelemetry:OtlpEndpoint");
-            if (!string.IsNullOrEmpty(otlpEndpoint))
-            {
-                metrics.AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(otlpEndpoint);
-                });
-            }
-
-            if (builder.Environment.IsDevelopment())
-            {
-                metrics.AddConsoleExporter();
-            }
-        })
-        .WithTracing(tracing =>
-        {
-            tracing
-                .SetResourceBuilder(resourceBuilder)
-                .AddAspNetCoreInstrumentation(options =>
-                {
-                    options.RecordException = true;
-                    options.Filter = httpContext =>
-                    {
-                        return !httpContext.Request.Path.StartsWithSegments("/health-check");
-                    };
-                })
-                .AddHttpClientInstrumentation()
-                .AddSource(Instrumentation.ActivitySource.Name);
-
-            var otlpEndpoint = builder.Configuration.GetValue<string>("OpenTelemetry:OtlpEndpoint");
-            if (!string.IsNullOrEmpty(otlpEndpoint))
-            {
-                tracing.AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(otlpEndpoint);
-                });
-            }
-
-            if (builder.Environment.IsDevelopment())
-            {
-                tracing.AddConsoleExporter();
-            }
-        });
-}
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-app.UseExceptionHandler();
-
-// Middleware
-app.UseMiddleware<CorrelationIdMiddleware>();
-
-// Enable Swagger in all environments
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+app.UseResponseCaching();
+app.UseOutputCache();
+app.UseRateLimiter();
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Open Referral UK API v1");
-    c.RoutePrefix = string.Empty;
-    c.DisplayRequestDuration();
-});
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHsts();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "JSON Validator API v1");
+        c.RoutePrefix = string.Empty; // Serve Swagger UI at root
+    });
 }
 
-// Health check endpoints
+// Health check endpoints with detailed responses
 app.MapHealthChecks("/health-check", new HealthCheckOptions
 {
     Predicate = _ => true,
@@ -271,7 +212,7 @@ app.MapHealthChecks("/health-check/ready", new HealthCheckOptions
 
 app.MapHealthChecks("/health-check/live", new HealthCheckOptions
 {
-    Predicate = _ => false,
+    Predicate = _ => false, // Just returns 200 OK if app is running
     ResponseWriter = async (context, _) =>
     {
         context.Response.ContentType = "application/json";
@@ -286,9 +227,6 @@ app.MapHealthChecks("/health-check/live", new HealthCheckOptions
 app.UseRouting();
 app.UseCors();
 app.UseHttpsRedirection();
-app.UseResponseCaching();
-app.UseOutputCache();
-app.UseRateLimiter();
 
 app.MapControllerRoute(name: "default", pattern: "{controller}/{action=Index}/{id?}");
 

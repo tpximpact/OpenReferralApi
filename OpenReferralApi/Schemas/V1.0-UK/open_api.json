@@ -3,13 +3,14 @@
   "info": {
     "title": "Human services API",
     "description": "An API to read open data compliant with Open Referral as extended for English local government and health data. Loaded with Bristol sample (historic) service data.\n\nWeb methods support JSON format outputs by default. Hence https://api.porism.com/ServiceDirectoryService/services returns the same as https://api.porism.com/ServiceDirectoryService/services.json\n\nImplementations supporting CSV append \".csv\" to the web method, eg https://api.porism.com/ServiceDirectoryService/services.csv\n\n<a href=\"https://developers.openreferraluk.org/Guidance/\" target=\"_blank\">Guidance on the data structure and each field</a>\n<a href=\"https://developers.openreferraluk.org/API-Guidance/\" target=\"_blank\">Guidance on using the API</a>\n<a href=\"https://openreferraluk.org/contact-us/\" target=\"_blank\">Contacts and to raise issues</a>\n<a href=\"http://www.nationalarchives.gov.uk/doc/open-government-licence\" target=\"_blank\">License of API</a>",
-    "version": "1.0.0"
+    "version": "HSDS-UK-1.0"
   },
   "paths": {
     "/services/{id}": {
       "get": {
         "tags": ["Services"],
-        "summary": "Get a single service",
+        "summary": "Does the service by id endpoint return the details of a service in the correct schema",
+        "description": "Get a single service",
         "operationId": "getService",
         "parameters": [
           {
@@ -39,8 +40,9 @@
     },
     "/taxonomies/{id}": {
       "get": {
-        "tags": ["Taxonomies"],
-        "summary": "Get a single taxonomy",
+        "tags": ["Taxonomies", "Optional"],
+        "summary": "Does the taxonomy by id endpoint return the details of a taxonomy in the correct schema",
+        "description": "Get a single taxonomy",
         "operationId": "getTaxonomy",
         "parameters": [
           {
@@ -68,7 +70,7 @@
     },
     "/reviews/{id}": {
       "get": {
-        "tags": ["Reviews"],
+        "tags": ["Reviews", "Optional"],
         "summary": "Get a single review",
         "operationId": "getReview",
         "parameters": [
@@ -99,7 +101,7 @@
     },
     "/organizations/{id}": {
       "get": {
-        "tags": ["Organizations"],
+        "tags": ["Organizations", "Optional"],
         "summary": "Get a single organization",
         "operationId": "getOrganization",
         "parameters": [
@@ -130,7 +132,7 @@
     },
     "/locations/{id}": {
       "get": {
-        "tags": ["Locations"],
+        "tags": ["Locations", "Optional"],
         "summary": "Get a single location",
         "operationId": "getLocation",
         "parameters": [
@@ -161,8 +163,9 @@
     },
     "/taxonomies": {
       "get": {
-        "tags": ["Taxonomies"],
-        "summary": "Get all taxonomies",
+        "tags": ["Taxonomies", "Optional"],
+        "summary": "Does the taxonomies list endpoint return a paginated list of taxonomies in the correct schema",
+        "description": "Get all taxonomies",
         "operationId": "getTaxonomies",
         "parameters": [
           {
@@ -225,7 +228,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/taxonomy"
@@ -247,7 +250,7 @@
     "/services": {
       "get": {
         "tags": ["Services"],
-        "summary": "Get all services",
+        "summary": "Does the services list endpoint return a paginated list of services in the correct schema",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getServices",
         "parameters": [
@@ -409,7 +412,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/service"
@@ -430,8 +433,8 @@
     },
     "/reviews": {
       "get": {
-        "tags": ["Reviews"],
-        "summary": "Get all reviews",
+        "tags": ["Reviews", "Optional"],
+        "summary": "Does the reviews list endpoint return a paginated list of reviews in the correct schema",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getReviews",
         "responses": {
@@ -445,7 +448,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/review"
@@ -466,8 +469,8 @@
     },
     "/organizations": {
       "get": {
-        "tags": ["Organizations"],
-        "summary": "Get all organizations",
+        "tags": ["Organizations", "Optional"],
+        "summary": "Does the organizations list endpoint return a paginated list of organizations in the correct schema",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getOrganizations",
         "parameters": [
@@ -495,7 +498,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/organization"
@@ -516,8 +519,8 @@
     },
     "/locations": {
       "get": {
-        "tags": ["Locations"],
-        "summary": "Get all locations",
+        "tags": ["Locations", "Optional"],
+        "summary": "Does the locations list endpoint return a paginated list of locations in the correct schema",
         "description": "Note that the objects returned by this method contains a subset of the properties shown in the example.",
         "operationId": "getLocations",
         "responses": {
@@ -531,7 +534,7 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "contents": {
+                    "content": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/location"
@@ -552,7 +555,7 @@
     },
     "/vocabularies": {
       "get": {
-        "tags": ["Vocabularies"],
+        "tags": ["Vocabularies", "Optional"],
         "summary": "Get all vocabularies",
         "operationId": "getVocabularies",
         "responses": {

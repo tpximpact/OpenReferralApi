@@ -56,3 +56,12 @@ riderModule.iml
 # End of https://www.toptal.com/developers/gitignore/api/dotnetcore,rider
 OpenReferralApi.sln.DotSettings.user
 *.user
+
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Testing.json
+
+results*.json
+
+# AI-generated documentation
+docs/

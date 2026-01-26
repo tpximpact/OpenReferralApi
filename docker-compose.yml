@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: openreferral-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+      MONGO_INITDB_DATABASE: openreferral
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - openreferral-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openreferral-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - Database__ConnectionString=mongodb://admin:adminpassword@mongodb:27017
+      - Database__DatabaseName=openreferral
+      - Database__ServicesCollection=services
+      - Database__ColumnsCollection=columns
+      - Database__ViewsCollection=views
+    ports:
+      - "5000:80"
+    depends_on:
+      - mongodb
+    networks:
+      - openreferral-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+
+networks:
+  openreferral-network:
+    driver: bridge

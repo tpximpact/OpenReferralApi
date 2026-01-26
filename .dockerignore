@@ -1,0 +1,37 @@
+# Docker build optimization
+.dockerignore
+
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+**/TestResults/
+
+# IDE and editor files
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+
+# CI/CD
+.github/
+
+# Development config files
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# Other
+LICENSE
+LICENSE-BSD
+*.log

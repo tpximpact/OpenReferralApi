@@ -1,0 +1,22 @@
+# ZAP Scanning Rules
+# Use the scan rules to ignore specific alerts or set thresholds
+# Format: rule_id	IGNORE|WARN|FAIL
+# 
+# Common rules:
+# 10021 - X-Content-Type-Options Header Missing
+# 10023 - Information Disclosure - Debug Error Messages
+# 10037 - Server Leaks Information via "X-Powered-By" HTTP Response Header
+# 10038 - Content Security Policy (CSP) Header Not Set
+# 10055 - CSP: Wildcard Directive
+# 10096 - Timestamp Disclosure
+# 10109 - Modern Web Application
+# 10202 - Absence of Anti-CSRF Tokens
+
+# Set informational findings to WARN instead of FAIL
+10096	WARN
+10109	WARN
+
+# Security headers - important but not critical for staging
+10021	WARN
+10037	WARN
+10038	WARN

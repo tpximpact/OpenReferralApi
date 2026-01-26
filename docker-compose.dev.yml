@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: openreferral-mongodb-dev
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+      MONGO_INITDB_DATABASE: openreferral
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data_dev:/data/db
+      - mongodb_config_dev:/data/configdb
+    networks:
+      - openreferral-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: openreferral-api-dev
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+      - DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true
+      - Database__ConnectionString=mongodb://admin:adminpassword@mongodb:27017
+      - Database__DatabaseName=openreferral
+      - Database__ServicesCollection=services
+      - Database__ColumnsCollection=columns
+      - Database__ViewsCollection=views
+    ports:
+      - "6969:80"
+    volumes:
+      # Mount source code for live editing
+      - ./OpenReferralApi:/app/OpenReferralApi
+      - ./OpenReferralApi.Core:/app/OpenReferralApi.Core
+      - ./OpenReferralApi.Tests:/app/OpenReferralApi.Tests
+      # Exclude bin and obj folders to avoid conflicts
+      - /app/OpenReferralApi/bin
+      - /app/OpenReferralApi/obj
+      - /app/OpenReferralApi.Core/bin
+      - /app/OpenReferralApi.Core/obj
+      - /app/OpenReferralApi.Tests/bin
+      - /app/OpenReferralApi.Tests/obj
+    depends_on:
+      - mongodb
+    networks:
+      - openreferral-network
+    stdin_open: true
+    tty: true
+
+volumes:
+  mongodb_data_dev:
+    driver: local
+  mongodb_config_dev:
+    driver: local
+
+networks:
+  openreferral-network:
+    driver: bridge
