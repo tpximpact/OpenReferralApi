@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5.1.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -39,7 +39,7 @@ jobs:
         run: dotnet test --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
 
       - name: Generate coverage report
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5.5.2
         with:
           directory: ./coverage
           fail_ci_if_error: false
@@ -58,7 +58,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -81,10 +81,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5.1.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -98,11 +98,11 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: [build-and-test, security-scan]
-    if: github.event_name == 'push'
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -129,7 +129,7 @@ jobs:
             latest=auto
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6.18.0
         with:
           context: .
           file: ./Dockerfile
@@ -164,11 +164,11 @@ jobs:
     name: OWASP ZAP Security Test
     runs-on: ubuntu-latest
     needs: docker-build
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main') && github.event_name == 'push'
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Lowercase repository name
         id: repo
@@ -292,7 +292,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
@@ -303,7 +303,7 @@ jobs:
         run: heroku stack:set container --app staging-oruk-api
 
       - name: Deploy to Heroku Staging
-        uses: akhileshns/heroku-deploy@v3.13.15
+        uses: akhileshns/heroku-deploy@v3.14.15
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: staging-oruk-api
@@ -318,13 +318,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
 
       - name: Deploy to Heroku Production
-        uses: akhileshns/heroku-deploy@v3.13.15
+        uses: akhileshns/heroku-deploy@v3.14.15
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: ${{ vars.HEROKU_APP_NAME }}
