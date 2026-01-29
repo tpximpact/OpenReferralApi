@@ -1,11 +1,10 @@
-name: Manual CI/CD Pipeline
+name: CI/CD Pipeline
 
 on:
-  workflow_dispatch:  # allow manual triggering of the workflow
-  # push:
-  #   branches: [staging, main]
-  # pull_request:
-  #   branches: [staging, main]
+  push:
+    branches: [staging, main]
+  pull_request:
+    branches: [staging, main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
