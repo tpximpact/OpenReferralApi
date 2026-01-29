@@ -23,13 +23,15 @@ public class OpenApiValidationService : IOpenApiValidationService
     private readonly HttpClient _httpClient;
     private readonly IJsonValidatorService _jsonValidatorService;
     private readonly IJsonSchemaResolverService _schemaResolverService;
+    private readonly IOpenApiDiscoveryService _discoveryService;
 
-    public OpenApiValidationService(ILogger<OpenApiValidationService> logger, HttpClient httpClient, IJsonValidatorService jsonValidatorService, IJsonSchemaResolverService schemaResolverService)
+    public OpenApiValidationService(ILogger<OpenApiValidationService> logger, HttpClient httpClient, IJsonValidatorService jsonValidatorService, IJsonSchemaResolverService schemaResolverService, IOpenApiDiscoveryService discoveryService)
     {
         _logger = logger;
         _httpClient = httpClient;
         _jsonValidatorService = jsonValidatorService;
         _schemaResolverService = schemaResolverService;
+        _discoveryService = discoveryService;
     }
 
     public async Task<OpenApiValidationResult> ValidateOpenApiSpecificationAsync(OpenApiValidationRequest request, CancellationToken cancellationToken = default)
@@ -44,6 +46,22 @@ public class OpenApiValidationService : IOpenApiValidationService
             // Ensure options has default values if not provided
             request.Options ??= new OpenApiValidationOptions();
 
+            // Discover OpenAPI schema URL if not provided
+            /*             if (string.IsNullOrEmpty(request.OpenApiSchemaUrl) && !string.IsNullOrEmpty(request.BaseUrl))
+                        {
+                            var (discoveredUrl, reason) = await _discoveryService.DiscoverOpenApiUrlAsync(request.BaseUrl, cancellationToken);
+                            if (!string.IsNullOrEmpty(discoveredUrl))
+                            {
+                                _logger.LogInformation("Discovered OpenAPI schema URL: {Url} (Reason: {Reason})", discoveredUrl, reason);
+                                request.OpenApiSchemaUrl = discoveredUrl;
+                                request.ProfileReason = reason;
+                            }
+                            else
+                            {
+                                throw new ArgumentException("Failed to discover OpenAPI schema URL from base URL");
+                            }
+                        } */
+
             // Get OpenAPI specification
             JObject openApiSpec;
             if (!string.IsNullOrEmpty(request.OpenApiSchemaUrl))
@@ -54,7 +72,7 @@ public class OpenApiValidationService : IOpenApiValidationService
             }
             else
             {
-                throw new ArgumentException("OpenApiSchemaUrl must be provided");
+                throw new ArgumentException("OpenApiSchemaUrl must be provided or BaseUrl must allow discovery");
             }
 
             // Validate the OpenAPI specification
@@ -1603,7 +1621,7 @@ public class OpenApiValidationService : IOpenApiValidationService
                 foreach (var methodProperty in pathItemObject.Properties())
                 {
                     var method = methodProperty.Name.ToUpperInvariant();
-                    
+
                     // Skip non-HTTP method properties like "parameters", "summary", "$ref", "servers", etc.
                     if (!validHttpMethods.Contains(method))
                     {

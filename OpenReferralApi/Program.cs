@@ -29,22 +29,22 @@ builder.Services.AddSwaggerGen(options =>
 {
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
-    
-    options.SwaggerDoc("v1", new() 
-    { 
-        Title = "Open Referral UK API", 
+
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "Open Referral UK API",
         Version = "v1",
         Description = "API for validating and monitoring Open Referral UK data feeds",
-        Contact = new() 
-        { 
-            Name = "Open Referral UK", 
-            Url = new Uri("https://openreferraluk.org") 
+        Contact = new()
+        {
+            Name = "Open Referral UK",
+            Url = new Uri("https://openreferraluk.org")
         }
     });
 });
 
 // CORS - Environment-specific origins
-var allowedOrigins = builder.Configuration.GetSection("Security:AllowedCorsOrigins").Get<string[]>() 
+var allowedOrigins = builder.Configuration.GetSection("Security:AllowedCorsOrigins").Get<string[]>()
                      ?? new[] { "*" };
 
 builder.Services.AddCors(options =>
@@ -71,7 +71,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    
+
     options.AddFixedWindowLimiter("fixed", opt =>
     {
         opt.PermitLimit = builder.Configuration.GetValue<int>("RateLimiting:PermitLimit", 100);
@@ -115,7 +115,7 @@ builder.Services.AddResponseCaching();
 builder.Services.AddOutputCache(options =>
 {
     options.AddBasePolicy(builder => builder.Cache());
-    options.AddPolicy("MockEndpoints", builder => 
+    options.AddPolicy("MockEndpoints", builder =>
         builder.Expire(TimeSpan.FromMinutes(5)));
 });
 
@@ -126,15 +126,24 @@ var healthChecksBuilder = builder.Services.AddHealthChecks()
 var mongoConnectionString = builder.Configuration.GetValue<string>("Database:ConnectionString");
 if (!string.IsNullOrEmpty(mongoConnectionString))
 {
-    // Register MongoDB client for health checks
+    // Register MongoDB client for health checks and feed validation
     builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp =>
     {
         return new MongoDB.Driver.MongoClient(mongoConnectionString);
     });
-    
+
     healthChecksBuilder.AddMongoDb(
         name: "mongodb",
         tags: new[] { "ready", "db" });
+
+    // Feed validation services - only register if MongoDB is configured
+    builder.Services.AddScoped<OpenReferralApi.Services.IFeedValidationService, OpenReferralApi.Services.FeedValidationService>();
+    builder.Services.AddHostedService<OpenReferralApi.Services.FeedValidationBackgroundService>();
+}
+else
+{
+    // Register null implementation when MongoDB is not configured
+    builder.Services.AddScoped<OpenReferralApi.Services.IFeedValidationService, OpenReferralApi.Services.NullFeedValidationService>();
 }
 
 healthChecksBuilder.AddUrlGroup(
@@ -155,7 +164,8 @@ builder.Services.AddScoped<IOpenApiValidationService>(provider =>
     var httpClient = httpClientFactory.CreateClient(nameof(OpenApiValidationService));
     var jsonValidatorService = provider.GetRequiredService<IJsonValidatorService>();
     var schemaResolverService = provider.GetRequiredService<IJsonSchemaResolverService>();
-    return new OpenApiValidationService(logger, httpClient, jsonValidatorService, schemaResolverService);
+    var discoveryService = provider.GetRequiredService<IOpenApiDiscoveryService>();
+    return new OpenApiValidationService(logger, httpClient, jsonValidatorService, schemaResolverService, discoveryService);
 });
 
 builder.Services.AddScoped<IOpenApiDiscoveryService, OpenApiDiscoveryService>();
@@ -275,8 +285,8 @@ app.MapHealthChecks("/health-check/live", new HealthCheckOptions
     ResponseWriter = async (context, _) =>
     {
         context.Response.ContentType = "application/json";
-        await context.Response.WriteAsync(JsonSerializer.Serialize(new 
-        { 
+        await context.Response.WriteAsync(JsonSerializer.Serialize(new
+        {
             status = "Healthy",
             timestamp = DateTime.UtcNow
         }));
