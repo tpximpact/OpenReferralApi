@@ -334,7 +334,7 @@ jobs:
         uses: jtalk/url-health-check-action@v4
         with:
           # Check the following URLs one by one sequentially
-          url: ${{vars.HEALTH_ENDPOINT}}|${{vars.API_BASE_ENDPOINT}}/api/dashboard
+          url: ${{ vars.HEALTH_ENDPOINT != '' && vars.HEALTH_ENDPOINT || format('{0}/health-check/overall', vars.API_BASE_ENDPOINT) }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.5.0
