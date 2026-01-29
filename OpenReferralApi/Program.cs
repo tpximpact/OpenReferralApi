@@ -137,13 +137,13 @@ if (!string.IsNullOrEmpty(mongoConnectionString))
         tags: new[] { "ready", "db" });
 
     // Feed validation services - only register if MongoDB is configured
-    builder.Services.AddScoped<OpenReferralApi.Services.IFeedValidationService, OpenReferralApi.Services.FeedValidationService>();
+    builder.Services.AddScoped<OpenReferralApi.Core.Services.IFeedValidationService, OpenReferralApi.Core.Services.FeedValidationService>();
     builder.Services.AddHostedService<OpenReferralApi.Services.FeedValidationBackgroundService>();
 }
 else
 {
     // Register null implementation when MongoDB is not configured
-    builder.Services.AddScoped<OpenReferralApi.Services.IFeedValidationService, OpenReferralApi.Services.NullFeedValidationService>();
+    builder.Services.AddScoped<OpenReferralApi.Core.Services.IFeedValidationService, OpenReferralApi.Core.Services.NullFeedValidationService>();
 }
 
 healthChecksBuilder.AddUrlGroup(

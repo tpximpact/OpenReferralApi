@@ -1,10 +1,10 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MongoDB.Bson;
-using OpenReferralApi.Models;
 using OpenReferralApi.Core.Models;
-using OpenReferralApi.Core.Services;
 
-namespace OpenReferralApi.Services;
+namespace OpenReferralApi.Core.Services;
 
 /// <summary>
 /// Service for validating registered feeds and updating their status

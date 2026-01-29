@@ -2,7 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.Text.Json.Serialization;
 
-namespace OpenReferralApi.Models;
+namespace OpenReferralApi.Core.Models;
 
 /// <summary>
 /// Represents a registered service feed in the MongoDB database

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using OpenReferralApi.Models;
-using OpenReferralApi.Services;
+using OpenReferralApi.Core.Models;
+using OpenReferralApi.Core.Services;
 
 namespace OpenReferralApi.Controllers;
 
