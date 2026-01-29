@@ -147,12 +147,6 @@ else
     builder.Services.AddScoped<OpenReferralApi.Core.Services.IFeedValidationService, OpenReferralApi.Core.Services.NullFeedValidationService>();
 }
 
-healthChecksBuilder.AddUrlGroup(
-    new Uri("https://openreferraluk.org"),
-    name: "openreferral-website",
-    timeout: TimeSpan.FromSeconds(5),
-    tags: new[] { "external" });
-
 healthChecksBuilder.AddCheck<FeedValidationHealthCheck>(
     "feed-validation",
     tags: new[] { "ready", "service" });
