@@ -308,7 +308,6 @@ jobs:
           heroku_app_name: staging-oruk-api
           heroku_email: ${{ vars.HEROKU_EMAIL }}
           usedocker: true
-          healthcheck: ${{ vars.STAGING_HEALTH_ENDPOINT }}  
 
   deploy-production:
     name: Deploy to Production
