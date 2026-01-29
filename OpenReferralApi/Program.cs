@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
+using OpenReferralApi.HealthChecks;
 using OpenReferralApi.Middleware;
 using OpenReferralApi.Telemetry;
 using OpenTelemetry.Metrics;
@@ -146,11 +147,9 @@ else
     builder.Services.AddScoped<OpenReferralApi.Core.Services.IFeedValidationService, OpenReferralApi.Core.Services.NullFeedValidationService>();
 }
 
-healthChecksBuilder.AddUrlGroup(
-    new Uri("https://openreferraluk.org"),
-    name: "openreferral-website",
-    timeout: TimeSpan.FromSeconds(5),
-    tags: new[] { "external" });
+healthChecksBuilder.AddCheck<FeedValidationHealthCheck>(
+    "feed-validation",
+    tags: new[] { "ready", "service" });
 
 // Services
 builder.Services.AddScoped<IPathParsingService, PathParsingService>();
@@ -274,6 +273,13 @@ app.MapHealthChecks("/health-check", new HealthCheckOptions
 });
 
 app.MapHealthChecks("/health-check/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Overall service health for CI/deploy checks
+app.MapHealthChecks("/health-check/overall", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready"),
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
