@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using OpenReferralApi.Core.Services;
 
 namespace OpenReferralApi.Services;
 
