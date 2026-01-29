@@ -26,6 +26,7 @@ This solution provides a comprehensive validation service for Open Referral UK (
 - **Optional Endpoint Support**: Intelligently handles optional endpoints with configurable warning levels
 - **Mock Data Service**: Built-in mock endpoints for testing validation logic
 - **RESTful API**: Clean, well-documented API with OpenAPI/Swagger documentation
+- **Scheduled Feed Validation**: Background service for automated periodic validation of registered feeds
 - **Rate Limiting**: Configurable rate limiting to protect against excessive requests
 - **Health Checks**: Kubernetes-ready liveness and readiness probes
 - **OpenTelemetry Integration**: Distributed tracing and metrics for observability
@@ -64,6 +65,7 @@ This solution is built as a modern, cloud-native application with the following 
 - **RequestProcessingService**: HTTP client management with caching and timeout handling
 - **PathParsingService**: URL and path parameter parsing utilities
 - **OpenApiToValidationResponseMapper**: Maps validation results to response formats
+- **FeedValidationBackgroundService**: Schedules and executes automatic feed validation at midnight or fixed intervals
 
 ### Deployment
 
