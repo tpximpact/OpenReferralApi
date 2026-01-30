@@ -17,7 +17,7 @@ env:
   DOTNET_VERSION: "10.0.x"
 
 jobs:
-  build-and-test:
+  build:
     name: Build and Test
     runs-on: ubuntu-latest
 
