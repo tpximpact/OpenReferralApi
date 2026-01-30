@@ -16,6 +16,7 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
+  # build-and-test job on every push and pull request
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
@@ -45,12 +46,13 @@ jobs:
           fail_ci_if_error: false
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results
           path: ./coverage/**/*
 
+  # security-scan job to run Trivy scan after build-and-test
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -68,12 +70,14 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
 
-      - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
+      - name: Upload Trivy results to artifacts
+        uses: actions/upload-artifact@v6
         if: always()
         with:
-          sarif_file: "trivy-results.sarif"
+          name: trivy-scan-results
+          path: trivy-results.sarif
 
+  # code-quality job to run static code analysis
   code-quality:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
@@ -94,21 +98,26 @@ jobs:
       - name: Run code analysis
         run: dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=false
 
+  # docker-build job to build and push Docker image.
+  # this job depends on build-and-test and security-scan jobs.
+  # it runs only for pull requests targeting main branch
+  # because we want to build images for code that is intended to go to production
+  # and ZAP scan is an intensive process that we want to limit to main PRs only
   docker-build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: [build-and-test, security-scan]
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    needs: [build-and-test]
+    if: (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'push' && github.ref == 'refs/heads/staging')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3.12.0
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -116,7 +125,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.10.0
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
           tags: |
@@ -155,10 +164,11 @@ jobs:
           output: "docker-trivy-results.sarif"
 
       - name: Upload Docker scan results
-        uses: github/codeql-action/upload-sarif@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
-          sarif_file: "docker-trivy-results.sarif"
+          name: docker-scan-results
+          path: docker-trivy-results.sarif
 
   zap-scan:
     name: OWASP ZAP Security Test
@@ -178,7 +188,7 @@ jobs:
         run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -270,7 +280,7 @@ jobs:
 
       - name: Upload ZAP results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: zap-scan-results
           path: zap-reports/
@@ -283,6 +293,10 @@ jobs:
           docker rm test-app || true
           docker network rm zap-test-network || true
 
+  # deploy-staging job to deploy to Heroku staging environment
+  # this job depends on security-scan and code-quality jobs
+  # it does not depend on docker-build or zap-scan jobs
+  # because the zap scan is only run when a pull request is made to main branch
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
@@ -308,8 +322,13 @@ jobs:
           heroku_app_name: staging-oruk-api
           heroku_email: ${{ vars.HEROKU_EMAIL }}
           usedocker: true
-          healthcheck: ${{ vars.STAGING_HEALTH_ENDPOINT }}  
+          healthcheck: ${{ vars.STAGING_HEALTH_ENDPOINT }}
 
+  # deploy-production job to deploy to Heroku production environment
+  # this job depends on security-scan and code-quality jobs
+  # it runs only on pushes to main branch
+  # it does not depend on docker-build or zap-scan jobs
+  # because all of those checks should have been done already on the pull request to main
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
