@@ -1061,7 +1061,8 @@ public class JsonValidatorService : IJsonValidatorService
                         Path = ConvertJsonPointerToPath(current.InstanceLocation.ToString()),
                         Message = message,
                         ErrorCode = isAdditionalProperty ? "ADDITIONAL_FIELD" : "VALIDATION_ERROR",
-                        Severity = isAdditionalProperty ? "Info" : "Error"
+                        Severity = isAdditionalProperty ? "Info" : "Error",
+                        RecordId = ExtractRecordId(current.InstanceLocation, rootElement)
                     };
                 }
             }
@@ -1076,6 +1077,85 @@ public class JsonValidatorService : IJsonValidatorService
                 stack.Push(current.Details[i]);
             }
         }
+    }
+
+    private static string? ExtractRecordId(JsonPointer location, System.Text.Json.JsonElement rootElement)
+    {
+        try
+        {
+            var locationStr = location.ToString();
+
+            // 1. Look for content array pattern: e.g. /content/{index}
+            var contentMatch = System.Text.RegularExpressions.Regex.Match(locationStr, @"^/content/(\d+)");
+            if (contentMatch.Success)
+            {
+                var contentPath = contentMatch.Value;
+                if (JsonPointer.TryParse(contentPath, out var contentPointer))
+                {
+                    var element = contentPointer.Evaluate(rootElement);
+                    if (element.HasValue && element.Value.ValueKind == System.Text.Json.JsonValueKind.Object)
+                    {
+                        if (element.Value.TryGetProperty("id", out var idProp))
+                        {
+                            return GetJsonElementRawOrStringValue(idProp);
+                        }
+                    }
+                }
+            }
+
+            // 2. Look for any root-level array pattern: e.g. /{arrayName}/{index}
+            var rootArrayMatch = System.Text.RegularExpressions.Regex.Match(locationStr, @"^/([^/]+)/(\d+)");
+            if (rootArrayMatch.Success)
+            {
+                var arrayPath = rootArrayMatch.Value;
+                if (JsonPointer.TryParse(arrayPath, out var arrayPointer))
+                {
+                    var element = arrayPointer.Evaluate(rootElement);
+                    if (element.HasValue && element.Value.ValueKind == System.Text.Json.JsonValueKind.Object)
+                    {
+                        if (element.Value.TryGetProperty("id", out var idProp))
+                        {
+                            return GetJsonElementRawOrStringValue(idProp);
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback: Walk up from the location's parent to find the nearest object with an "id" property
+            JsonPointer? currentPointer = location;
+            while (currentPointer.HasValue && currentPointer.Value.SegmentCount > 0)
+            {
+                currentPointer = currentPointer.Value.GetParent();
+                if (currentPointer == null)
+                {
+                    break;
+                }
+
+                var element = currentPointer.Value.Evaluate(rootElement);
+                if (element.HasValue && element.Value.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    if (element.Value.TryGetProperty("id", out var idProp))
+                    {
+                        return GetJsonElementRawOrStringValue(idProp);
+                    }
+                }
+            }
+
+            // 4. Ultimate fallback: if the root element itself is an object and has an "id"
+            if (rootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                if (rootElement.TryGetProperty("id", out var idProp))
+                {
+                    return GetJsonElementRawOrStringValue(idProp);
+                }
+            }
+        }
+        catch
+        {
+            // Fail silently and return null
+        }
+
+        return null;
     }
 
     private static string GetJsonElementRawOrStringValue(System.Text.Json.JsonElement element)

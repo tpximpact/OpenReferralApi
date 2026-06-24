@@ -58,6 +58,9 @@ public class ValidationError
 
     [JsonPropertyName("sourceIdentifier")]
     public string? SourceIdentifier { get; set; }
+
+    [JsonPropertyName("recordId")]
+    public string? RecordId { get; set; }
 }
 
 

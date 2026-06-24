@@ -137,13 +137,24 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
                 result.Notifications.Add("Validation failed. One or more specification validation errors or endpoint test failures were encountered.");
             }
 
+            var resolvedProfile = ResolveMetadataProfileIdentifier(executionOutcome.ClaimedProfileVersion, request.OwnSchemaUrl);
+            var resolvedProfileUri = executionOutcome.ProfileUri;
+            if (string.IsNullOrWhiteSpace(resolvedProfileUri) && !string.IsNullOrWhiteSpace(resolvedProfile))
+            {
+                if (_specificationOptions.Urls.TryGetValue(resolvedProfile, out var configUrl))
+                {
+                    resolvedProfileUri = configUrl;
+                }
+            }
+
             result.Metadata = new CommonValidationMetadata
             {
                 BaseUrl = request.BaseUrl,
                 TestTimestamp = DateTime.UtcNow,
                 TestDuration = stopwatch.Elapsed,
                 UserAgent = "OpenReferral-Validator/1.0",
-                Profile = ResolveMetadataProfileIdentifier(executionOutcome.ClaimedProfileVersion, request.OwnSchemaUrl),
+                Profile = resolvedProfile,
+                ProfileUri = resolvedProfileUri,
                 ProfileReason = executionOutcome.ProfileReason
             };
 
@@ -246,7 +257,8 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
             SpecificationValidation = result.SpecificationValidation,
             EndpointTests = endpointTests,
             ClaimedProfileVersion = discovery.HsdsProfileVersion,
-            ProfileReason = discovery.HsdsProfileReason
+            ProfileReason = discovery.HsdsProfileReason,
+            ProfileUri = discovery.ProfileUri
         };
     }
 
@@ -280,6 +292,11 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
 
         var ownSchema = TryParseJsonObject(bootstrap.OpenApiSchemaContent);
         var resolvedHsdsProfileSpec = TryParseJsonObject(bootstrap.HsdsProfileSchemaContent);
+
+        if (ownSchema != null && !string.IsNullOrWhiteSpace(bootstrap.OpenApiSchemaUrl))
+        {
+            request.OwnSchemaUrl = bootstrap.OpenApiSchemaUrl;
+        }
 
         // When the bootstrap service did not provide schema content and a direct URL is known,
         // fetch and cache the spec here so that caching, schema auth, and circular-ref collection work correctly.
@@ -332,6 +349,25 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
             result.Notifications.Add("OwnSchemaValidation is enabled, but no feed OpenAPI schema was discovered from the base URL.");
         }
 
+        string? profileUri = null;
+        if (resolvedHsdsProfileSpec != null && resolvedHsdsProfileSpec.TryGetPropertyValue("$id", out var idNode) && idNode is JsonValue idVal)
+        {
+            profileUri = idVal.GetValue<string>();
+        }
+
+        if (string.IsNullOrWhiteSpace(profileUri))
+        {
+            profileUri = bootstrap.HsdsProfileSchemaUrl;
+        }
+
+        if (string.IsNullOrWhiteSpace(profileUri) && !string.IsNullOrWhiteSpace(discoveredProfileVersion))
+        {
+            if (_specificationOptions.Urls.TryGetValue(discoveredProfileVersion, out var configUrl))
+            {
+                profileUri = configUrl;
+            }
+        }
+
         return new DiscoveryPreparation
         {
             HsdsProfileVersion = discoveredProfileVersion,
@@ -341,7 +377,8 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
             OwnSchemaUrl = request.OwnSchemaUrl,
             HasConfiguredDefaultProfile = bootstrap.UsedDefaultProfile,
             DataSourceRequestAuth = dataSourceRequestAuth,
-            HsdsProfileReason = bootstrap.HsdsProfileReason
+            HsdsProfileReason = bootstrap.HsdsProfileReason,
+            ProfileUri = profileUri
         };
     }
 
@@ -370,6 +407,7 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
             else
             {
                 specValidation = await _openApiSpecificationService.ValidateAsync(ownSchemaContent, cancellationToken);
+                specValidation.Url = request.OwnSchemaUrl;
                 specValidationErrors.AddRange(specValidation.Errors);
 
                 if (specValidation != null)
@@ -619,6 +657,7 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
         public List<EndpointTestResult> EndpointTests { get; init; } = [];
         public string? ClaimedProfileVersion { get; init; }
         public string? ProfileReason { get; init; }
+        public string? ProfileUri { get; init; }
     }
 
     private sealed class DiscoveryPreparation
@@ -631,6 +670,7 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
         public bool HasConfiguredDefaultProfile { get; init; }
         public DataSourceAuthentication? DataSourceRequestAuth { get; init; }
         public string? HsdsProfileReason { get; init; }
+        public string? ProfileUri { get; init; }
     }
 
     private sealed class SpecificationStageResult

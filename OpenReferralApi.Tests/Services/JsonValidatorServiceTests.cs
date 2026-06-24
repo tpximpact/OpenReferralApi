@@ -902,6 +902,76 @@ public class JsonValidatorServiceTests
         }
     }
 
+    [Test]
+    public async Task ValidateAsync_WithRecordValidationFailure_ExtractsRecordId()
+    {
+        // Arrange
+        var schema = new
+        {
+            type = "object",
+            properties = new
+            {
+                content = new
+                {
+                    type = "array",
+                    items = new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            id = new { type = "string" },
+                            name = new { type = "string", minLength = 5 }
+                        },
+                        required = new[] { "id", "name" }
+                    }
+                }
+            }
+        };
+
+        var request = new ValidationRequest
+        {
+            JsonData = new
+            {
+                content = new[]
+                {
+                    new { id = "service-abc", name = "OkName" },
+                    new { id = "service-def", name = "Bad" } // name too short
+                }
+            },
+            Schema = schema
+        };
+
+        // Act
+        var result = await _service.ValidateAsync(request);
+
+        // Assert
+        Console.WriteLine($"IsValid: {result.IsValid}");
+        foreach (var err in result.Errors)
+        {
+            Console.WriteLine($"Path: '{err.Path}', ErrorCode: '{err.ErrorCode}', Message: '{err.Message}', RecordId: '{err.RecordId}'");
+        }
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.False);
+            var validationError = result.Errors.FirstOrDefault(e => e.Path == "content[1].name");
+            Assert.That(validationError, Is.Not.Null);
+            if (validationError != null)
+            {
+                Assert.That(validationError.RecordId, Is.EqualTo("service-def"));
+            }
+
+            // Also verify ValidationErrorNormalizer propagates the RecordId
+            var normalizedErrors = ValidationErrorNormalizer.NormalizeAndDeduplicateByPath(result.Errors);
+            var normalizedError = normalizedErrors.FirstOrDefault(e => e.Path == "content[].name");
+            Assert.That(normalizedError, Is.Not.Null);
+            if (normalizedError != null)
+            {
+                Assert.That(normalizedError.RecordId, Is.EqualTo("service-def"));
+            }
+        }
+    }
+
     private static string BuildDeepJson(int depth)
     {
         var sb = new System.Text.StringBuilder();

@@ -63,7 +63,8 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
                     description = error.Severity,
                     message = error.Message,
                     errorIn = BuildErrorIn(error),
-                    errorAt = BuildErrorAt(error)
+                    errorAt = BuildErrorAt(error),
+                    recordId = error.RecordId
                 });
             }
 
@@ -71,6 +72,7 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
             {
                 isValid = openApiResult.SpecificationValidation.IsValid,
                 version = openApiResult.SpecificationValidation.Version,
+                url = openApiResult.SpecificationValidation.Url,
                 errors = specErrors
             };
         }
@@ -179,7 +181,8 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
                         description = validationError.Severity,
                         message = validationError.Message,
                         errorIn = validationError.Path,
-                        errorAt = ""
+                        errorAt = "",
+                        recordId = validationError.RecordId
                     });
                 }
             }
@@ -242,7 +245,8 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
                     description = validationError.Severity,
                     message = validationError.Message,
                     errorIn = validationError.Path,
-                    errorAt = ""
+                    errorAt = "",
+                    recordId = validationError.RecordId
                 });
             }
         }

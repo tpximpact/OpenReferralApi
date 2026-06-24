@@ -90,6 +90,7 @@ public class ProfileDiscoveryServiceTests
         {
             Assert.That(result.HsdsProfileVersion, Is.EqualTo("HSDS-UK-3.0"));
             Assert.That(result.OpenApiSchemaContent, Does.Contain("openapi"));
+            Assert.That(result.OpenApiSchemaUrl, Is.EqualTo("https://api.example.com/openapi.json"));
         }
 
     }
@@ -260,7 +261,11 @@ public class ProfileDiscoveryServiceTests
             null,
             "https://api.example.com");
 
-        Assert.That(result.OpenApiSchemaContent, Does.Contain("openapi"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.OpenApiSchemaContent, Does.Contain("openapi"));
+            Assert.That(result.OpenApiSchemaUrl, Is.EqualTo("https://api.example.com/api/v2/openapi-custom.json"));
+        }
     }
 
     [Test]

@@ -31,6 +31,9 @@ public class CommonValidationMetadata : IMetadata
     [JsonPropertyName("profile")]
     public string? Profile { get; set; }
 
+    [JsonPropertyName("profileUri")]
+    public string? ProfileUri { get; set; }
+
     internal string? ProfileReason { get; set; }
 
     [JsonPropertyName("schemaTitle")]

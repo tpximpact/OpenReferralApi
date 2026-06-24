@@ -29,6 +29,7 @@ public sealed class ProfileDiscoveryResult
     public string? HsdsProfileReason { get; init; }
     public string? HsdsProfileSchemaUrl { get; init; }
     public string? OpenApiSchemaContent { get; init; }
+    public string? OpenApiSchemaUrl { get; init; }
     public string? HsdsProfileSchemaContent { get; init; }
     public string? HsdsProfileVersion { get; init; }
     public bool UsedDefaultProfile { get; init; }
@@ -80,6 +81,7 @@ public partial class ProfileDiscoveryService(
 
         string? discoveredVersion = null;
         string? discoveredSchema = null;
+        string? discoveredSchemaUrl = null;
         string? discoveryReason = null;
         string? candidateOpenApiSpecContent = null;
         bool usedDefaultProfile = false;
@@ -131,11 +133,14 @@ public partial class ProfileDiscoveryService(
                         if (LooksLikeOpenApiSpec(content))
                         {
                             discoveredSchema = content;
+                            discoveredSchemaUrl = discoveryUrl;
                         }
                         else
                         {
                             // Attempt scraping for indirect schema (UI/Config)
-                            discoveredSchema = await TryFetchIndirectSchemaAsync(client, content, normalizedBaseUrl, authentication, cancellationToken);
+                            var (indirectContent, indirectUrl) = await TryFetchIndirectSchemaAsync(client, content, normalizedBaseUrl, authentication, cancellationToken);
+                            discoveredSchema = indirectContent;
+                            discoveredSchemaUrl = indirectUrl;
 
                             if (discoveredVersion == null && discoveredSchema != null)
                             {
@@ -270,6 +275,7 @@ public partial class ProfileDiscoveryService(
             HsdsProfileVersion = discoveredVersion,
             HsdsProfileSchemaUrl = hsdsProfileSchemaUrl,
             OpenApiSchemaContent = discoveredSchema,
+            OpenApiSchemaUrl = discoveredSchemaUrl,
             HsdsProfileSchemaContent = hsdsProfileSchemaContent,
             HsdsProfileReason = discoveryReason,
             UsedDefaultProfile = usedDefaultProfile
@@ -313,6 +319,7 @@ public partial class ProfileDiscoveryService(
             HsdsProfileVersion = profileVersion,
             HsdsProfileSchemaUrl = hsdsProfileSchemaUrl,
             OpenApiSchemaContent = null,
+            OpenApiSchemaUrl = null,
             HsdsProfileSchemaContent = hsdsProfileSchemaContent,
             HsdsProfileReason = $"Explicit profile '{profileVersion}' provided in request.",
             UsedDefaultProfile = false
@@ -561,7 +568,7 @@ public partial class ProfileDiscoveryService(
         return (null, false);
     }
 
-    private async Task<string?> TryFetchIndirectSchemaAsync(
+    private async Task<(string? Content, string? ResolvedUrl)> TryFetchIndirectSchemaAsync(
         HttpClient client,
         string content,
         string baseUrl,
@@ -573,8 +580,8 @@ public partial class ProfileDiscoveryService(
         if (configUrls.Count > 0)
         {
             // Try the first URL found in the config
-            var spec = await TryFetchDiscoveredSpecContentAsync(client, configUrls[0], authentication, cancellationToken);
-            if (spec != null) return spec;
+            var result = await TryFetchDiscoveredSpecContentAsync(client, configUrls[0], authentication, cancellationToken);
+            if (result.Content != null) return result;
         }
 
         // 2. Check if the content is HTML (Swagger UI / Redoc)
@@ -584,10 +591,10 @@ public partial class ProfileDiscoveryService(
             return await TryFetchDiscoveredSpecContentAsync(client, htmlSpecUrl, authentication, cancellationToken);
         }
 
-        return null;
+        return (null, null);
     }
 
-    private async Task<string?> TryFetchDiscoveredSpecContentAsync(
+    private async Task<(string? Content, string? ResolvedUrl)> TryFetchDiscoveredSpecContentAsync(
         HttpClient client,
         string specUrl,
         DataSourceAuthentication? authentication,
@@ -604,18 +611,18 @@ public partial class ProfileDiscoveryService(
                 {
                     logger.DiscoveredSpecUrlReturnedStatusCode(TextSanitizer.SanitizeUrlForLogging(specUrl), (int)response.StatusCode);
                 }
-                return null;
+                return (null, null);
             }
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
             if (LooksLikeOpenApiSpec(content))
             {
-                return content;
+                return (content, specUrl);
             }
 
             // If the response is not JSON or an OpenAPI spec, parse the HTML and test if it is another specification such as Swagger UI
-            var extractedSpec = await TryFetchIndirectSchemaAsync(client, content, specUrl, authentication, cancellationToken);
-            return extractedSpec;
+            var result = await TryFetchIndirectSchemaAsync(client, content, specUrl, authentication, cancellationToken);
+            return result;
         }
         catch (OperationCanceledException)
         {
@@ -627,7 +634,7 @@ public partial class ProfileDiscoveryService(
             {
                 logger.FailedToFetchDiscoveredSpecContent(ex, TextSanitizer.SanitizeUrlForLogging(specUrl));
             }
-            return null;
+            return (null, null);
         }
     }
 

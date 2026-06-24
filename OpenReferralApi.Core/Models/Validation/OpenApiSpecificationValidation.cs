@@ -15,6 +15,12 @@ public class OpenApiSpecificationValidation : ValidationResultBase
     public string? OpenApiVersion { get; set; }
 
     /// <summary>
+    /// The source URL of the OpenAPI specification/schema being validated
+    /// </summary>
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    /// <summary>
     /// The title of the API from the info section
     /// Provides the human-readable name of the API for identification and documentation purposes
     /// </summary>

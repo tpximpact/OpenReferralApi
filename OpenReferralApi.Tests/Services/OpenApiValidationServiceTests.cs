@@ -348,6 +348,68 @@ public class OpenApiValidationServiceTests
     }
 
     [Test]
+    public async Task ValidateOpenApiSpecificationAsync_MetadataProfileUri_PopulatedFromConfiguration()
+    {
+        // Arrange
+        var customProfileSpecUrl = "https://raw.githubusercontent.com/openreferral/specification/refs/heads/3.2/schema/openapi.json";
+        var request = new OpenApiValidationRequest
+        {
+            OwnSchemaUrl = customProfileSpecUrl,
+            BaseUrl = "https://api.example.com",
+            Options = new OpenApiValidationOptions()
+        };
+
+        SetupHttpMock((httpRequest, ct) =>
+        {
+            var requestUrl = httpRequest.RequestUri?.ToString();
+            if (string.Equals(requestUrl, customProfileSpecUrl, StringComparison.OrdinalIgnoreCase))
+            {
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(CreateOpenApi30Spec())
+                };
+            }
+
+            return new HttpResponseMessage(System.Net.HttpStatusCode.NotFound);
+        });
+
+        var serviceWithCustomProfile = new OpenApiValidationService(
+            _loggerMock.Object,
+            CreateFactory(_httpClient),
+            _jsonValidatorServiceMock.Object,
+            _schemaResolverServiceMock.Object,
+            _openApiSpecificationService,
+            null!,
+            null!,
+            null!,
+            _openApiBootstrapServiceMock.Object,
+            specificationOptions: Options.Create(new SpecificationOptions
+            {
+                Urls = new Dictionary<string, string>
+                {
+                    ["HSDS-3.2"] = customProfileSpecUrl,
+                    ["HSDS-UK-3.0"] = "https://openreferraluk.org/specifications/3.0/openapi.json"
+                }
+            }),
+            openApiValidationServerOptions: Options.Create(new OpenApiValidationServerOptions
+            {
+                ValidateSpecification = false,
+                TestEndpoints = false
+            }));
+
+        // Act
+        var result = await serviceWithCustomProfile.ValidateOpenApiSpecificationAsync(request);
+
+        // Assert
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.True);
+            Assert.That(result.Metadata?.Profile, Is.EqualTo("HSDS-3.2"));
+            Assert.That(result.Metadata?.ProfileUri, Is.EqualTo(customProfileSpecUrl));
+        }
+    }
+
+    [Test]
     public async Task ValidateOpenApiSpecificationAsync_MeasuresDuration()
     {
         // Arrange
@@ -617,6 +679,28 @@ public class OpenApiValidationServiceTests
         // Assert
         Assert.That(result.SpecificationValidation, Is.Not.Null);
         Assert.That(result.SpecificationValidation!.OpenApiVersion, Does.Contain("3.0"));
+    }
+
+    [Test]
+    public async Task ValidateOpenApiSpecificationAsync_PopulatesSpecificationValidationUrl()
+    {
+        // Arrange
+        var json = CreateOpenApi30Spec();
+        var specUrl = "https://example.com/openapi.json";
+        var request = new OpenApiValidationRequest
+        {
+            OwnSchemaUrl = specUrl,
+            BaseUrl = "https://api.example.com",
+            Options = new OpenApiValidationOptions()
+        };
+        SetupHttpMock(json);
+
+        // Act
+        var result = await _service.ValidateOpenApiSpecificationAsync(request);
+
+        // Assert
+        Assert.That(result.SpecificationValidation, Is.Not.Null);
+        Assert.That(result.SpecificationValidation!.Url, Is.EqualTo(specUrl));
     }
 
     [Test]

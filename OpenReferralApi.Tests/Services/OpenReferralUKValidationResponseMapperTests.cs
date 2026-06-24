@@ -528,4 +528,111 @@ public class OpenReferralUKValidationResponseMapperTests
         // Assert: Allow for .NET GC segment fragmentation and ArrayPool retention, but fail if unbounded leaks occur
         Assert.That(memoryGrowth, Is.LessThan(5000 * 1024), $"Memory grew by {memoryGrowth} bytes, indicating a potential leak or degraded pooling optimizations.");
     }
+
+    [Test]
+    public void MapToOpenReferralUKValidationResponse_MapsRecordIdToPayload()
+    {
+        // Arrange
+        var result = new OpenApiValidationResult
+        {
+            Metadata = new CommonValidationMetadata
+            {
+                BaseUrl = "https://api.example.com"
+            },
+            SpecificationValidation = new OpenApiSpecificationValidation
+            {
+                IsValid = false,
+                Errors =
+                [
+                    new ValidationError
+                    {
+                        ErrorCode = "SPEC_ERR",
+                        Severity = "Error",
+                        Message = "Spec issue",
+                        Path = "spec",
+                        RecordId = "spec-record-id"
+                    }
+                ]
+            },
+            EndpointTests =
+            [
+                new EndpointTestResult
+                {
+                    Name = "Get Services",
+                    Method = "GET",
+                    Path = "/services",
+                    Status = EndpointTestStatus.FailedValidation,
+                    TestResults =
+                    [
+                        new HttpTestResult
+                        {
+                            ValidationResult = new ValidationResult
+                            {
+                                IsValid = false,
+                                Errors =
+                                [
+                                    new ValidationError
+                                    {
+                                        ErrorCode = "VAL_ERR",
+                                        Severity = "Error",
+                                        Message = "Required field missing",
+                                        Path = "content[0].name",
+                                        RecordId = "my-record-123"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // Act
+        var response = _mapper.MapToOpenReferralUKValidationResponse(result);
+
+        // Assert
+        Assert.That(response, Is.Not.Null);
+        var json = JsonSerializer.SerializeToNode(response)!.AsObject();
+
+        // 1. Check specification validation recordId
+        var specValidation = json["specificationValidation"]!.AsObject();
+        var specErrors = specValidation["errors"]!.AsArray();
+        Assert.That(specErrors[0]!["recordId"]!.ToString(), Is.EqualTo("spec-record-id"));
+
+        // 2. Check endpoint test message recordId
+        var testSuites = json["testSuites"]!.AsArray();
+        var tests = testSuites[0]!["tests"]!.AsArray();
+        var messages = tests[0]!["messages"]!.AsArray();
+        Assert.That(messages[0]!["recordId"]!.ToString(), Is.EqualTo("my-record-123"));
+    }
+
+    [Test]
+    public void MapToOpenReferralUKValidationResponse_MapsSpecificationValidationUrl()
+    {
+        // Arrange
+        var result = new OpenApiValidationResult
+        {
+            Metadata = new CommonValidationMetadata
+            {
+                BaseUrl = "https://api.example.com"
+            },
+            SpecificationValidation = new OpenApiSpecificationValidation
+            {
+                IsValid = true,
+                Version = "3.0.0",
+                Url = "https://api.example.com/swagger/v1/swagger.json",
+                Errors = []
+            },
+            EndpointTests = []
+        };
+
+        // Act
+        var response = _mapper.MapToOpenReferralUKValidationResponse(result);
+
+        // Assert
+        Assert.That(response, Is.Not.Null);
+        var json = JsonSerializer.SerializeToNode(response)!.AsObject();
+        var specValidation = json["specificationValidation"]!.AsObject();
+        Assert.That(specValidation["url"]!.ToString(), Is.EqualTo("https://api.example.com/swagger/v1/swagger.json"));
+    }
 }

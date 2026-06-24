@@ -33,7 +33,8 @@ internal static class ValidationErrorNormalizer
                 Severity = error.Severity,
                 LineNumber = error.LineNumber,
                 ColumnNumber = error.ColumnNumber,
-                SourceIdentifier = error.SourceIdentifier
+                SourceIdentifier = error.SourceIdentifier,
+                RecordId = error.RecordId
             });
         }
 
