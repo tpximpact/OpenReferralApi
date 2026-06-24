@@ -144,7 +144,7 @@ public class JsonValidatorService : IJsonValidatorService
             // Report additional fields if requested
             if (request.Options?.ReportAdditionalFields == true)
             {
-                var additionalFieldWarnings = DetectAdditionalFields(jsonDataDoc.RootElement, schema.SchemaNode);
+                var additionalFieldWarnings = await DetectAdditionalFieldsAsync(jsonDataDoc.RootElement, schema.SchemaNode);
                 validationErrors.AddRange(additionalFieldWarnings);
             }
 
@@ -1266,14 +1266,14 @@ public class JsonValidatorService : IJsonValidatorService
     /// Returns a list of validation warnings for each additional field found.
     /// Normalizes array index segments (for example "items[0]" -> "items") and returns only unique results.
     /// </summary>
-    private List<ValidationError> DetectAdditionalFields(System.Text.Json.JsonElement dataElement, System.Text.Json.Nodes.JsonNode? schemaNode)
+    private async Task<List<ValidationError>> DetectAdditionalFieldsAsync(System.Text.Json.JsonElement dataElement, System.Text.Json.Nodes.JsonNode? schemaNode)
     {
         var warnings = new List<ValidationError>();
 
         try
         {
             var pathSegments = new List<string>();
-            DetectAdditionalFieldsRecursive(dataElement, schemaNode, pathSegments, warnings);
+            await DetectAdditionalFieldsRecursiveAsync(dataElement, schemaNode, pathSegments, warnings);
 
             // Normalize paths and keep only unique warnings by normalized path
             var uniqueWarnings = new Dictionary<string, ValidationError>();
@@ -1300,7 +1300,7 @@ public class JsonValidatorService : IJsonValidatorService
     /// <summary>
     /// Recursively traverses the JSON data and schema to detect fields not defined in the schema.
     /// </summary>
-    private void DetectAdditionalFieldsRecursive(System.Text.Json.JsonElement jsonElement, System.Text.Json.Nodes.JsonNode? schemaNode, List<string> pathSegments, List<ValidationError> warnings)
+    private async Task DetectAdditionalFieldsRecursiveAsync(System.Text.Json.JsonElement jsonElement, System.Text.Json.Nodes.JsonNode? schemaNode, List<string> pathSegments, List<ValidationError> warnings)
     {
         if (schemaNode == null)
         {
@@ -1310,10 +1310,10 @@ public class JsonValidatorService : IJsonValidatorService
         if (schemaNode is JsonObject obj && obj.TryGetPropertyValue("$ref", out var refNode) && refNode is JsonValue refValue)
         {
             var refStr = refValue.GetValue<string>();
-            var resolvedNode = Task.Run(() => _schemaResolverService.ResolveNodeRefAsync(refStr)).GetAwaiter().GetResult();
+            var resolvedNode = await _schemaResolverService.ResolveNodeRefAsync(refStr);
             if (resolvedNode != null)
             {
-                DetectAdditionalFieldsRecursive(jsonElement, resolvedNode, pathSegments, warnings);
+                await DetectAdditionalFieldsRecursiveAsync(jsonElement, resolvedNode, pathSegments, warnings);
             }
             return;
         }
@@ -1326,7 +1326,7 @@ public class JsonValidatorService : IJsonValidatorService
             foreach (var property in jsonElement.EnumerateObject())
             {
                 pathSegments.Add(property.Name);
-                var hasSchemaProperty = IsPropertyDefined(schemaNode, property.Name, out var propSchema);
+                var (hasSchemaProperty, propSchema) = await IsPropertyDefinedAsync(schemaNode, property.Name);
 
                 if (!hasSchemaProperty)
                 {
@@ -1340,11 +1340,11 @@ public class JsonValidatorService : IJsonValidatorService
 
                 if (hasSchemaProperty)
                 {
-                    DetectAdditionalFieldsRecursive(property.Value, propSchema, pathSegments, warnings);
+                    await DetectAdditionalFieldsRecursiveAsync(property.Value, propSchema, pathSegments, warnings);
                 }
                 else if (additionalPropertiesNode is System.Text.Json.Nodes.JsonObject additionalPropertiesSchema)
                 {
-                    DetectAdditionalFieldsRecursive(property.Value, additionalPropertiesSchema, pathSegments, warnings);
+                    await DetectAdditionalFieldsRecursiveAsync(property.Value, additionalPropertiesSchema, pathSegments, warnings);
                 }
 
                 pathSegments.RemoveAt(pathSegments.Count - 1);
@@ -1352,26 +1352,25 @@ public class JsonValidatorService : IJsonValidatorService
         }
         else if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            var itemSchema = FindItemsSchema(schemaNode);
+            var itemSchema = await FindItemsSchemaAsync(schemaNode);
 
             if (itemSchema != null)
             {
                 pathSegments.Add(ArrayIndexToken);
                 foreach (var item in jsonElement.EnumerateArray())
                 {
-                    DetectAdditionalFieldsRecursive(item, itemSchema, pathSegments, warnings);
+                    await DetectAdditionalFieldsRecursiveAsync(item, itemSchema, pathSegments, warnings);
                 }
                 pathSegments.RemoveAt(pathSegments.Count - 1);
             }
         }
     }
 
-    private bool IsPropertyDefined(System.Text.Json.Nodes.JsonNode? schemaNode, string propertyName, out System.Text.Json.Nodes.JsonNode? propertySchema)
+    private async Task<(bool IsDefined, System.Text.Json.Nodes.JsonNode? PropertySchema)> IsPropertyDefinedAsync(System.Text.Json.Nodes.JsonNode? schemaNode, string propertyName)
     {
-        propertySchema = null;
         if (schemaNode == null)
         {
-            return false;
+            return (false, null);
         }
 
         if (schemaNode is JsonObject obj)
@@ -1379,15 +1378,15 @@ public class JsonValidatorService : IJsonValidatorService
             if (obj.TryGetPropertyValue("$ref", out var refNode) && refNode is JsonValue refValue)
             {
                 var refStr = refValue.GetValue<string>();
-                var resolvedNode = Task.Run(() => _schemaResolverService.ResolveNodeRefAsync(refStr)).GetAwaiter().GetResult();
-                return IsPropertyDefined(resolvedNode, propertyName, out propertySchema);
+                var resolvedNode = await _schemaResolverService.ResolveNodeRefAsync(refStr);
+                return await IsPropertyDefinedAsync(resolvedNode, propertyName);
             }
 
             if (obj.TryGetPropertyValue("properties", out var propsNode) && propsNode is JsonObject propsObj)
             {
-                if (propsObj.TryGetPropertyValue(propertyName, out propertySchema))
+                if (propsObj.TryGetPropertyValue(propertyName, out var propertySchema))
                 {
-                    return true;
+                    return (true, propertySchema);
                 }
             }
 
@@ -1395,18 +1394,19 @@ public class JsonValidatorService : IJsonValidatorService
             {
                 foreach (var item in allOfArr)
                 {
-                    if (IsPropertyDefined(item, propertyName, out propertySchema))
+                    var (isDefined, propertySchema) = await IsPropertyDefinedAsync(item, propertyName);
+                    if (isDefined)
                     {
-                        return true;
+                        return (true, propertySchema);
                     }
                 }
             }
         }
 
-        return false;
+        return (false, null);
     }
 
-    private System.Text.Json.Nodes.JsonNode? FindItemsSchema(System.Text.Json.Nodes.JsonNode? schemaNode)
+    private async Task<System.Text.Json.Nodes.JsonNode?> FindItemsSchemaAsync(System.Text.Json.Nodes.JsonNode? schemaNode)
     {
         if (schemaNode == null) return null;
 
@@ -1415,8 +1415,8 @@ public class JsonValidatorService : IJsonValidatorService
             if (obj.TryGetPropertyValue("$ref", out var refNode) && refNode is JsonValue refValue)
             {
                 var refStr = refValue.GetValue<string>();
-                var resolvedNode = Task.Run(() => _schemaResolverService.ResolveNodeRefAsync(refStr)).GetAwaiter().GetResult();
-                return FindItemsSchema(resolvedNode);
+                var resolvedNode = await _schemaResolverService.ResolveNodeRefAsync(refStr);
+                return await FindItemsSchemaAsync(resolvedNode);
             }
 
             if (obj.TryGetPropertyValue("items", out var itemsSchema))
@@ -1428,7 +1428,7 @@ public class JsonValidatorService : IJsonValidatorService
             {
                 foreach (var item in allOfArr)
                 {
-                    var found = FindItemsSchema(item);
+                    var found = await FindItemsSchemaAsync(item);
                     if (found != null) return found;
                 }
             }

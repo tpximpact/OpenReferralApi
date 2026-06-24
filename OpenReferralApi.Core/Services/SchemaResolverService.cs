@@ -171,7 +171,7 @@ public class SchemaResolverService : ISchemaResolverService
 
             try
             {
-                var node = Task.Run(() => _remoteSchemaLoader.LoadRemoteSchemaAsync(resolvedUrl)).GetAwaiter().GetResult();
+                var node = _remoteSchemaLoader.LoadRemoteSchema(resolvedUrl);
                 if (_memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema2) && cachedSchema2 != null)
                 {
                     return cachedSchema2.CompiledSchema;
@@ -390,6 +390,43 @@ public class SchemaResolverService : ISchemaResolverService
     /// </summary>
     public async Task<JsonSchema> CreateSchemaFromJsonAsync(string schemaJson, string? documentUri, DataSourceAuthentication? auth = null, CancellationToken cancellationToken = default)
     {
+        JsonNode? rootNode = null;
+        try
+        {
+            rootNode = JsonNode.Parse(schemaJson);
+        }
+        catch { /* Ignore parsing errors here */ }
+
+        string? schemaId = null;
+        if (rootNode is JsonObject rootObj && rootObj.TryGetPropertyValue("$id", out var idVal) && idVal is JsonValue jVal)
+        {
+            schemaId = jVal.GetValue<string>();
+        }
+
+        var urlsToCache = new List<string>();
+        if (!string.IsNullOrEmpty(schemaId)) urlsToCache.Add(schemaId);
+        if (!string.IsNullOrEmpty(documentUri)) urlsToCache.Add(documentUri);
+
+        var cacheKeysRegistered = new List<string>();
+        if (rootNode != null && _cacheOptions.Enabled)
+        {
+            foreach (var url in urlsToCache)
+            {
+                var normalized = NormalizeAbsoluteUrl(url);
+                if (normalized != null)
+                {
+                    var cacheKey = $"schema:{normalized}";
+                    if (!_memoryCache.TryGetValue(cacheKey, out _))
+                    {
+                        var placeholder = new CachedSchema(new JsonSchemaBuilder().Build(), rootNode.DeepClone(), schemaJson, schemaJson.Length);
+                        _memoryCache.Set(cacheKey, placeholder, TimeSpan.FromMinutes(5));
+                        cacheKeysRegistered.Add(cacheKey);
+                    }
+                }
+            }
+        }
+
+        bool success = false;
         try
         {
             _logger.CreatingJsonSchema(documentUri != null ? TextSanitizer.SanitizeUrlForLogging(documentUri) : "none");
@@ -414,6 +451,18 @@ public class SchemaResolverService : ISchemaResolverService
             {
                 var schema = await Task.Run(() => JsonSchemaBuild.FromText(resolvedSchemaJson), cancellationToken);
                 _logger.SuccessfullyCreatedSchemaWithReferenceResolution();
+
+                // Update cache with the fully compiled schema
+                if (_cacheOptions.Enabled && rootNode != null)
+                {
+                    foreach (var cacheKey in cacheKeysRegistered)
+                    {
+                        var cachedSchema = new CachedSchema(schema, rootNode.DeepClone(), schemaJson, schemaJson.Length);
+                        _memoryCache.Set(cacheKey, cachedSchema, TimeSpan.FromMinutes(_cacheOptions.ExpirationMinutes > 0 ? _cacheOptions.ExpirationMinutes : 120));
+                    }
+                }
+
+                success = true;
                 return schema;
             }
             catch (Exception ex)
@@ -451,6 +500,36 @@ public class SchemaResolverService : ISchemaResolverService
             _logger.FailedToCreateJsonSchema(ex, documentUri != null ? TextSanitizer.SanitizeUrlForLogging(documentUri) : "none");
             throw;
         }
+        finally
+        {
+            if (!success && _cacheOptions.Enabled)
+            {
+                foreach (var cacheKey in cacheKeysRegistered)
+                {
+                    _memoryCache.Remove(cacheKey);
+                }
+            }
+        }
+    }
+
+    private static string? NormalizeAbsoluteUrl(string schemaUrl)
+    {
+        if (string.IsNullOrWhiteSpace(schemaUrl))
+        {
+            return null;
+        }
+
+        if (schemaUrl.Contains("json-everything.lib", StringComparison.OrdinalIgnoreCase))
+        {
+            schemaUrl = schemaUrl.Replace("json-everything.lib", "json-everything.net", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (!Uri.TryCreate(schemaUrl, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        return uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
     }
 
     private static string CreateSchemaFingerprint(string schemaJson)

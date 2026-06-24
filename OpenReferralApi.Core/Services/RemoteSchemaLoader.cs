@@ -439,6 +439,189 @@ public class RemoteSchemaLoader
         return uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
     }
 
+    public JsonNode? LoadRemoteSchema(string schemaUrl)
+    {
+        if (schemaUrl.Contains("json-everything.lib", StringComparison.OrdinalIgnoreCase))
+        {
+            schemaUrl = schemaUrl.Replace("json-everything.lib", "json-everything.net", StringComparison.OrdinalIgnoreCase);
+        }
+        var resolvedUrl = NormalizeKnownSchemaUrl(schemaUrl) ?? schemaUrl;
+
+        // 1. Check SchemaRegistry.Global first for known public meta-schemas
+        if (Uri.TryCreate(resolvedUrl, UriKind.Absolute, out var schemaUri))
+        {
+            var isPublicMetaSchema = schemaUri.Host.Equals("json-schema.org", StringComparison.OrdinalIgnoreCase) ||
+                                     schemaUri.Host.Equals("spec.openapis.org", StringComparison.OrdinalIgnoreCase) ||
+                                     schemaUri.Host.Equals("json-everything.net", StringComparison.OrdinalIgnoreCase);
+
+            if (isPublicMetaSchema)
+            {
+                var registered = Json.Schema.SchemaRegistry.Global.Get(schemaUri);
+                if (registered != null)
+                {
+                    var cacheKey = GenerateCacheKey(resolvedUrl);
+                    if (_cacheOptions.Enabled && _memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema) && cachedSchema != null)
+                    {
+                        return cachedSchema.JsonRepresentation.DeepClone();
+                    }
+
+                    try
+                    {
+                        var serialized = JsonSerializer.SerializeToNode(registered);
+                        if (serialized != null)
+                        {
+                            return serialized;
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback
+                    }
+                    return new JsonObject();
+                }
+            }
+        }
+
+        // 2. Check persistent cache first if caching is enabled
+        if (_cacheOptions.Enabled)
+        {
+            var cacheKey = GenerateCacheKey(resolvedUrl);
+            if (_memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema) && cachedSchema != null)
+            {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.RetrievedSchemaFromCache(TextSanitizer.SanitizeUrlForLogging(resolvedUrl));
+                }
+                
+                try
+                {
+                    if (Uri.TryCreate(resolvedUrl, UriKind.Absolute, out var cacheUri) &&
+                        Json.Schema.SchemaRegistry.Global.Get(cacheUri) == null)
+                    {
+                        Json.Schema.SchemaRegistry.Global.Register(cacheUri, cachedSchema.CompiledSchema);
+                    }
+                }
+                catch { /* Ignore */ }
+
+                return cachedSchema.JsonRepresentation.DeepClone();
+            }
+        }
+
+        return LoadRemoteSchemaInternal(resolvedUrl);
+    }
+
+    private JsonNode? LoadRemoteSchemaInternal(string resolvedUrl)
+    {
+        try
+        {
+            if (!Uri.TryCreate(resolvedUrl, UriKind.Absolute, out var schemaUri) ||
+                (schemaUri.Scheme != Uri.UriSchemeHttp && schemaUri.Scheme != Uri.UriSchemeHttps))
+            {
+                throw new ArgumentException($"Invalid schema URL: Only HTTP and HTTPS URLs are allowed", nameof(resolvedUrl));
+            }
+
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.FetchingRemoteSchema(TextSanitizer.SanitizeUrlForLogging(resolvedUrl));
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, resolvedUrl);
+
+            if (_auth != null && IsValidAuthentication(_auth))
+            {
+                ApplyAuthentication(request, _auth);
+            }
+
+            var httpClient = _httpClientFactory.CreateClient("OpenApiValidationService");
+            string content;
+            try
+            {
+                using var response = httpClient.Send(request);
+                _ = response.EnsureSuccessStatusCode();
+                using var reader = new System.IO.StreamReader(response.Content.ReadAsStream());
+                content = reader.ReadToEnd();
+            }
+            catch (HttpRequestException ex)
+            {
+                RemoteSchemaLoaderLog.ConnectionFailureFetchingRemoteSchema(_logger, ex, TextSanitizer.SanitizeUrlForLogging(resolvedUrl), ex.Message);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Connection failure fetching remote schema synchronously from {Url}", TextSanitizer.SanitizeUrlForLogging(resolvedUrl));
+                return null;
+            }
+
+            var jsonNode = JsonNode.Parse(content) ?? throw new InvalidOperationException("Fetched content is not valid JSON.");
+            var cacheKey = GenerateCacheKey(resolvedUrl);
+            var cacheEntryOptions = new MemoryCacheEntryOptions
+            {
+                Size = content.Length,
+                Priority = CacheItemPriority.Normal
+            };
+
+            // Configure expiration
+            if (_cacheOptions.ExpirationMinutes > 0)
+            {
+                if (_cacheOptions.UseSlidingExpiration)
+                {
+                    cacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(_cacheOptions.SlidingExpirationMinutes);
+                    cacheEntryOptions.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheOptions.ExpirationMinutes);
+                }
+                else
+                {
+                    cacheEntryOptions.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheOptions.ExpirationMinutes);
+                }
+            }
+
+            // Put placeholder in cache to prevent circular recursion/deadlocks during compilation
+            if (_cacheOptions.Enabled)
+            {
+                var placeholder = new CachedSchema(new JsonSchemaBuilder().Build(), jsonNode, content, content.Length);
+                _memoryCache.Set(cacheKey, placeholder, cacheEntryOptions);
+            }
+
+            // Double check SchemaRegistry.Global right before compiling to avoid duplicate key exceptions
+            if (Json.Schema.SchemaRegistry.Global.Get(schemaUri) != null)
+            {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Schema for {Url} was registered concurrently in SchemaRegistry.Global.", resolvedUrl);
+                }
+                return jsonNode.DeepClone();
+            }
+
+            var schema = OpenReferralApi.Core.Helpers.JsonSchemaBuild.FromText(content);
+
+            // Store in persistent cache if caching is enabled
+            if (_cacheOptions.Enabled)
+            {
+                var cachedSchema = new CachedSchema(schema, jsonNode, content, content.Length);
+                _ = _memoryCache.Set(cacheKey, cachedSchema, cacheEntryOptions);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.CachedSchema(TextSanitizer.SanitizeUrlForLogging(resolvedUrl), _cacheOptions.ExpirationMinutes);
+                }
+            }
+
+            try
+            {
+                if (Json.Schema.SchemaRegistry.Global.Get(schemaUri) == null)
+                {
+                    Json.Schema.SchemaRegistry.Global.Register(schemaUri, schema);
+                }
+            }
+            catch { /* Ignore registration errors if it's not a valid schema (e.g. partial component) */ }
+
+            return jsonNode.DeepClone();
+        }
+        catch (Exception ex)
+        {
+            _logger.FailedToFetchRemoteSchema(ex, TextSanitizer.SanitizeUrlForLogging(resolvedUrl));
+            throw;
+        }
+    }
+
     private static bool IsJsonSchemaDraftUrl(string absoluteUrl)
     {
         if (!Uri.TryCreate(absoluteUrl, UriKind.Absolute, out var uri))
