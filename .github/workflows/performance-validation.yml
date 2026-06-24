@@ -1,0 +1,178 @@
+name: Performance Validation
+
+# Triggered manually only — keeps sensitive request data out of automated runs.
+# Store the full JSON request body (e.g. {"baseUrl":"...","options":{...}}) in
+# a repository secret named PERF_VALIDATION_REQUEST before running this workflow.
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [feature/hsds-validation-flow]
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  # Suppress Node.js version deprecation warnings from actions
+  ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: "node22"
+  IMAGE_TAG: "oruk-perf:local"
+  APP_PORT: "5001"
+  SEQUENTIAL_REQUESTS: 10
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  performance-validation:
+    name: Build, Run & Validate (10 sequential requests)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      # -----------------------------------------------------------------------
+      # 2. Build .NET project (validates the build is healthy before Docker)
+      # -----------------------------------------------------------------------
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5.2.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+
+      - name: Restore & Build
+        run: |
+          dotnet restore --use-lock-file
+          dotnet build --configuration Release --no-restore
+
+      # -----------------------------------------------------------------------
+      # 3. Build local Docker image
+      # -----------------------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.0.0
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v7.0.0
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: ${{ env.IMAGE_TAG }}
+          # Re-use the GHA layer cache to speed up repeated runs
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # -----------------------------------------------------------------------
+      # 4. Start container
+      # -----------------------------------------------------------------------
+      - name: Start container
+        run: |
+          docker run -d \
+            --name perf-app \
+            -p ${{ env.APP_PORT }}:80 \
+            -e ASPNETCORE_ENVIRONMENT=Production \
+            ${{ env.IMAGE_TAG }}
+
+      - name: Wait for app to be ready
+        run: |
+          echo "Waiting for container to become healthy…"
+          for i in $(seq 1 30); do
+            if curl -fsS "http://localhost:${{ env.APP_PORT }}/health-check/live" > /dev/null 2>&1; then
+              echo "App is ready after ${i} attempts."
+              exit 0
+            fi
+            echo "  attempt ${i}/30 – not ready yet, sleeping 2 s"
+            sleep 2
+          done
+          echo "::error::App failed to become ready within 60 s."
+          docker logs perf-app || true
+          exit 1
+
+      # -----------------------------------------------------------------------
+      # 5. Run 10 sequential validation requests
+      #    The full JSON body is read from the PERF_VALIDATION_REQUEST secret.
+      # -----------------------------------------------------------------------
+      - name: Run sequential validation requests
+        env:
+          REQUEST_BODY: ${{ secrets.PERF_VALIDATION_REQUEST }}
+        run: |
+          mkdir -p perf-results
+
+          for i in $(seq 1 ${{ env.SEQUENTIAL_REQUESTS }}); do
+            echo ""
+            echo "========================================"
+            echo "  Request ${i} / ${{ env.SEQUENTIAL_REQUESTS }}"
+            echo "========================================"
+
+            START_NS=$(date +%s%N)
+
+            curl -i -L \
+              --silent \
+              --show-error \
+              --max-time 120 \
+              -X POST \
+              "http://localhost:${{ env.APP_PORT }}/openreferral/validate" \
+              -H "Accept: application/json" \
+              -H "Content-Type: application/json" \
+              -d "${REQUEST_BODY}" \
+              | tee "perf-results/response-${i}.http" || true
+
+            END_NS=$(date +%s%N)
+            ELAPSED_MS=$(( (END_NS - START_NS) / 1000000 ))
+            echo ""
+            echo "  → elapsed: ${ELAPSED_MS} ms"
+            echo "${ELAPSED_MS}" >> perf-results/timings.txt
+          done
+
+          echo ""
+          echo "========================================"
+          echo "  Timing summary (ms)"
+          echo "========================================"
+          TOTAL=0
+          COUNT=0
+          while IFS= read -r line; do
+            echo "  Request $((COUNT + 1)): ${line} ms"
+            TOTAL=$((TOTAL + line))
+            COUNT=$((COUNT + 1))
+          done < perf-results/timings.txt
+          if [ "${COUNT}" -gt 0 ]; then
+            AVG=$((TOTAL / COUNT))
+            echo "  ----------------------------------------"
+            echo "  Total requests : ${COUNT}"
+            echo "  Total time     : ${TOTAL} ms"
+            echo "  Average        : ${AVG} ms"
+          fi
+
+      # -----------------------------------------------------------------------
+      # 6. Output container logs (always, for diagnostics)
+      # -----------------------------------------------------------------------
+      - name: Output container logs
+        if: always()
+        run: |
+          echo "========================================"
+          echo "  Container logs"
+          echo "========================================"
+          docker logs perf-app 2>&1 | tee perf-results/container.log || true
+
+      # -----------------------------------------------------------------------
+      # 7. Stop & remove container
+      # -----------------------------------------------------------------------
+      - name: Stop container
+        if: always()
+        run: docker stop perf-app && docker rm perf-app || true
+
+      # -----------------------------------------------------------------------
+      # 8. Upload all results as a workflow artifact
+      # -----------------------------------------------------------------------
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: performance-results-${{ github.run_number }}
+          path: perf-results/
+          if-no-files-found: warn
+          retention-days: 14

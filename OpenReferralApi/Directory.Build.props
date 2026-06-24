@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+   <AnalysisLevel>latest-all</AnalysisLevel>
+     <AnalysisMode>All</AnalysisMode>
+     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+</Project>

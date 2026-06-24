@@ -12,11 +12,11 @@ public class CorrelationIdMiddlewareTests
         // Arrange
         var context = new DefaultHttpContext();
         var nextCalled = false;
-        RequestDelegate next = (ctx) =>
+        Task next(HttpContext ctx)
         {
             nextCalled = true;
             return Task.CompletedTask;
-        };
+        }
 
         var middleware = new CorrelationIdMiddleware(next);
 
@@ -39,11 +39,11 @@ public class CorrelationIdMiddlewareTests
         context.Request.Headers["X-Correlation-ID"] = existingCorrelationId;
 
         var nextCalled = false;
-        RequestDelegate next = (ctx) =>
+        Task next(HttpContext ctx)
         {
             nextCalled = true;
             return Task.CompletedTask;
-        };
+        }
 
         var middleware = new CorrelationIdMiddleware(next);
 

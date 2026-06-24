@@ -90,7 +90,7 @@ public class GlobalExceptionHandlerTests
         context.Response.Body.Position = 0;
         var reader = new StreamReader(context.Response.Body);
         var responseBody = await reader.ReadToEndAsync();
-        
+
         Assert.That(responseBody, Does.Contain("stackTrace"));
     }
 }

@@ -1,53 +1,65 @@
+// Enable nullable reference types for better null-safety
+#nullable enable
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Json.Schema;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Schema;
-using OpenReferralApi.Core.Models;
+using OpenReferralApi.Core.Helpers;
+using OpenReferralApi.Core.Logging;
 
 namespace OpenReferralApi.Core.Services;
 
 /// <summary>
 /// Service for resolving JSON Schema references ($ref) and creating schemas with proper resolution.
-/// Uses System.Text.Json for reference resolution and Newtonsoft.Json.Schema for JSchema creation.
+/// Uses System.Text.Json for reference resolution and Json.Schema for schema creation.
 /// Handles both external URL references and internal JSON pointer references.
 /// </summary>
 public interface ISchemaResolverService
 {
-  // System.Text.Json based schema resolution methods
-  /// <summary>
-  /// Resolves all $ref references in the provided schema with a base URI context.
-  /// </summary>
-  /// <param name="schema">The schema to resolve (as JSON string).</param>
-  /// <param name="baseUri">The base URI for resolving relative references.</param>
-  /// <param name="auth">Optional authentication for fetching remote schemas.</param>
-  /// <returns>The fully resolved schema as a JSON string.</returns>
-  Task<string> ResolveAsync(string schema, string? baseUri = null, DataSourceAuthentication? auth = null);
+    // System.Text.Json based schema resolution methods
+    /// <summary>
+    /// Resolves all $ref references in the provided schema with a base URI context.
+    /// </summary>
+    /// <param name="schema">The schema to resolve (as JSON string).</param>
+    /// <param name="baseUri">The base URI for resolving relative references.</param>
+    /// <param name="auth">Optional authentication for fetching remote schemas.</param>
+    /// <returns>The fully resolved schema as a JSON string.</returns>
+    Task<string> ResolveAsync(string schema, string? baseUri = null, DataSourceAuthentication? auth = null);
 
-  /// <summary>
-  /// Resolves all $ref references in the provided schema with a base URI context.
-  /// </summary>
-  /// <param name="schema">The schema to resolve (as JsonNode).</param>
-  /// <param name="baseUri">The base URI for resolving relative references.</param>
-  /// <param name="auth">Optional authentication for fetching remote schemas.</param>
-  /// <returns>The fully resolved schema as a JsonNode.</returns>
-  Task<JsonNode?> ResolveAsync(JsonNode schema, string? baseUri = null, DataSourceAuthentication? auth = null);
+    /// <summary>
+    /// Resolves all $ref references in the provided schema with a base URI context.
+    /// </summary>
+    /// <param name="schema">The schema to resolve (as JsonNode).</param>
+    /// <param name="baseUri">The base URI for resolving relative references.</param>
+    /// <param name="auth">Optional authentication for fetching remote schemas.</param>
+    /// <returns>The fully resolved schema as a JsonNode.</returns>
+    Task<JsonNode?> ResolveAsync(JsonNode schema, string? baseUri = null, DataSourceAuthentication? auth = null);
 
-  // Newtonsoft.Json.Schema based schema creation methods
-  /// <summary>
-  /// Creates a JSON schema from JSON string with proper reference resolution
-  /// </summary>
-  Task<JSchema> CreateSchemaFromJsonAsync(string schemaJson, CancellationToken cancellationToken = default);
+    // Json.Schema based schema creation methods
+    /// <summary>
+    /// Creates a JSON schema from JSON string with proper reference resolution
+    /// </summary>
+    Task<JsonSchema> CreateSchemaFromJsonAsync(string schemaJson, CancellationToken cancellationToken = default);
 
-  /// <summary>
-  /// Creates a JSON schema from JSON string with proper reference resolution and base URI
-  /// </summary>
-  Task<JSchema> CreateSchemaFromJsonAsync(string schemaJson, string? documentUri, DataSourceAuthentication? auth = null, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Creates a JSON schema from JSON string with proper reference resolution and base URI
+    /// </summary>
+    Task<JsonSchema> CreateSchemaFromJsonAsync(string schemaJson, string? documentUri, DataSourceAuthentication? auth = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns non-fatal issues discovered during the most recent reference resolution call.
+    /// </summary>
+    IReadOnlyList<SchemaResolutionIssue> GetResolutionIssues();
+
+    /// <summary>
+    /// Resolves a single $ref pointer on-the-fly.
+    /// </summary>
+    Task<JsonNode?> ResolveNodeRefAsync(string refString);
 }
 
 /// <summary>
@@ -62,366 +74,428 @@ public interface ISchemaResolverService
 /// </remarks>
 public class SchemaResolverService : ISchemaResolverService
 {
-  private readonly HttpClient _httpClient;
-  private readonly ILogger<SchemaResolverService> _logger;
-  private readonly IMemoryCache _memoryCache;
-  private readonly CacheOptions _cacheOptions;
-  private readonly RemoteSchemaLoader _remoteSchemaLoader;
-  private readonly ReferenceResolver _referenceResolver;
-  private readonly string? _localSpecificationBaseUrl;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<SchemaResolverService> _logger;
+    private readonly IMemoryCache _memoryCache;
+    private readonly CacheOptions _cacheOptions;
+    private readonly RemoteSchemaLoader _remoteSchemaLoader;
+    private readonly ReferenceResolver _referenceResolver;
+    private static readonly JsonSerializerOptions IndentedSerializerOptions = new() { WriteIndented = true };
 
-  /// <summary>
-  /// Initializes a new instance of the SchemaResolver for remote schema resolution.
-  /// </summary>
-  /// <param name="httpClient">HTTP client for fetching remote schemas.</param>
-  /// <param name="logger">Logger instance.</param>
-  /// <param name="memoryCache">Memory cache for persistent schema caching.</param>
-  /// <param name="cacheOptions">Cache configuration options.</param>
-  /// <param name="specificationOptions">Specification configuration options for URL rewriting.</param>
-  public SchemaResolverService(
-    HttpClient httpClient,
-    ILogger<SchemaResolverService> logger,
-    IMemoryCache memoryCache,
-    IOptions<CacheOptions> cacheOptions,
-    IOptions<SpecificationOptions>? specificationOptions = null,
-    IOptions<SchemaResolutionOptions>? schemaResolutionOptions = null)
-  {
-    _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-    _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
-    _cacheOptions = cacheOptions?.Value ?? throw new ArgumentNullException(nameof(cacheOptions));
-    _localSpecificationBaseUrl = specificationOptions?.Value?.BaseUrl;
-    _remoteSchemaLoader = new RemoteSchemaLoader(
-      httpClient,
-      logger,
-      memoryCache,
-      cacheOptions,
-      _localSpecificationBaseUrl,
-      schemaResolutionOptions?.Value?.KnownJsonSchemaUrls,
-      schemaResolutionOptions?.Value?.WarnOnUnknownJsonSchemaDraft ?? true);
-    _referenceResolver = new ReferenceResolver(logger, _remoteSchemaLoader);
-  }
-
-  /// <summary>
-  /// Resolves all $ref references in the provided schema.
-  /// </summary>
-  /// <param name="schema">The schema to resolve (as JSON string).</param>
-  /// <param name="baseUri">The base URI for resolving relative references.</param>
-  /// <param name="auth">Optional authentication for fetching remote schemas.</param>
-  /// <returns>The fully resolved schema as a JSON string.</returns>
-  public async Task<string> ResolveAsync(string schema, string? baseUri = null, DataSourceAuthentication? auth = null)
-  {
-    var jsonNode = JsonNode.Parse(schema);
-    if (jsonNode == null)
+    /// <summary>
+    /// Initializes a new instance of the SchemaResolver for remote schema resolution.
+    /// </summary>
+    /// <param name="httpClientFactory">HTTP client factory for fetching remote schemas.</param>
+    /// <param name="logger">Logger instance.</param>
+    /// <param name="memoryCache">Memory cache for persistent schema caching.</param>
+    /// <param name="cacheOptions">Cache configuration options.</param>
+    /// <param name="schemaResolutionOptions">Schema resolution configuration options for URL normalization.</param>
+    public SchemaResolverService(
+      IHttpClientFactory httpClientFactory,
+      ILogger<SchemaResolverService> logger,
+      IMemoryCache memoryCache,
+      IOptions<CacheOptions> cacheOptions,
+      IOptions<SchemaResolutionOptions>? schemaResolutionOptions = null)
     {
-      throw new ArgumentException("Invalid JSON schema", nameof(schema));
+        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+        _cacheOptions = cacheOptions?.Value ?? throw new ArgumentNullException(nameof(cacheOptions));
+        _remoteSchemaLoader = new RemoteSchemaLoader(
+            httpClientFactory,
+            logger,
+            memoryCache,
+            cacheOptions,
+            schemaResolutionOptions?.Value?.KnownJsonSchemaUrls,
+            schemaResolutionOptions?.Value?.WarnOnUnknownJsonSchemaDraft ?? true);
+        _referenceResolver = new ReferenceResolver(logger, _remoteSchemaLoader);
+        ConfigureGlobalFetch();
     }
 
-    var resolved = await ResolveAsync(jsonNode, baseUri, auth);
-    return resolved?.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) ?? "null";
-  }
-
-  /// <summary>
-  /// Resolves all $ref references in the provided schema.
-  /// </summary>
-  /// <param name="schema">The schema to resolve (as JsonNode).</param>
-  /// <param name="baseUri">The base URI for resolving relative references.</param>
-  /// <param name="auth">Optional authentication for fetching remote schemas.</param>
-  /// <returns>The fully resolved schema as a JsonNode.</returns>
-  public async Task<JsonNode?> ResolveAsync(JsonNode schema, string? baseUri = null, DataSourceAuthentication? auth = null)
-  {
-    // Configure authentication for the remote loader
-    var validatedAuth = IsValidAuthentication(auth) ? auth : null;
-    _remoteSchemaLoader.SetAuthentication(validatedAuth);
-
-    // Initialize the reference resolver for this resolution session
-    _referenceResolver.Initialize(schema, baseUri);
-
-    // Pass a new HashSet to track the current resolution path
-    return await _referenceResolver.ResolveAllRefsAsync(schema, new HashSet<string>());
-  }
-
-  /// <summary>
-  /// Determines whether the provided authentication configuration is considered valid for use.
-  /// This adds a server-side gate so that user-controlled data does not directly drive whether
-  /// sensitive authentication behavior is applied.
-  /// </summary>
-  /// <param name="auth">The authentication configuration supplied by the caller.</param>
-  /// <returns>True if the configuration is valid and may be applied; otherwise, false.</returns>
-  private static bool IsValidAuthentication([NotNullWhen(true)] DataSourceAuthentication? auth)
-  {
-    if (auth == null)
+    private void ConfigureGlobalFetch()
     {
-      return false;
-    }
-
-    // NOTE: We avoid assuming unnamed properties on DataSourceAuthentication.
-    // If this type exposes a scheme/value model, additional checks should be added here
-    // to restrict allowed schemes and ensure required fields are non-empty.
-    return true;
-  }
-
-  /// <summary>
-  /// Sanitizes a string for safe logging by stripping control characters (including newlines)
-  /// that could be used for log-forging attacks. This is a general-purpose method for 
-  /// sanitizing arbitrary user-supplied strings.
-  /// </summary>
-  public static string SanitizeStringForLogging(string input)
-  {
-    if (string.IsNullOrEmpty(input))
-      return string.Empty;
-
-    // Remove control characters (including CR/LF) and restrict to a conservative set of printable characters
-    // to prevent log forging or confusing log output.
-    var sanitizedChars = input
-      .Where(c =>
-        // Exclude control characters
-        !char.IsControl(c) &&
-        // Allow basic printable ASCII range; adjust as needed if wider Unicode is desired
-        c >= ' ' && c <= '~')
-      .ToArray();
-
-    var sanitized = new string(sanitizedChars);
-
-    // Normalize internal whitespace to a single space to avoid confusing spacing in logs.
-    if (sanitized.Length > 0)
-    {
-      sanitized = string.Join(' ',
-        sanitized
-          .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-    }
-
-    // Limit length to prevent log flooding
-    const int maxLength = 500;
-    if (sanitized.Length > maxLength)
-    {
-      sanitized = sanitized.Substring(0, maxLength) + "...(truncated)";
-    }
-
-    // Escape brace characters that might be interpreted specially by some logging frameworks
-    sanitized = sanitized
-      .Replace("{", "{{")
-      .Replace("}", "}}");
-
-    // Clearly mark user-supplied content so it cannot be mistaken for static log text.
-    return "[user: " + sanitized + "]";
-  }
-
-  /// <summary>
-  /// Sanitizes a URL for safe logging by removing query parameters and fragments
-  /// and stripping any control characters (including newlines) that could be used
-  /// for log-forging attacks.
-  /// </summary>
-  public static string SanitizeUrlForLogging(string url)
-  {
-    if (string.IsNullOrEmpty(url))
-      return string.Empty;
-
-    // Normalize whitespace and strip control characters (including CR/LF) to prevent log forging
-    var trimmed = url.Trim();
-    // Allow only a conservative set of URL-safe printable characters; replace others with '?'
-    var cleanedChars = trimmed
-      .Where(c => !char.IsControl(c))
-      .Select(c =>
-      {
-        // Unreserved and common reserved URL characters
-        const string allowedPunctuation = "-._~:/?#[]@!$&'()*+,;=%";
-        if ((c >= 'a' && c <= 'z') ||
-            (c >= 'A' && c <= 'Z') ||
-            (c >= '0' && c <= '9') ||
-            allowedPunctuation.IndexOf(c) >= 0)
+        Json.Schema.SchemaRegistry.Global.Fetch = (uri, registry) =>
         {
-          return c;
-        }
-        // Replace any unusual characters with a placeholder to keep logs safe and readable
-        return '?';
-      })
-      .ToArray();
-    var cleaned = new string(cleanedChars);
+            if (uri.Scheme == Uri.UriSchemeFile)
+            {
+                var localPath = uri.LocalPath;
+                if (File.Exists(localPath))
+                {
+                    try
+                    {
+                        var content = File.ReadAllText(localPath);
+                        return JsonSchema.FromText(content);
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
+            }
 
-    // Optionally limit length to avoid log flooding/obfuscation with attacker-controlled data
-    const int maxLength = 2048;
-    if (cleaned.Length > maxLength)
-    {
-      cleaned = cleaned.Substring(0, maxLength) + "...(truncated)";
+            // Correct TLD for json-everything domain to avoid dns resolution timeouts
+            var host = uri.Host;
+            if (host.Equals("json-everything.lib", StringComparison.OrdinalIgnoreCase))
+            {
+                host = "json-everything.net";
+            }
+
+            // Bypass network calls for standard JSON schema drafts, OpenAPI meta-schemas,
+            // and json-everything schemas to avoid ThreadPool starvation deadlocks and speed up compilation.
+            if (host.Equals("json-schema.org", StringComparison.OrdinalIgnoreCase) ||
+                host.Equals("spec.openapis.org", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (host.Equals("json-everything.net", StringComparison.OrdinalIgnoreCase))
+            {
+                var fileName = uri.Segments.LastOrDefault()?.TrimEnd('/');
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    var localSchema = FindRegisteredSchemaByFileName(fileName);
+                    if (localSchema != null)
+                    {
+                        return localSchema;
+                    }
+                }
+                return null;
+            }
+
+            var resolvedUrl = uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
+            var cacheKey = $"schema:{resolvedUrl}";
+            if (_memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema) && cachedSchema != null)
+            {
+                return cachedSchema.CompiledSchema;
+            }
+
+            try
+            {
+                var node = Task.Run(() => _remoteSchemaLoader.LoadRemoteSchemaAsync(resolvedUrl)).GetAwaiter().GetResult();
+                if (_memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema2) && cachedSchema2 != null)
+                {
+                    return cachedSchema2.CompiledSchema;
+                }
+            }
+            catch
+            {
+                // Ignore
+            }
+
+            return null;
+        };
     }
 
-    try
+    private static IBaseDocument? FindRegisteredSchemaByFileName(string fileName)
     {
-      // Prefer to log without query string or fragment where possible
-      if (Uri.TryCreate(cleaned, UriKind.Absolute, out var uri))
-      {
-        // Return URL without query string or fragment
-        var sanitized = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}";
-        // Ensure no control characters are present in the final value
-        return new string(sanitized.Where(c => !char.IsControl(c)).ToArray());
-      }
-      // For relative or non-absolute URLs, just remove query and fragment from the cleaned value
-      var questionMarkIndex = cleaned.IndexOf('?');
-      var hashIndex = cleaned.IndexOf('#');
-      var endIndex = cleaned.Length;
-
-      if (questionMarkIndex > 0)
-        endIndex = Math.Min(endIndex, questionMarkIndex);
-      if (hashIndex > 0)
-        endIndex = Math.Min(endIndex, hashIndex);
-
-      var withoutQueryOrFragment = cleaned[..endIndex];
-      return new string(withoutQueryOrFragment.Where(c => !char.IsControl(c)).ToArray());
-    }
-    catch
-    {
-      // If parsing fails, return a safely truncated, control-character-free version
-      var fallback = cleaned;
-      const int fallbackMaxLength = 100;
-      if (fallback.Length > fallbackMaxLength)
-      {
-        fallback = fallback[..fallbackMaxLength] + "...";
-      }
-      return new string(fallback.Where(c => !char.IsControl(c)).ToArray());
-    }
-  }
-
-  /// <summary>
-  /// Creates a JSON schema from JSON string with proper reference resolution
-  /// </summary>
-  public async Task<JSchema> CreateSchemaFromJsonAsync(string schemaJson, CancellationToken cancellationToken = default)
-  {
-    return await CreateSchemaFromJsonAsync(schemaJson, null, null, cancellationToken);
-  }
-
-  /// <summary>
-  /// Creates a JSON schema from JSON string with proper reference resolution and base URI
-  /// Uses System.Text.Json based resolution to pre-resolve all $ref before creating JSchema
-  /// </summary>
-  public async Task<JSchema> CreateSchemaFromJsonAsync(string schemaJson, string? documentUri, DataSourceAuthentication? auth = null, CancellationToken cancellationToken = default)
-  {
-    try
-    {
-      _logger.LogDebug("Creating JSON schema from JSON string with resolver. DocumentUri: {DocumentUri}", documentUri != null ? SanitizeUrlForLogging(documentUri) : "none");
-
-      // Pre-resolve all external and internal references using System.Text.Json based resolution
-      string resolvedSchemaJson = schemaJson;
-      try
-      {
-        _logger.LogDebug("Pre-resolving all schema references with base URI: {DocumentUri}", documentUri != null ? SanitizeUrlForLogging(documentUri) : "none");
-        resolvedSchemaJson = await ResolveAsync(schemaJson, documentUri, auth);
-        _logger.LogDebug("Successfully pre-resolved all schema references");
-      }
-      catch (Exception ex)
-      {
-        _logger.LogWarning(ex, "Failed to pre-resolve schema, continuing with original schema");
-        // Continue with original schema if resolution fails
-        resolvedSchemaJson = schemaJson;
-      }
-
-      // Create JSchema with the fully resolved schema (no more $ref to resolve)
-      var resolver = new JSchemaUrlResolver();
-
-      // Parse the schema with resolver settings
-      using var reader = new JsonTextReader(new StringReader(resolvedSchemaJson));
-
-      var settings = new JSchemaReaderSettings
-      {
-        Resolver = resolver,
-        // References are pre-resolved by our resolver; disable a second pass in Newtonsoft to avoid
-        // runtime remote resolution and failures on remaining informational refs.
-        ResolveSchemaReferences = false,
-        // Draft-specific meta-schema validation can reject otherwise parseable schemas when newer
-        // vocabularies are present. We validate payloads against the parsed schema downstream.
-        ValidateVersion = false
-      };
-
-      // Set base URI for any remaining reference resolution if provided
-      if (!string.IsNullOrEmpty(documentUri))
-      {
-        _logger.LogDebug("Loading schema with base URI: {DocumentUri}", SanitizeUrlForLogging(documentUri));
-        settings.BaseUri = new Uri(documentUri);
-      }
-
-      JSchema schema;
-      try
-      {
-        schema = await Task.Run(() => JSchema.Parse(resolvedSchemaJson, settings), cancellationToken);
-        _logger.LogDebug("Successfully created schema with reference resolution");
-      }
-      catch (Exception ex)
-      {
-        _logger.LogWarning(ex, "Failed to parse schema with resolver, attempting to parse without resolver. DocumentUri: {DocumentUri}", documentUri != null ? SanitizeUrlForLogging(documentUri) : "none");
         try
         {
-          // Fallback: parse original schema with the same relaxed settings.
-          schema = await Task.Run(() => JSchema.Parse(schemaJson, settings), cancellationToken);
-          _logger.LogDebug("Successfully created schema without resolver");
+            var registry = Json.Schema.SchemaRegistry.Global;
+            var field = typeof(SchemaRegistry).GetField("_registered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field == null) return null;
+
+            var dict = field.GetValue(registry) as System.Collections.IEnumerable;
+            if (dict == null) return null;
+
+            foreach (var entry in dict)
+            {
+                var keyProp = entry.GetType().GetProperty("Key");
+                var valueProp = entry.GetType().GetProperty("Value");
+                if (keyProp == null || valueProp == null) continue;
+
+                var uri = keyProp.GetValue(entry) as Uri;
+                if (uri == null) continue;
+
+                var path = uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
+                if (path.EndsWith("/" + fileName, StringComparison.OrdinalIgnoreCase) || path.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    var registration = valueProp.GetValue(entry);
+                    if (registration == null) continue;
+
+                    var rootProp = registration.GetType().GetProperty("Root");
+                    if (rootProp == null) continue;
+
+                    var doc = rootProp.GetValue(registration) as IBaseDocument;
+                    if (doc != null)
+                    {
+                        return doc;
+                    }
+                }
+            }
         }
-        catch (Exception fallbackEx)
+        catch
         {
-          var originalFingerprint = CreateSchemaFingerprint(schemaJson);
-          var resolvedFingerprint = CreateSchemaFingerprint(resolvedSchemaJson);
-          var originalSchemaId = ExtractTopLevelSchemaId(schemaJson);
-          var resolvedSchemaId = ExtractTopLevelSchemaId(resolvedSchemaJson);
-
-          _logger.LogError(
-            fallbackEx,
-            "Failed to parse schema even without resolver. DocumentUri: {DocumentUri}. ReaderError: {ReaderError}. OriginalFingerprint: {OriginalFingerprint}. ResolvedFingerprint: {ResolvedFingerprint}. OriginalSchemaId: {OriginalSchemaId}. ResolvedSchemaId: {ResolvedSchemaId}",
-            documentUri != null ? SanitizeUrlForLogging(documentUri) : "none",
-            SanitizeStringForLogging(fallbackEx.Message),
-            originalFingerprint,
-            resolvedFingerprint,
-            SanitizeStringForLogging(originalSchemaId),
-            SanitizeStringForLogging(resolvedSchemaId));
-
-          throw new InvalidOperationException("Unable to parse schema with or without resolver", fallbackEx);
+            // Ignore reflection errors and fallback
         }
-      }
-
-      return schema;
+        return null;
     }
-    catch (Exception ex)
+
+    /// <summary>
+    /// Resolves all $ref references in the provided schema.
+    /// </summary>
+    /// <param name="schema">The schema to resolve (as JSON string).</param>
+    /// <param name="baseUri">The base URI for resolving relative references.</param>
+    /// <param name="auth">Optional authentication for fetching remote schemas.</param>
+    /// <returns>The fully resolved schema as a JSON string.</returns>
+    public async Task<string> ResolveAsync(string schema, string? baseUri = null, DataSourceAuthentication? auth = null)
     {
-      _logger.LogError(ex, "Failed to create JSON schema from JSON with resolver. DocumentUri: {DocumentUri}", documentUri != null ? SanitizeUrlForLogging(documentUri) : "none");
-      throw;
+        var jsonNode = JsonNode.Parse(schema) ?? throw new ArgumentException("Invalid JSON schema", nameof(schema));
+        var resolved = await ResolveAsync(jsonNode, baseUri, auth);
+        return resolved?.ToJsonString(IndentedSerializerOptions) ?? "null";
     }
-  }
 
-  private static string CreateSchemaFingerprint(string schemaJson)
-  {
-    if (string.IsNullOrWhiteSpace(schemaJson))
+    /// <summary>
+    /// Resolves all $ref references in the provided schema.
+    /// </summary>
+    /// <param name="schema">The schema to resolve (as JsonNode).</param>
+    /// <param name="baseUri">The base URI for resolving relative references.</param>
+    /// <param name="auth">Optional authentication for fetching remote schemas.</param>
+    /// <returns>The fully resolved schema as a JsonNode.</returns>
+    public async Task<JsonNode?> ResolveAsync(JsonNode schema, string? baseUri = null, DataSourceAuthentication? auth = null)
     {
-      return "sha256:empty:length:0";
+        // Configure authentication for the remote loader
+        var validatedAuth = IsValidAuthentication(auth) ? auth : null;
+        _remoteSchemaLoader.SetAuthentication(validatedAuth);
+
+        // Initialize the reference resolver for this resolution session (needed for on-the-fly lookups)
+        _referenceResolver.Initialize(schema, baseUri);
+
+        // Pre-fetch all external references recursively and register them in SchemaRegistry.Global
+        await PreFetchSchemaRefsAsync(schema, baseUri, validatedAuth, CancellationToken.None);
+
+        return schema.DeepClone();
     }
 
-    var bytes = Encoding.UTF8.GetBytes(schemaJson);
-    var hash = SHA256.HashData(bytes);
-    var hex = Convert.ToHexString(hash).ToLowerInvariant();
-
-    return $"sha256:{hex}:length:{bytes.Length}";
-  }
-
-  private static string ExtractTopLevelSchemaId(string schemaJson)
-  {
-    if (string.IsNullOrWhiteSpace(schemaJson))
+    public IReadOnlyList<SchemaResolutionIssue> GetResolutionIssues()
     {
-      return "none";
+        return [.. _referenceResolver.ResolutionIssues];
     }
 
-    try
+    private async Task PreFetchSchemaRefsAsync(JsonNode rootNode, string? baseUri, DataSourceAuthentication? auth, CancellationToken cancellationToken)
     {
-      var node = JsonNode.Parse(schemaJson);
-      if (node is JsonObject obj &&
-          obj.TryGetPropertyValue("$id", out var idNode) &&
-          idNode is JsonValue idValue)
-      {
-        var id = idValue.GetValue<string>();
-        return string.IsNullOrWhiteSpace(id) ? "none" : id;
-      }
-    }
-    catch
-    {
-      // Ignore best-effort extraction failures and continue with diagnostics.
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var queue = new Queue<string>();
+
+        var initialRefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        FindExternalRefs(rootNode, baseUri, initialRefs);
+
+        foreach (var r in initialRefs)
+        {
+            if (visited.Add(r))
+            {
+                queue.Enqueue(r);
+            }
+        }
+
+        var validatedAuth = IsValidAuthentication(auth) ? auth : null;
+        _remoteSchemaLoader.SetAuthentication(validatedAuth);
+
+        while (queue.Count > 0)
+        {
+            var url = queue.Dequeue();
+            try
+            {
+                var schemaNode = await _remoteSchemaLoader.LoadRemoteSchemaAsync(url, cancellationToken);
+                if (schemaNode != null)
+                {
+                    var nestedRefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    FindExternalRefs(schemaNode, url, nestedRefs);
+                    foreach (var nr in nestedRefs)
+                    {
+                        if (visited.Add(nr))
+                        {
+                            queue.Enqueue(nr);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.FailedToPreFetchSchemaRef(ex, url);
+            }
+        }
     }
 
-    return "none";
-  }
+    private static void FindExternalRefs(JsonNode? node, string? baseUri, HashSet<string> result)
+    {
+        if (node == null) return;
+        if (node is JsonObject obj)
+        {
+            if (obj.TryGetPropertyValue("$ref", out var refNode) && refNode is JsonValue refValue)
+            {
+                var refStr = refValue.GetValue<string>();
+                if (!string.IsNullOrEmpty(refStr))
+                {
+                    var parts = refStr.Split('#');
+                    var schemaUrl = parts[0];
+                    if (!string.IsNullOrEmpty(schemaUrl))
+                    {
+                        if (schemaUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                            schemaUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                        {
+                            result.Add(schemaUrl);
+                        }
+                        else if (!string.IsNullOrEmpty(baseUri) && Uri.TryCreate(new Uri(baseUri), schemaUrl, out var absoluteUri))
+                        {
+                            result.Add(absoluteUri.GetLeftPart(UriPartial.Path).TrimEnd('/'));
+                        }
+                    }
+                }
+            }
+            foreach (var kvp in obj)
+            {
+                FindExternalRefs(kvp.Value, baseUri, result);
+            }
+        }
+        else if (node is JsonArray arr)
+        {
+            foreach (var item in arr)
+            {
+                FindExternalRefs(item, baseUri, result);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Determines whether the provided authentication configuration is considered valid for use.
+    /// This adds a server-side gate so that user-controlled data does not directly drive whether
+    /// sensitive authentication behavior is applied.
+    /// </summary>
+    /// <param name="auth">The authentication configuration supplied by the caller.</param>
+    /// <returns>True if the configuration is valid and may be applied; otherwise, false.</returns>
+    private static bool IsValidAuthentication([NotNullWhen(true)] DataSourceAuthentication? auth)
+    {
+        if (auth == null)
+        {
+            return false;
+        }
+
+        // NOTE: We avoid assuming unnamed properties on DataSourceAuthentication.
+        // If this type exposes a scheme/value model, additional checks should be added here
+        // to restrict allowed schemes and ensure required fields are non-empty.
+        return true;
+    }
+
+    /// <summary>
+    /// Creates a JSON schema from JSON string with proper reference resolution
+    /// </summary>
+    public async Task<JsonSchema> CreateSchemaFromJsonAsync(string schemaJson, CancellationToken cancellationToken = default)
+    {
+        return await CreateSchemaFromJsonAsync(schemaJson, null, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Creates a JSON schema from JSON string with proper reference resolution and base URI
+    /// Uses System.Text.Json based resolution to pre-resolve all $ref before creating JsonSchema
+    /// </summary>
+    public async Task<JsonSchema> CreateSchemaFromJsonAsync(string schemaJson, string? documentUri, DataSourceAuthentication? auth = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.CreatingJsonSchema(documentUri != null ? TextSanitizer.SanitizeUrlForLogging(documentUri) : "none");
+
+            // Pre-resolve all external and internal references using System.Text.Json based resolution
+            string resolvedSchemaJson = schemaJson;
+            try
+            {
+                _logger.PreResolvingSchemaReferences(documentUri != null ? TextSanitizer.SanitizeUrlForLogging(documentUri) : "none");
+                resolvedSchemaJson = await ResolveAsync(schemaJson, documentUri, auth);
+                _logger.SuccessfullyPreResolvedSchemaReferences();
+            }
+            catch (Exception ex)
+            {
+                _logger.FailedToPreResolveSchema(ex);
+                // Continue with original schema if resolution fails
+                resolvedSchemaJson = schemaJson;
+            }
+
+            // Create JsonSchema with the fully resolved schema (no more $ref to resolve)
+            try
+            {
+                var schema = await Task.Run(() => JsonSchemaBuild.FromText(resolvedSchemaJson), cancellationToken);
+                _logger.SuccessfullyCreatedSchemaWithReferenceResolution();
+                return schema;
+            }
+            catch (Exception ex)
+            {
+                _logger.FailedToParseSchemaWithResolver(ex, documentUri != null ? TextSanitizer.SanitizeUrlForLogging(documentUri) : "none");
+                try
+                {
+                    // Fallback: parse original schema if resolution produced a schema that JsonSchema cannot parse.
+                    var schema = await Task.Run(() => JsonSchemaBuild.FromText(schemaJson), cancellationToken);
+                    _logger.SuccessfullyCreatedSchemaWithoutResolver();
+                    return schema;
+                }
+                catch (Exception fallbackEx)
+                {
+                    var originalFingerprint = CreateSchemaFingerprint(schemaJson);
+                    var resolvedFingerprint = CreateSchemaFingerprint(resolvedSchemaJson);
+                    var originalSchemaId = ExtractTopLevelSchemaId(schemaJson);
+                    var resolvedSchemaId = ExtractTopLevelSchemaId(resolvedSchemaJson);
+
+                    _logger.FailedToParseSchemaWithoutResolver(
+                      fallbackEx,
+                      documentUri != null ? TextSanitizer.SanitizeUrlForLogging(documentUri) : "none",
+                      TextSanitizer.SanitizeStringForLogging(fallbackEx.Message),
+                      originalFingerprint,
+                      resolvedFingerprint,
+                      TextSanitizer.SanitizeStringForLogging(originalSchemaId),
+                      TextSanitizer.SanitizeStringForLogging(resolvedSchemaId));
+
+                    throw new InvalidOperationException("Unable to parse schema with or without resolver", fallbackEx);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.FailedToCreateJsonSchema(ex, documentUri != null ? TextSanitizer.SanitizeUrlForLogging(documentUri) : "none");
+            throw;
+        }
+    }
+
+    private static string CreateSchemaFingerprint(string schemaJson)
+    {
+        if (string.IsNullOrWhiteSpace(schemaJson))
+        {
+            return "sha256:empty:length:0";
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(schemaJson);
+        var hash = SHA256.HashData(bytes);
+        var hex = Convert.ToHexString(hash).ToLowerInvariant();
+
+        return $"sha256:{hex}:length:{bytes.Length}";
+    }
+
+    public async Task<JsonNode?> ResolveNodeRefAsync(string refString)
+    {
+        return await _referenceResolver.ResolveNodeRefAsync(refString);
+    }
+
+    private static string ExtractTopLevelSchemaId(string schemaJson)
+    {
+        if (string.IsNullOrWhiteSpace(schemaJson))
+        {
+            return "none";
+        }
+
+        try
+        {
+            var node = JsonNode.Parse(schemaJson);
+            if (node is JsonObject obj &&
+                obj.TryGetPropertyValue("$id", out var idNode) &&
+                idNode is JsonValue idValue)
+            {
+                var id = idValue.GetValue<string>();
+                return string.IsNullOrWhiteSpace(id) ? "none" : id;
+            }
+        }
+        catch
+        {
+            // Ignore best-effort extraction failures and continue with diagnostics.
+        }
+
+        return "none";
+    }
 }
 

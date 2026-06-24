@@ -1,43 +1,58 @@
+// Enable nullable reference types for better null-safety
+#nullable enable
+using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using Json.Schema;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenReferralApi.Core.Models;
+using OpenReferralApi.Core.Helpers;
+using OpenReferralApi.Core.Logging;
+
 
 namespace OpenReferralApi.Core.Services;
 
 /// <summary>
+/// Structured record to cache compiled schemas and their parsed representation.
+/// </summary>
+public sealed record CachedSchema(
+    JsonSchema CompiledSchema,
+    JsonNode JsonRepresentation,
+    string RawJson,
+    int SizeInBytes
+);
+
+/// <summary>
 /// Internal helper class for loading remote JSON schemas with caching and authentication support.
 /// </summary>
-internal class RemoteSchemaLoader
+public class RemoteSchemaLoader
 {
     private readonly HashSet<string> _knownJsonSchemaUrls;
     private readonly HashSet<string> _unknownDraftWarnings = new(StringComparer.OrdinalIgnoreCase);
     private readonly bool _warnOnUnknownJsonSchemaDraft;
+    private readonly ConcurrentDictionary<string, Task<JsonNode?>> _activeLoads = new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger _logger;
     private readonly IMemoryCache _memoryCache;
     private readonly CacheOptions _cacheOptions;
-    private readonly string? _localSpecificationBaseUrl;
     private IAuthenticationConfig? _auth;
 
     public RemoteSchemaLoader(
-        HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         ILogger logger,
         IMemoryCache memoryCache,
         IOptions<CacheOptions> cacheOptions,
-        string? localSpecificationBaseUrl = null,
         IEnumerable<string>? knownJsonSchemaUrls = null,
         bool warnOnUnknownJsonSchemaDraft = true)
     {
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
         _cacheOptions = cacheOptions?.Value ?? throw new ArgumentNullException(nameof(cacheOptions));
-        _localSpecificationBaseUrl = localSpecificationBaseUrl;
         _warnOnUnknownJsonSchemaDraft = warnOnUnknownJsonSchemaDraft;
         _knownJsonSchemaUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -47,8 +62,18 @@ internal class RemoteSchemaLoader
             var normalized = NormalizeAbsoluteUrl(url);
             if (!string.IsNullOrWhiteSpace(normalized))
             {
-                _knownJsonSchemaUrls.Add(normalized);
+                _ = _knownJsonSchemaUrls.Add(normalized);
             }
+        }
+
+        // Trigger initialization of standard meta-schemas to populate SchemaRegistry.Global
+        try
+        {
+            _ = OpenReferralApi.Core.Helpers.JsonSchemaBuild.FromText("{}");
+        }
+        catch
+        {
+            // Ignore initialization errors
         }
     }
 
@@ -60,46 +85,121 @@ internal class RemoteSchemaLoader
         _auth = auth;
     }
 
-    /// <summary>
-    /// Loads a remote JSON schema from a URL with caching support.
-    /// </summary>
-    public async Task<JsonNode?> LoadRemoteSchemaAsync(string schemaUrl)
+    public async Task<JsonNode?> LoadRemoteSchemaAsync(string schemaUrl, CancellationToken cancellationToken = default)
     {
-        var normalizedKnownSchemaUrl = NormalizeKnownSchemaUrl(schemaUrl);
+        if (schemaUrl.Contains("json-everything.lib", StringComparison.OrdinalIgnoreCase))
+        {
+            schemaUrl = schemaUrl.Replace("json-everything.lib", "json-everything.net", StringComparison.OrdinalIgnoreCase);
+        }
+        var resolvedUrl = NormalizeKnownSchemaUrl(schemaUrl) ?? schemaUrl;
 
-        // Rewrite URL if needed (e.g., redirect openreferraluk.org URLs to local server)
-        var rewrittenUrl = normalizedKnownSchemaUrl ?? RewriteSchemaUrl(schemaUrl);
-        
-        // Check persistent cache first if caching is enabled
+        // 1. Check SchemaRegistry.Global first for known public meta-schemas
+        if (Uri.TryCreate(resolvedUrl, UriKind.Absolute, out var schemaUri))
+        {
+            var isPublicMetaSchema = schemaUri.Host.Equals("json-schema.org", StringComparison.OrdinalIgnoreCase) ||
+                                     schemaUri.Host.Equals("spec.openapis.org", StringComparison.OrdinalIgnoreCase) ||
+                                     schemaUri.Host.Equals("json-everything.net", StringComparison.OrdinalIgnoreCase);
+
+            if (isPublicMetaSchema)
+            {
+                var registered = Json.Schema.SchemaRegistry.Global.Get(schemaUri);
+                if (registered != null)
+                {
+                    var cacheKey = GenerateCacheKey(resolvedUrl);
+                    if (_cacheOptions.Enabled && _memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema) && cachedSchema != null)
+                    {
+                        return cachedSchema.JsonRepresentation.DeepClone();
+                    }
+
+                    try
+                    {
+                        var serialized = JsonSerializer.SerializeToNode(registered);
+                        if (serialized != null)
+                        {
+                            return serialized;
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback
+                    }
+                    return new JsonObject();
+                }
+            }
+        }
+
+        // 2. Check persistent cache first if caching is enabled
         if (_cacheOptions.Enabled)
         {
-            var cacheKey = GenerateCacheKey(rewrittenUrl);
-            if (_memoryCache.TryGetValue<string>(cacheKey, out var cachedContent) && cachedContent != null)
+            var cacheKey = GenerateCacheKey(resolvedUrl);
+            if (_memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema) && cachedSchema != null)
             {
-                _logger.LogDebug("Retrieved schema from cache: {SchemaUrl}", SchemaResolverService.SanitizeUrlForLogging(rewrittenUrl));
-                return JsonNode.Parse(cachedContent);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.RetrievedSchemaFromCache(TextSanitizer.SanitizeUrlForLogging(resolvedUrl));
+                }
+                
+                try
+                {
+                    if (Uri.TryCreate(resolvedUrl, UriKind.Absolute, out var cacheUri) &&
+                        Json.Schema.SchemaRegistry.Global.Get(cacheUri) == null)
+                    {
+                        Json.Schema.SchemaRegistry.Global.Register(cacheUri, cachedSchema.CompiledSchema);
+                    }
+                }
+                catch { /* Ignore */ }
+
+                return cachedSchema.JsonRepresentation.DeepClone();
+            }
+        }
+
+        // 3. Gate concurrent loads using _activeLoads
+        Task<JsonNode?>? loadTask;
+        bool isNewTask = false;
+        
+        lock (_activeLoads)
+        {
+            if (!_activeLoads.TryGetValue(resolvedUrl, out loadTask))
+            {
+                loadTask = LoadRemoteSchemaInternalAsync(resolvedUrl, cancellationToken);
+                _activeLoads[resolvedUrl] = loadTask;
+                isNewTask = true;
             }
         }
 
         try
         {
+            return await loadTask;
+        }
+        finally
+        {
+            if (isNewTask)
+            {
+                lock (_activeLoads)
+                {
+                    _activeLoads.TryRemove(resolvedUrl, out _);
+                }
+            }
+        }
+    }
+
+    private async Task<JsonNode?> LoadRemoteSchemaInternalAsync(string resolvedUrl, CancellationToken cancellationToken)
+    {
+        try
+        {
             // Validate URL before making HTTP request to prevent SSRF attacks
-            if (!Uri.TryCreate(rewrittenUrl, UriKind.Absolute, out var schemaUri) ||
+            if (!Uri.TryCreate(resolvedUrl, UriKind.Absolute, out var schemaUri) ||
                 (schemaUri.Scheme != Uri.UriSchemeHttp && schemaUri.Scheme != Uri.UriSchemeHttps))
             {
-                throw new ArgumentException($"Invalid schema URL: Only HTTP and HTTPS URLs are allowed", nameof(schemaUrl));
+                throw new ArgumentException($"Invalid schema URL: Only HTTP and HTTPS URLs are allowed", nameof(resolvedUrl));
             }
 
-            if (rewrittenUrl != schemaUrl)
+            if (_logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug("Rewritten schema URL from {OriginalUrl} to {RewrittenUrl}", 
-                    SchemaResolverService.SanitizeUrlForLogging(schemaUrl), 
-                    SchemaResolverService.SanitizeUrlForLogging(rewrittenUrl));
+                _logger.FetchingRemoteSchema(TextSanitizer.SanitizeUrlForLogging(resolvedUrl));
             }
 
-            _logger.LogDebug("Fetching remote schema: {SchemaUrl}", SchemaResolverService.SanitizeUrlForLogging(rewrittenUrl));
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, rewrittenUrl);
+            using var request = new HttpRequestMessage(HttpMethod.Get, resolvedUrl);
 
             // Apply authentication only if the configuration is considered valid
             if (_auth != null && IsValidAuthentication(_auth))
@@ -107,45 +207,91 @@ internal class RemoteSchemaLoader
                 ApplyAuthentication(request, _auth);
             }
 
-            var response = await _httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsStringAsync();
+            var httpClient = _httpClientFactory.CreateClient("OpenApiValidationService");
+            string content;
+            try
+            {
+                using var response = await httpClient.SendAsync(request, cancellationToken);
+                _ = response.EnsureSuccessStatusCode();
+                content = await response.Content.ReadAsStringAsync(cancellationToken);
+            }
+            catch (HttpRequestException ex)
+            {
+                RemoteSchemaLoaderLog.ConnectionFailureFetchingRemoteSchema(_logger, ex, TextSanitizer.SanitizeUrlForLogging(resolvedUrl), ex.Message);
+                return null;
+            }
+            catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                RemoteSchemaLoaderLog.ConnectionFailureFetchingRemoteSchema(_logger, ex, TextSanitizer.SanitizeUrlForLogging(resolvedUrl), "Request timed out.");
+                return null;
+            }
+
+            var jsonNode = JsonNode.Parse(content) ?? throw new InvalidOperationException("Fetched content is not valid JSON.");
+            var cacheKey = GenerateCacheKey(resolvedUrl);
+            var cacheEntryOptions = new MemoryCacheEntryOptions
+            {
+                Size = content.Length,
+                Priority = CacheItemPriority.Normal
+            };
+
+            // Configure expiration
+            if (_cacheOptions.ExpirationMinutes > 0)
+            {
+                if (_cacheOptions.UseSlidingExpiration)
+                {
+                    cacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(_cacheOptions.SlidingExpirationMinutes);
+                    cacheEntryOptions.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheOptions.ExpirationMinutes);
+                }
+                else
+                {
+                    cacheEntryOptions.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheOptions.ExpirationMinutes);
+                }
+            }
+
+            // Put placeholder in cache to prevent circular recursion/deadlocks during compilation
+            if (_cacheOptions.Enabled)
+            {
+                var placeholder = new CachedSchema(new JsonSchemaBuilder().Build(), jsonNode, content, content.Length);
+                _memoryCache.Set(cacheKey, placeholder, cacheEntryOptions);
+            }
+
+            // Double check SchemaRegistry.Global right before compiling to avoid duplicate key exceptions
+            if (Json.Schema.SchemaRegistry.Global.Get(schemaUri) != null)
+            {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Schema for {Url} was registered concurrently in SchemaRegistry.Global.", resolvedUrl);
+                }
+                return jsonNode.DeepClone();
+            }
+
+            var schema = OpenReferralApi.Core.Helpers.JsonSchemaBuild.FromText(content);
 
             // Store in persistent cache if caching is enabled
             if (_cacheOptions.Enabled)
             {
-                var cacheKey = GenerateCacheKey(rewrittenUrl);
-                var cacheEntryOptions = new MemoryCacheEntryOptions
+                var cachedSchema = new CachedSchema(schema, jsonNode, content, content.Length);
+                _ = _memoryCache.Set(cacheKey, cachedSchema, cacheEntryOptions);
+                if (_logger.IsEnabled(LogLevel.Debug))
                 {
-                    Size = content.Length,
-                    Priority = CacheItemPriority.Normal
-                };
-
-                // Configure expiration
-                if (_cacheOptions.ExpirationMinutes > 0)
-                {
-                    if (_cacheOptions.UseSlidingExpiration)
-                    {
-                        cacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(_cacheOptions.SlidingExpirationMinutes);
-                        cacheEntryOptions.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheOptions.ExpirationMinutes);
-                    }
-                    else
-                    {
-                        cacheEntryOptions.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheOptions.ExpirationMinutes);
-                    }
+                    _logger.CachedSchema(TextSanitizer.SanitizeUrlForLogging(resolvedUrl), _cacheOptions.ExpirationMinutes);
                 }
-
-                _memoryCache.Set(cacheKey, content, cacheEntryOptions);
-                _logger.LogDebug("Cached schema: {SchemaUrl} (expires in {Minutes} minutes)",
-                    SchemaResolverService.SanitizeUrlForLogging(rewrittenUrl), _cacheOptions.ExpirationMinutes);
             }
 
-            return JsonNode.Parse(content);
+            try
+            {
+                if (Json.Schema.SchemaRegistry.Global.Get(schemaUri) == null)
+                {
+                    Json.Schema.SchemaRegistry.Global.Register(schemaUri, schema);
+                }
+            }
+            catch { /* Ignore registration errors if it's not a valid schema (e.g. partial component) */ }
+
+            return jsonNode.DeepClone();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch remote schema: {SchemaUrl}",
-                SchemaResolverService.SanitizeUrlForLogging(schemaUrl));
+            _logger.FailedToFetchRemoteSchema(ex, TextSanitizer.SanitizeUrlForLogging(resolvedUrl));
             throw;
         }
     }
@@ -165,18 +311,18 @@ internal class RemoteSchemaLoader
             // Validate header name before using it to prevent header injection
             if (!IsValidHeaderName(auth.ApiKeyHeader))
             {
-                _logger.LogWarning("Invalid API key header name provided, skipping API key authentication");
+                _logger.InvalidApiKeyHeaderName();
                 return;
             }
             request.Headers.Add(auth.ApiKeyHeader, auth.ApiKey);
-            _logger.LogDebug("Applied API Key authentication");
+            _logger.AppliedApiKeyAuthentication();
         }
 
         // Apply Bearer Token authentication
         if (!string.IsNullOrEmpty(auth.BearerToken))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.BearerToken);
-            _logger.LogDebug("Applied Bearer Token authentication");
+            RemoteSchemaLoaderLog.AppliedBearerTokenAuthentication(_logger);
         }
 
         // Apply Basic authentication
@@ -185,7 +331,7 @@ internal class RemoteSchemaLoader
             var credentials = Convert.ToBase64String(
                 Encoding.ASCII.GetBytes($"{auth.BasicAuth.Username}:{auth.BasicAuth.Password}"));
             request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-            _logger.LogDebug("Applied Basic authentication");
+            RemoteSchemaLoaderLog.AppliedBasicAuthentication(_logger);
         }
 
         // Apply custom headers
@@ -196,11 +342,11 @@ internal class RemoteSchemaLoader
                 // Validate header name
                 if (!IsValidHeaderName(header.Key))
                 {
-                    _logger.LogWarning("Invalid custom header name provided: {HeaderName}", header.Key);
+                    _logger.InvalidCustomHeaderName(header.Key);
                     continue;
                 }
                 request.Headers.Add(header.Key, header.Value);
-                _logger.LogDebug("Applied custom header: {HeaderName}", header.Key);
+                RemoteSchemaLoaderLog.AppliedCustomHeader(_logger, header.Key);
             }
         }
     }
@@ -247,33 +393,6 @@ internal class RemoteSchemaLoader
         return $"schema:{schemaUrl}";
     }
 
-    /// <summary>
-    /// Rewrites a schema URL if it points to a known remote specification server
-    /// and a local specification base URL is configured.
-    /// This allows development environments to use local schema files instead of remote ones.
-    /// </summary>
-    /// <param name="schemaUrl">The original schema URL.</param>
-    /// <returns>The rewritten URL or the original URL if no rewriting is needed.</returns>
-    private string RewriteSchemaUrl(string schemaUrl)
-    {
-        if (string.IsNullOrWhiteSpace(_localSpecificationBaseUrl))
-        {
-            return schemaUrl;
-        }
-
-        // Rewrite openreferraluk.org URLs to use the local specification server
-        const string remoteSpecificationBase = "https://openreferraluk.org/specifications/";
-        
-        if (schemaUrl.StartsWith(remoteSpecificationBase, StringComparison.OrdinalIgnoreCase))
-        {
-            var relativePath = schemaUrl.Substring(remoteSpecificationBase.Length);
-            var localUrl = $"{_localSpecificationBaseUrl.TrimEnd('/')}/{relativePath}";
-            return localUrl;
-        }
-
-        return schemaUrl;
-    }
-
     private string? NormalizeKnownSchemaUrl(string schemaUrl)
     {
         var normalized = NormalizeAbsoluteUrl(schemaUrl);
@@ -291,9 +410,10 @@ internal class RemoteSchemaLoader
             IsJsonSchemaDraftUrl(normalized) &&
             _unknownDraftWarnings.Add(normalized))
         {
-            _logger.LogWarning(
-                "Encountered json-schema.org draft URL not present in configured known schema list: {SchemaUrl}",
-                SchemaResolverService.SanitizeUrlForLogging(normalized));
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.UnknownJsonSchemaDraftUrl(TextSanitizer.SanitizeUrlForLogging(normalized));
+            }
         }
 
         return null;
@@ -301,6 +421,16 @@ internal class RemoteSchemaLoader
 
     private static string? NormalizeAbsoluteUrl(string schemaUrl)
     {
+        if (string.IsNullOrWhiteSpace(schemaUrl))
+        {
+            return null;
+        }
+
+        if (schemaUrl.Contains("json-everything.lib", StringComparison.OrdinalIgnoreCase))
+        {
+            schemaUrl = schemaUrl.Replace("json-everything.lib", "json-everything.net", StringComparison.OrdinalIgnoreCase);
+        }
+
         if (!Uri.TryCreate(schemaUrl, UriKind.Absolute, out var uri))
         {
             return null;

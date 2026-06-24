@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using OpenReferralApi.Controllers;
-using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
 
 namespace OpenReferralApi.Tests.Controllers;
@@ -35,19 +34,16 @@ public class OpenReferralUkControllerTests
         var request = new OpenApiValidationRequest
         {
             BaseUrl = "https://api.example.com",
-            OpenApiSchema = new OpenApiSchema
-            {
-                Url = "https://api.example.com/openapi.json"
-            }
+            OwnSchemaUrl = "https://api.example.com/openapi.json"
         };
 
         var validationResult = new OpenApiValidationResult
         {
             IsValid = false,
-            Notifications = new List<string>
-            {
+            Notifications =
+            [
                 "Unable to get or resolve the OpenAPI specification from https://api.example.com/openapi.json. 404"
-            }
+            ]
         };
 
         var mappedResult = new OpenReferralUKValidationResponse
@@ -59,10 +55,10 @@ public class OpenReferralUkControllerTests
                 Profile = "Unknown",
                 ProfileReason = "Unknown"
             },
-            Notifications = new List<string>
-            {
+            Notifications =
+            [
                 "Unable to get or resolve the OpenAPI specification from https://api.example.com/openapi.json. 404"
-            }
+            ]
         };
 
         _validationServiceMock

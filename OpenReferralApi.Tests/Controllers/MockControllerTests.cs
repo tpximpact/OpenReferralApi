@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using OpenReferralApi.Controllers;
@@ -25,7 +25,7 @@ public class MockControllerTests
         // Arrange
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
+            HttpContext = new DefaultHttpContext()
         };
 
         // Act
@@ -41,7 +41,7 @@ public class MockControllerTests
         // Arrange
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
+            HttpContext = new DefaultHttpContext()
         };
 
         // Act
@@ -57,7 +57,7 @@ public class MockControllerTests
         // Arrange
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
+            HttpContext = new DefaultHttpContext()
         };
 
         // Act
@@ -73,7 +73,7 @@ public class MockControllerTests
         // Arrange
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
+            HttpContext = new DefaultHttpContext()
         };
 
         // Act
@@ -89,7 +89,7 @@ public class MockControllerTests
         // Arrange
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
+            HttpContext = new DefaultHttpContext()
         };
 
         // Act

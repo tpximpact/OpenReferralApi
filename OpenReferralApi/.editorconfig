@@ -1,0 +1,25 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cs]
+#### --- STYLE RULES (The "Linter") --- ####
+
+# Require 'var' for all variables (cleaner code)
+csharp_style_var_for_built_in_types = true:error
+csharp_style_var_when_type_is_apparent = true:error
+
+# Enforce Brace style (consistent blocks)
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+
+# Naming conventions (The "ESLint-Naming" equivalent)
+dotnet_naming_rule.interface_should_be_begun_with_i.severity = error
+dotnet_naming_rule.interface_should_be_begun_with_i.symbols = interface_types
+dotnet_naming_symbols.interface_types.applicable_kinds = interface

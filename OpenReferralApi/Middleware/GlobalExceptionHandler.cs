@@ -1,31 +1,26 @@
 using System.Net;
 using Microsoft.AspNetCore.Diagnostics;
+using OpenReferralApi.Logging;
 
 namespace OpenReferralApi.Middleware;
 
 /// <summary>
 /// Global exception handler middleware for centralized error handling
 /// </summary>
-public class GlobalExceptionHandler : IExceptionHandler
+internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IHostEnvironment environment) : IExceptionHandler
 {
-    private readonly ILogger<GlobalExceptionHandler> _logger;
-    private readonly IHostEnvironment _environment;
-
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IHostEnvironment environment)
-    {
-        _logger = logger;
-        _environment = environment;
-    }
+    private readonly ILogger<GlobalExceptionHandler> _logger = logger;
+    private readonly IHostEnvironment _environment = environment;
 
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
         CancellationToken cancellationToken)
     {
-        _logger.LogError(
-            exception,
-            "An unhandled exception occurred. TraceId: {TraceId}",
-            httpContext.TraceIdentifier);
+        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(exception);
+
+        _logger.UnhandledExceptionOccurred(exception, httpContext.TraceIdentifier);
 
         var problemDetails = new ProblemDetails
         {
@@ -46,10 +41,10 @@ public class GlobalExceptionHandler : IExceptionHandler
             problemDetails.Extensions["innerException"] = exception.InnerException?.Message;
         }
 
-        httpContext.Response.StatusCode = problemDetails.Status ?? (int)HttpStatusCode.InternalServerError;
+        httpContext.Response.StatusCode = problemDetails.Status!.Value;
         httpContext.Response.ContentType = "application/problem+json";
 
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken).ConfigureAwait(false);
 
         return true;
     }
@@ -80,11 +75,11 @@ public class GlobalExceptionHandler : IExceptionHandler
 /// <summary>
 /// Standard problem details response
 /// </summary>
-public class ProblemDetails
+internal sealed class ProblemDetails
 {
     public int? Status { get; set; }
     public string? Title { get; set; }
     public string? Detail { get; set; }
     public string? Instance { get; set; }
-    public Dictionary<string, object?> Extensions { get; set; } = new();
+    public Dictionary<string, object?> Extensions { get; set; } = [];
 }

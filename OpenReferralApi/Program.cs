@@ -1,5 +1,5 @@
 using System.Net;
-using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -7,20 +7,47 @@ using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
+using OpenReferralApi.Extensions;
 using OpenReferralApi.HealthChecks;
+using OpenReferralApi.Logging;
 using OpenReferralApi.Middleware;
 using OpenReferralApi.Services;
-using OpenReferralApi.Telemetry;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
+using OpenReferralApi.Swagger;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Just declare it here!
+string[] databaseHealthTags = ["ready", "db"];
+
+string[] selfHealthTags = ["ready"];
+
+string[] serviceHealthTags = ["ready", "service"];
+
 builder.Configuration.AddEnvironmentVariables("ORUK_API_");
+
+// 1. Load standard Environment Variables (including those with your prefix)
+builder.Configuration.AddEnvironmentVariables("ORUK_API_");
+
+// 2. Load the Custom JSON Strings (These will override/patch the above)
+// --- Specification URLs ---
+var urlsJson = Environment.GetEnvironmentVariable("ORUK_API_Specification__UrlsJson");
+if (!string.IsNullOrEmpty(urlsJson))
+{
+    var patch = $"{{\"Specification\":{{\"Urls\":{urlsJson}}}}}";
+    using var urlsPatchStream = new MemoryStream(Encoding.UTF8.GetBytes(patch));
+    builder.Configuration.AddJsonStream(urlsPatchStream);
+}
+
+// --- Schema URLs ---
+var schemasJson = Environment.GetEnvironmentVariable("ORUK_API_SchemaResolution__KnownUrlsJson");
+if (!string.IsNullOrEmpty(schemasJson))
+{
+    var patch = $"{{\"SchemaResolution\":{{\"KnownJsonSchemaUrls\":{schemasJson}}}}}";
+    using var schemasPatchStream = new MemoryStream(Encoding.UTF8.GetBytes(patch));
+    builder.Configuration.AddJsonStream(schemasPatchStream);
+}
 
 // Configure Serilog
 builder.Host.UseSerilog((context, configuration) =>
@@ -35,12 +62,6 @@ builder.Services.Configure<CacheOptions>(
 
 builder.Services.Configure<SchemaResolutionOptions>(
     builder.Configuration.GetSection(SchemaResolutionOptions.SectionName));
-
-builder.Services.Configure<SchemaWarmupOptions>(
-    builder.Configuration.GetSection(SchemaWarmupOptions.SectionName));
-
-builder.Services.Configure<AuthenticationOptions>(
-    builder.Configuration.GetSection(AuthenticationOptions.SectionName));
 
 builder.Services.Configure<DatabaseOptions>(
     builder.Configuration.GetSection(DatabaseOptions.SectionName));
@@ -57,25 +78,11 @@ builder.Services.Configure<RateLimitingOptions>(
 builder.Services.Configure<OpenTelemetryOptions>(
     builder.Configuration.GetSection(OpenTelemetryOptions.SectionName));
 
-// Add services to the container.
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+builder.Services.Configure<OpenApiValidationServerOptions>(
+    builder.Configuration.GetSection(OpenApiValidationServerOptions.SectionName));
 
-    options.SwaggerDoc("v1", new()
-    {
-        Title = "Open Referral UK API",
-        Version = "v1",
-        Description = "API for validating and monitoring Open Referral UK data feeds",
-        Contact = new()
-        {
-            Name = "Open Referral UK",
-            Url = new Uri("https://openreferraluk.org")
-        }
-    });
-});
+// Add services to the container.
+builder.Services.AddSwaggerDocumentation(builder.Configuration);
 
 // CORS - Environment-specific origins
 var securityOptions = builder.Configuration.GetSection(SecurityOptions.SectionName).Get<SecurityOptions>() ?? new SecurityOptions();
@@ -86,13 +93,13 @@ builder.Services.AddCors(options =>
     {
         if (securityOptions.AllowedCorsOrigins.Contains("*"))
         {
-            policy.AllowAnyOrigin()
+            _ = policy.AllowAnyOrigin()
                   .AllowAnyMethod()
                   .AllowAnyHeader();
         }
         else
         {
-            policy.WithOrigins(securityOptions.AllowedCorsOrigins)
+            _ = policy.WithOrigins(securityOptions.AllowedCorsOrigins)
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials();
@@ -107,7 +114,7 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    options.AddFixedWindowLimiter("fixed", opt =>
+    _ = options.AddFixedWindowLimiter("fixed", opt =>
     {
         opt.PermitLimit = rateLimitingOptions.PermitLimit;
         opt.Window = TimeSpan.FromSeconds(rateLimitingOptions.Window);
@@ -139,6 +146,10 @@ builder.Services.AddHttpClient(nameof(OpenApiValidationService), client =>
 
 builder.Services.AddHttpClient();
 builder.Services.AddControllers()
+    .ConfigureApplicationPartManager(manager =>
+    {
+        manager.FeatureProviders.Add(new InternalControllerFeatureProvider());
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
@@ -156,34 +167,34 @@ builder.Services.AddOutputCache(options =>
 
 // Health Checks
 var healthChecksBuilder = builder.Services.AddHealthChecks()
-    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "ready" });
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: selfHealthTags);
 
 var databaseOptions = builder.Configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>() ?? new DatabaseOptions();
 if (!string.IsNullOrEmpty(databaseOptions.ConnectionString))
 {
     // Register MongoDB client for health checks and feed validation
-    builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp =>
+    _ = builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(sp =>
     {
         return new MongoDB.Driver.MongoClient(databaseOptions.ConnectionString);
     });
 
-    healthChecksBuilder.AddMongoDb(
+    _ = healthChecksBuilder.AddMongoDb(
         name: "mongodb",
-        tags: new[] { "ready", "db" });
+        tags: databaseHealthTags);
 
     // Feed validation services - only register if MongoDB is configured
-    builder.Services.AddScoped<OpenReferralApi.Core.Services.IFeedValidationService, OpenReferralApi.Core.Services.FeedValidationService>();
-    builder.Services.AddHostedService<OpenReferralApi.Services.FeedValidationBackgroundService>();
+    _ = builder.Services.AddScoped<IFeedValidationService, FeedValidationService>();
+    _ = builder.Services.AddHostedService<FeedValidationBackgroundService>();
 }
 else
 {
     // Register null implementation when MongoDB is not configured
-    builder.Services.AddScoped<OpenReferralApi.Core.Services.IFeedValidationService, OpenReferralApi.Core.Services.NullFeedValidationService>();
+    _ = builder.Services.AddScoped<IFeedValidationService, NullFeedValidationService>();
 }
 
 healthChecksBuilder.AddCheck<FeedValidationHealthCheck>(
     "feed-validation",
-    tags: new[] { "ready", "service" });
+    tags: serviceHealthTags);
 
 // Services
 builder.Services.AddScoped<IPathParsingService, PathParsingService>();
@@ -191,17 +202,22 @@ builder.Services.AddSingleton<IRequestProcessingService, RequestProcessingServic
 builder.Services.AddSingleton<ISchemaWarmupStatusTracker, SchemaWarmupStatusTracker>();
 builder.Services.AddSingleton<ISchemaWarmupStatusProvider>(sp => sp.GetRequiredService<ISchemaWarmupStatusTracker>());
 
-// Schema Resolver Service - resolves $ref in remote schema files and creates JSchema objects
+// Schema Resolver Service - resolves $ref in remote schema files for runtime schema validation
 builder.Services.AddScoped<ISchemaResolverService, SchemaResolverService>();
-builder.Services.AddHostedService<OpenReferralApi.Services.SchemaWarmupBackgroundService>();
+builder.Services.AddHostedService<SchemaWarmupBackgroundService>();
 
 builder.Services.AddScoped<IJsonValidatorService, JsonValidatorService>();
+builder.Services.AddScoped<IAuthenticationValidationService, AuthenticationValidationService>();
+builder.Services.AddScoped<IOpenApiSpecificationService, OpenApiSpecificationService>();
+builder.Services.AddScoped<IHsdsComplianceService, HsdsComplianceService>();
+builder.Services.AddScoped<IProfileResolverService, ProfileResolverService>();
+builder.Services.AddScoped<IEndpointTestingService, EndpointTestingService>();
 builder.Services.AddScoped<IOpenApiValidationService, OpenApiValidationService>();
 
-builder.Services.AddScoped<IOpenApiDiscoveryService, OpenApiDiscoveryService>();
+builder.Services.AddScoped<IProfileDiscoveryService, ProfileDiscoveryService>();
 builder.Services.AddScoped<IOpenReferralUKValidationResponseMapper, OpenReferralUKValidationResponseMapper>();
 
-// Configure Memory Cache with size limit from cache options
+// Memory Cache configuration
 builder.Services.AddMemoryCache(options =>
 {
     var cacheOpts = builder.Configuration.GetSection(CacheOptions.SectionName).Get<CacheOptions>() ?? new CacheOptions();
@@ -213,71 +229,17 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // OpenTelemetry Configuration
-var otelOptions = builder.Configuration.GetSection(OpenTelemetryOptions.SectionName).Get<OpenTelemetryOptions>() ?? new OpenTelemetryOptions();
-if (otelOptions.Enabled)
-{
-    var resourceBuilder = ResourceBuilder.CreateDefault()
-        .AddService(
-            serviceName: Instrumentation.ServiceName,
-            serviceVersion: Instrumentation.ServiceVersion)
-        .AddAttributes(new Dictionary<string, object>
-        {
-            ["deployment.environment"] = builder.Environment.EnvironmentName
-        });
+builder.ConfigureOpenTelemetry();
 
-    builder.Services.AddOpenTelemetry()
-        .WithMetrics(metrics =>
-        {
-            metrics
-                .SetResourceBuilder(resourceBuilder)
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                .AddMeter(Instrumentation.ServiceName);
-
-            if (!string.IsNullOrEmpty(otelOptions.OtlpEndpoint))
-            {
-                metrics.AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(otelOptions.OtlpEndpoint);
-                });
-            }
-
-            if (builder.Environment.IsDevelopment())
-            {
-                metrics.AddConsoleExporter();
-            }
-        })
-        .WithTracing(tracing =>
-        {
-            tracing
-                .SetResourceBuilder(resourceBuilder)
-                .AddAspNetCoreInstrumentation(options =>
-                {
-                    options.RecordException = true;
-                    options.Filter = httpContext =>
-                    {
-                        return !httpContext.Request.Path.StartsWithSegments("/health-check");
-                    };
-                })
-                .AddHttpClientInstrumentation()
-                .AddSource(Instrumentation.ActivitySource.Name);
-
-            if (!string.IsNullOrEmpty(otelOptions.OtlpEndpoint))
-            {
-                tracing.AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(otelOptions.OtlpEndpoint);
-                });
-            }
-
-            if (builder.Environment.IsDevelopment())
-            {
-                tracing.AddConsoleExporter();
-            }
-        });
-}
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 
 var app = builder.Build();
+
+var openApiValidationSettings = app.Configuration
+    .GetSection(OpenApiValidationServerOptions.SectionName)
+    .Get<OpenApiValidationServerOptions>() ?? new OpenApiValidationServerOptions();
+
+StartupLogger.LogSettings(app.Logger, openApiValidationSettings);
 
 // Configure the HTTP request pipeline
 app.UseExceptionHandler();
@@ -286,17 +248,11 @@ app.UseExceptionHandler();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
 // Enable Swagger in all environments
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Open Referral UK API v1");
-    c.RoutePrefix = string.Empty;
-    c.DisplayRequestDuration();
-});
+app.UseSwaggerDocumentation();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseHsts();
+    _ = app.UseHsts();
 }
 
 // Health check endpoints
@@ -307,13 +263,6 @@ app.MapHealthChecks("/health-check", new HealthCheckOptions
 });
 
 app.MapHealthChecks("/health-check/ready", new HealthCheckOptions
-{
-    Predicate = check => check.Tags.Contains("ready"),
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-});
-
-// Overall service health for CI/deploy checks
-app.MapHealthChecks("/health-check/overall", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready"),
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
@@ -332,14 +281,25 @@ app.MapHealthChecks("/health-check/live", new HealthCheckOptions
             status = "Healthy",
             timestamp = DateTime.UtcNow,
             schemaWarmup = warmupStatus
-        }));
+        })).ConfigureAwait(false);
     }
 });
 
 app.UseRouting();
 app.UseSerilogRequestLogging();
 app.UseCors();
-app.UseHttpsRedirection();
+var configuredUrls = app.Configuration["ASPNETCORE_URLS"] ?? app.Configuration["urls"] ?? string.Empty;
+var hasHttpsInUrls = configuredUrls
+    .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Any(url => url.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+var hasExplicitHttpsPort = !string.IsNullOrWhiteSpace(app.Configuration["ASPNETCORE_HTTPS_PORT"]) ||
+                           !string.IsNullOrWhiteSpace(app.Configuration["HTTPS_PORT"]);
+var hasKestrelHttpsEndpoint = !string.IsNullOrWhiteSpace(app.Configuration["Kestrel:Endpoints:Https:Url"]);
+
+if (hasHttpsInUrls || hasExplicitHttpsPort || hasKestrelHttpsEndpoint)
+{
+    _ = app.UseHttpsRedirection();
+}
 app.UseResponseCaching();
 app.UseOutputCache();
 app.UseRateLimiter();
@@ -350,7 +310,3 @@ app.Run();
 
 // Ensure logs are flushed on shutdown
 Log.CloseAndFlush();
-
-public partial class Program
-{
-}
