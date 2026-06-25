@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Json.Schema;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenReferralApi.Core.Extensions;
@@ -40,14 +39,18 @@ public partial class ProfileDiscoveryService(
     IHttpClientFactory httpClientFactory,
     IOptions<SpecificationOptions> specificationOptions,
     IOptions<OpenApiValidationServerOptions>? openApiValidationOptions = null,
-    IMemoryCache? memoryCache = null,
-    ISchemaResolverService? schemaResolverService = null) : IProfileDiscoveryService
+    ISchemaResolverService? schemaResolverService = null,
+    IRemoteSchemaLoader? remoteSchemaLoader = null) : IProfileDiscoveryService
 {
     private readonly OpenApiValidationServerOptions _openApiValidationOptions = openApiValidationOptions?.Value ?? new OpenApiValidationServerOptions();
 
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
 
     private readonly SpecificationOptions _specificationOptions = specificationOptions?.Value ?? throw new ArgumentNullException(nameof(specificationOptions));
+
+    private readonly IRemoteSchemaLoader? _remoteSchemaLoader = remoteSchemaLoader;
+
+    private readonly object? _unusedResolver = schemaResolverService;
     private static readonly string[] HSDS_VERSION_candidateTokens =
     [
         "x-hsds-version",
@@ -256,7 +259,7 @@ public partial class ProfileDiscoveryService(
             }
         }
 
-         var hsdsProfileSchemaContent = await GetHsdsProfileSchemaContentAsync(discoveredVersion, cancellationToken);
+        var hsdsProfileSchemaContent = await GetHsdsProfileSchemaContentAsync(discoveredVersion, cancellationToken);
         if (string.IsNullOrWhiteSpace(hsdsProfileSchemaContent))
         {
             throw ProfileValidationErrors.ProfileSchemaNotCached(discoveredVersion);
@@ -295,18 +298,10 @@ public partial class ProfileDiscoveryService(
         }
 
         string? hsdsProfileSchemaContent = null;
-        if (memoryCache != null)
+        if (_remoteSchemaLoader != null)
         {
-            foreach (var cacheKey in GetSchemaCacheKeyCandidates(hsdsProfileSchemaUrl))
-            {
-                if (memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema)
-                    && cachedSchema != null
-                    && !string.IsNullOrWhiteSpace(cachedSchema.RawJson))
-                {
-                    hsdsProfileSchemaContent = cachedSchema.RawJson;
-                    break;
-                }
-            }
+            var node = _remoteSchemaLoader.LoadRemoteSchema(hsdsProfileSchemaUrl);
+            hsdsProfileSchemaContent = node?.ToJsonString();
         }
 
         if (string.IsNullOrWhiteSpace(hsdsProfileSchemaContent))
@@ -328,7 +323,7 @@ public partial class ProfileDiscoveryService(
 
     private async Task<string?> GetHsdsProfileSchemaContentAsync(string? hsdsProfileVersion, CancellationToken cancellationToken)
     {
-        if (memoryCache == null)
+        if (_remoteSchemaLoader == null)
         {
             return null;
         }
@@ -345,60 +340,16 @@ public partial class ProfileDiscoveryService(
             return null;
         }
 
-        foreach (var cacheKey in GetSchemaCacheKeyCandidates(schemaUrl))
-        {
-            if (memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema)
-                && cachedSchema != null
-                && !string.IsNullOrWhiteSpace(cachedSchema.RawJson))
-            {
-                return cachedSchema.RawJson;
-            }
-        }
-
         try
         {
-            logger.ProfileSchemaCacheMiss(profileVersion, schemaUrl);
-            using var client = _httpClientFactory.CreateClient("OpenApiValidationService");
-            using var response = await client.GetAsync(schemaUrl, cancellationToken);
-            if (response.IsSuccessStatusCode)
+            var node = await _remoteSchemaLoader.LoadRemoteSchemaAsync(schemaUrl, cancellationToken);
+            if (node == null)
             {
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                var jsonNode = JsonNode.Parse(content);
-                if (jsonNode != null)
-                {
-                    var cacheEntryOptions = new MemoryCacheEntryOptions
-                    {
-                        Size = content.Length,
-                        Priority = CacheItemPriority.Normal
-                    };
-
-                    // Put placeholder in cache to prevent circular recursion/deadlocks during compilation
-                    var placeholder = new CachedSchema(new JsonSchemaBuilder().Build(), jsonNode, content, content.Length);
-                    memoryCache.Set($"schema:{schemaUrl}", placeholder, cacheEntryOptions);
-
-                    var schema = schemaResolverService != null
-                        ? await schemaResolverService.CreateSchemaFromJsonAsync(content, schemaUrl, auth: null, cancellationToken)
-                        : JsonSchemaBuild.FromText(content);
-                    var cachedSchema = new CachedSchema(schema, jsonNode, content, content.Length);
-
-                    memoryCache.Set($"schema:{schemaUrl}", cachedSchema, cacheEntryOptions);
-
-                    try
-                    {
-                        if (Json.Schema.SchemaRegistry.Global.Get(new Uri(schemaUrl)) == null)
-                        {
-                            Json.Schema.SchemaRegistry.Global.Register(new Uri(schemaUrl), schema);
-                        }
-                    }
-                    catch { /* Ignore */ }
-
-                    return content;
-                }
+                logger.FailedToFetchProfileSchema(schemaUrl, 0);
+                return null;
             }
-            else
-            {
-                logger.FailedToFetchProfileSchema(schemaUrl, (int)response.StatusCode);
-            }
+
+            return node.ToJsonString();
         }
         catch (Exception ex)
         {
@@ -432,19 +383,7 @@ public partial class ProfileDiscoveryService(
         return false;
     }
 
-    private static IEnumerable<string> GetSchemaCacheKeyCandidates(string schemaUrl)
-    {
-        yield return $"schema:{schemaUrl}";
 
-        if (Uri.TryCreate(schemaUrl, UriKind.Absolute, out var schemaUri))
-        {
-            var normalizedUrl = schemaUri.GetLeftPart(UriPartial.Path).TrimEnd('/');
-            if (!string.Equals(normalizedUrl, schemaUrl, StringComparison.Ordinal))
-            {
-                yield return $"schema:{normalizedUrl}";
-            }
-        }
-    }
 
     private static IReadOnlyList<string> BuildDiscoveryProbePaths(string? ownSchemaUrl = null)
     {

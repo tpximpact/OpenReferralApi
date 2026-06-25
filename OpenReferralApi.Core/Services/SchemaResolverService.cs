@@ -74,40 +74,30 @@ public interface ISchemaResolverService
 /// </remarks>
 public class SchemaResolverService : ISchemaResolverService
 {
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<SchemaResolverService> _logger;
     private readonly IMemoryCache _memoryCache;
     private readonly CacheOptions _cacheOptions;
-    private readonly RemoteSchemaLoader _remoteSchemaLoader;
+    private readonly IRemoteSchemaLoader _remoteSchemaLoader;
     private readonly ReferenceResolver _referenceResolver;
     private static readonly JsonSerializerOptions IndentedSerializerOptions = new() { WriteIndented = true };
 
     /// <summary>
     /// Initializes a new instance of the SchemaResolver for remote schema resolution.
     /// </summary>
-    /// <param name="httpClientFactory">HTTP client factory for fetching remote schemas.</param>
+    /// <param name="remoteSchemaLoader">Remote schema loader interface.</param>
     /// <param name="logger">Logger instance.</param>
     /// <param name="memoryCache">Memory cache for persistent schema caching.</param>
     /// <param name="cacheOptions">Cache configuration options.</param>
-    /// <param name="schemaResolutionOptions">Schema resolution configuration options for URL normalization.</param>
     public SchemaResolverService(
-      IHttpClientFactory httpClientFactory,
+      IRemoteSchemaLoader remoteSchemaLoader,
       ILogger<SchemaResolverService> logger,
       IMemoryCache memoryCache,
-      IOptions<CacheOptions> cacheOptions,
-      IOptions<SchemaResolutionOptions>? schemaResolutionOptions = null)
+      IOptions<CacheOptions> cacheOptions)
     {
-        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+        _remoteSchemaLoader = remoteSchemaLoader ?? throw new ArgumentNullException(nameof(remoteSchemaLoader));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
         _cacheOptions = cacheOptions?.Value ?? throw new ArgumentNullException(nameof(cacheOptions));
-        _remoteSchemaLoader = new RemoteSchemaLoader(
-            httpClientFactory,
-            logger,
-            memoryCache,
-            cacheOptions,
-            schemaResolutionOptions?.Value?.KnownJsonSchemaUrls,
-            schemaResolutionOptions?.Value?.WarnOnUnknownJsonSchemaDraft ?? true);
         _referenceResolver = new ReferenceResolver(logger, _remoteSchemaLoader);
         ConfigureGlobalFetch();
     }

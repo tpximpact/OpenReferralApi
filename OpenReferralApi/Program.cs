@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenReferralApi.Core.Services;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using OpenReferralApi.Extensions;
 using OpenReferralApi.HealthChecks;
 using OpenReferralApi.Logging;
@@ -203,6 +205,14 @@ builder.Services.AddSingleton<ISchemaWarmupStatusTracker, SchemaWarmupStatusTrac
 builder.Services.AddSingleton<ISchemaWarmupStatusProvider>(sp => sp.GetRequiredService<ISchemaWarmupStatusTracker>());
 
 // Schema Resolver Service - resolves $ref in remote schema files for runtime schema validation
+builder.Services.AddScoped<IRemoteSchemaLoader>(sp => new RemoteSchemaLoader(
+    sp.GetRequiredService<IHttpClientFactory>(),
+    sp.GetRequiredService<ILogger<RemoteSchemaLoader>>(),
+    sp.GetRequiredService<IMemoryCache>(),
+    sp.GetRequiredService<IOptions<CacheOptions>>(),
+    sp.GetService<IOptions<SchemaResolutionOptions>>()?.Value?.KnownJsonSchemaUrls,
+    sp.GetService<IOptions<SchemaResolutionOptions>>()?.Value?.WarnOnUnknownJsonSchemaDraft ?? true
+));
 builder.Services.AddScoped<ISchemaResolverService, SchemaResolverService>();
 builder.Services.AddHostedService<SchemaWarmupBackgroundService>();
 
@@ -210,7 +220,6 @@ builder.Services.AddScoped<IJsonValidatorService, JsonValidatorService>();
 builder.Services.AddScoped<IAuthenticationValidationService, AuthenticationValidationService>();
 builder.Services.AddScoped<IOpenApiSpecificationService, OpenApiSpecificationService>();
 builder.Services.AddScoped<IHsdsComplianceService, HsdsComplianceService>();
-builder.Services.AddScoped<IProfileResolverService, ProfileResolverService>();
 builder.Services.AddScoped<IEndpointTestingService, EndpointTestingService>();
 builder.Services.AddScoped<IOpenApiValidationService, OpenApiValidationService>();
 

@@ -12,11 +12,11 @@ namespace OpenReferralApi.Core.Services;
 /// </summary>
 public class ReferenceResolver(
     ILogger logger,
-    RemoteSchemaLoader remoteSchemaLoader)
+    IRemoteSchemaLoader remoteSchemaLoader)
 {
     private const string CircularReferenceErrorCode = "CIRCULAR_SCHEMA_REFERENCE";
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    private readonly RemoteSchemaLoader _remoteSchemaLoader = remoteSchemaLoader ?? throw new ArgumentNullException(nameof(remoteSchemaLoader));
+    private readonly IRemoteSchemaLoader _remoteSchemaLoader = remoteSchemaLoader ?? throw new ArgumentNullException(nameof(remoteSchemaLoader));
     private readonly Dictionary<string, JsonNode?> _refCache = [];
     private readonly List<SchemaResolutionIssue> _resolutionIssues = [];
     private JsonNode? _rootDocument;

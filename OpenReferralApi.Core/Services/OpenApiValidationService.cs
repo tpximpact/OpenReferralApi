@@ -1025,45 +1025,6 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
             _logger.ResolvedOpenApiCacheMiss(cacheScope, sanitizedSpecUrl);
         }
 
-        if (string.Equals(cacheScope, "profile", StringComparison.Ordinal))
-        {
-            var warmupSchemaRef = $$"""
-            {
-              "$ref": "{{specUrl}}"
-            }
-            """;
-
-            try
-            {
-                var resolvedFromWarmup = await _schemaResolverService.ResolveAsync(warmupSchemaRef, specUrl, auth: null);
-                CollectSchemaResolutionIssues(collectedIssues);
-                var resolvedFromWarmupObject = ParseJsonObject(resolvedFromWarmup);
-
-                if (!IsLikelyOpenApiDocument(resolvedFromWarmupObject))
-                {
-                    throw new InvalidOperationException("Warmup-path resolution did not produce an OpenAPI document.");
-                }
-
-                if (_cacheOptions.Enabled)
-                {
-                    PurgeExpiredCacheEntries();
-                    cache[cacheKey] = new CachedResolvedSpec(
-                        resolvedFromWarmup,
-                        resolvedFromWarmupObject,
-                        DateTime.UtcNow.Add(GetProfileSchemaCacheTtl()));
-                }
-
-                _logger.ResolvedProfileViaWarmup(sanitizedSpecUrl);
-                LogLookupCheckpoint("cache-miss-warmup-hit");
-
-                return resolvedFromWarmupObject;
-            }
-            catch (Exception ex)
-            {
-                _logger.WarmupPathResolutionUnavailable(ex, sanitizedSpecUrl);
-            }
-        }
-
         var unresolvedSpec = await _specFetcher.FetchOpenApiSpecFromUrlAsync(
             specUrl,
             auth,

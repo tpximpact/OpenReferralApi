@@ -112,13 +112,6 @@ public abstract class OpenApiValidationServiceBase
         };
     }
 
-    protected static bool IsLikelyOpenApiDocument(JsonObject candidate)
-    {
-        return candidate.ContainsKey("openapi")
-            || candidate.ContainsKey("swagger")
-            || candidate.ContainsKey("paths");
-    }
-
     protected static string ResolveMemoryCheckpointCorrelationId()
     {
         return Activity.Current?.TraceId.ToString()

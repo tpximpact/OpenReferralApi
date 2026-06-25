@@ -19,8 +19,9 @@ public class ProfileDiscoveryServiceTests
     private Mock<IHttpClientFactory> _httpClientFactoryMock = null!;
     private Mock<ILogger<ProfileDiscoveryService>> _loggerMock = null!;
     private Mock<HttpMessageHandler> _httpMessageHandlerMock = null!;
+    private Mock<IRemoteSchemaLoader> _remoteSchemaLoaderMock = null!;
     private HttpClient _httpClient = null!;
-    private MemoryCache _memoryCache = null!;
+
 
     [SetUp]
     public void Setup()
@@ -29,23 +30,25 @@ public class ProfileDiscoveryServiceTests
         _loggerMock = new Mock<ILogger<ProfileDiscoveryService>>();
         _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
         _httpClient = TestHttpClientFactory.CreateClient(_httpMessageHandlerMock.Object);
-        _memoryCache = new MemoryCache(new MemoryCacheOptions());
+        _remoteSchemaLoaderMock = new Mock<IRemoteSchemaLoader>();
 
         _httpClientFactoryMock
             .Setup(f => f.CreateClient("OpenApiValidationService"))
             .Returns(_httpClient);
 
-        var jsonNode = JsonNode.Parse(CachedHsdsSchema)!;
-        var compiledSchema = JsonSchemaBuild.FromText(CachedHsdsSchema);
-        var cachedSchemaObject = new CachedSchema(compiledSchema, jsonNode, CachedHsdsSchema, CachedHsdsSchema.Length);
-        _memoryCache.Set("schema:https://hsds.example.org/3.0/openapi.json", cachedSchemaObject);
+        _remoteSchemaLoaderMock
+            .Setup(x => x.LoadRemoteSchemaAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(JsonNode.Parse(CachedHsdsSchema));
+
+        _remoteSchemaLoaderMock
+            .Setup(x => x.LoadRemoteSchema("https://hsds.example.org/3.0/openapi.json"))
+            .Returns(JsonNode.Parse(CachedHsdsSchema));
     }
 
     [TearDown]
     public void TearDown()
     {
         _httpClient?.Dispose();
-        _memoryCache.Dispose();
     }
 
     [Test]
@@ -164,7 +167,8 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = OwnSchemaValidationMode.Strict }),
-            _memoryCache);
+            null,
+            _remoteSchemaLoaderMock.Object);
 
         var result = await service.DiscoverFromBaseUrlAsync(null, "https://api.example.com");
 
@@ -200,7 +204,8 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = OwnSchemaValidationMode.Strict }),
-            _memoryCache);
+            null,
+            _remoteSchemaLoaderMock.Object);
 
         var result = await service.DiscoverFromBaseUrlAsync(null, "https://api.example.com");
 
@@ -235,7 +240,8 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = OwnSchemaValidationMode.Strict }),
-            _memoryCache);
+            null,
+            _remoteSchemaLoaderMock.Object);
 
         var result = await service.DiscoverFromBaseUrlAsync(null, "https://api.example.com");
 
@@ -346,7 +352,8 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = OwnSchemaValidationMode.Strict }),
-            _memoryCache);
+            null,
+            _remoteSchemaLoaderMock.Object);
 
         var ex = Assert.Throws<ArgumentException>(() => service.GetExplicitProfile("3.1"));
         using (Assert.EnterMultipleScope())
@@ -389,7 +396,8 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = ownSchemaValidation }),
-            _memoryCache);
+            null,
+            _remoteSchemaLoaderMock.Object);
     }
 
     private void SetupHttpResponseMap(Dictionary<string, (HttpStatusCode statusCode, string content)> responses)

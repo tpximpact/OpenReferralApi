@@ -28,7 +28,7 @@ public sealed record CachedSchema(
 /// <summary>
 /// Internal helper class for loading remote JSON schemas with caching and authentication support.
 /// </summary>
-public class RemoteSchemaLoader
+public class RemoteSchemaLoader : IRemoteSchemaLoader
 {
     private readonly HashSet<string> _knownJsonSchemaUrls;
     private readonly HashSet<string> _unknownDraftWarnings = new(StringComparer.OrdinalIgnoreCase);
