@@ -59,7 +59,7 @@ public class RemoteSchemaLoader : IRemoteSchemaLoader
         var configuredUrls = knownJsonSchemaUrls ?? SchemaResolutionOptionsDefaults.KnownJsonSchemaUrls;
         foreach (var url in configuredUrls)
         {
-            var normalized = NormalizeAbsoluteUrl(url);
+            var normalized = UrlHelper.NormalizeAbsoluteUrl(url);
             if (!string.IsNullOrWhiteSpace(normalized))
             {
                 _ = _knownJsonSchemaUrls.Add(normalized);
@@ -395,7 +395,7 @@ public class RemoteSchemaLoader : IRemoteSchemaLoader
 
     private string? NormalizeKnownSchemaUrl(string schemaUrl)
     {
-        var normalized = NormalizeAbsoluteUrl(schemaUrl);
+        var normalized = UrlHelper.NormalizeAbsoluteUrl(schemaUrl);
         if (normalized == null)
         {
             return null;
@@ -417,26 +417,6 @@ public class RemoteSchemaLoader : IRemoteSchemaLoader
         }
 
         return null;
-    }
-
-    private static string? NormalizeAbsoluteUrl(string schemaUrl)
-    {
-        if (string.IsNullOrWhiteSpace(schemaUrl))
-        {
-            return null;
-        }
-
-        if (schemaUrl.Contains("json-everything.lib", StringComparison.OrdinalIgnoreCase))
-        {
-            schemaUrl = schemaUrl.Replace("json-everything.lib", "json-everything.net", StringComparison.OrdinalIgnoreCase);
-        }
-
-        if (!Uri.TryCreate(schemaUrl, UriKind.Absolute, out var uri))
-        {
-            return null;
-        }
-
-        return uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
     }
 
     public JsonNode? LoadRemoteSchema(string schemaUrl)

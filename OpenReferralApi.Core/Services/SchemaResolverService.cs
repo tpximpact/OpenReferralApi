@@ -402,7 +402,7 @@ public class SchemaResolverService : ISchemaResolverService
         {
             foreach (var url in urlsToCache)
             {
-                var normalized = NormalizeAbsoluteUrl(url);
+                var normalized = UrlHelper.NormalizeAbsoluteUrl(url);
                 if (normalized != null)
                 {
                     var cacheKey = $"schema:{normalized}";
@@ -500,26 +500,6 @@ public class SchemaResolverService : ISchemaResolverService
                 }
             }
         }
-    }
-
-    private static string? NormalizeAbsoluteUrl(string schemaUrl)
-    {
-        if (string.IsNullOrWhiteSpace(schemaUrl))
-        {
-            return null;
-        }
-
-        if (schemaUrl.Contains("json-everything.lib", StringComparison.OrdinalIgnoreCase))
-        {
-            schemaUrl = schemaUrl.Replace("json-everything.lib", "json-everything.net", StringComparison.OrdinalIgnoreCase);
-        }
-
-        if (!Uri.TryCreate(schemaUrl, UriKind.Absolute, out var uri))
-        {
-            return null;
-        }
-
-        return uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
     }
 
     private static string CreateSchemaFingerprint(string schemaJson)
