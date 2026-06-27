@@ -13,6 +13,7 @@ namespace OpenReferralApi.Core.Services;
 public interface IFeedValidationService
 {
     Task<List<ServiceFeed>> GetAllFeedsAsync(CancellationToken cancellationToken = default);
+    Task<ServiceFeed?> GetFeedByIdAsync(string feedId, CancellationToken cancellationToken = default);
     Task UpdateFeedStatusAsync(string feedId, bool isUp, bool isValid, string? error, double? responseTimeMs, int? validationErrorCount, CancellationToken cancellationToken = default);
     Task<FeedValidationResult> ValidateSingleFeedAsync(ServiceFeed feed, CancellationToken cancellationToken = default);
     Task<FeedValidationResult> ValidateAndUpdateFeedAsync(ServiceFeed feed, CancellationToken cancellationToken = default);
@@ -56,6 +57,22 @@ public class FeedValidationService : IFeedValidationService
         {
             _logger.FailedToRetrieveFeeds(ex);
             return [];
+        }
+    }
+
+    public async Task<ServiceFeed?> GetFeedByIdAsync(string feedId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var filter = Builders<ServiceFeed>.Filter.Eq(f => f.Id, feedId);
+            return await _servicesCollection
+                .Find(filter)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.FailedToRetrieveFeed(feedId, ex);
+            return null;
         }
     }
 
@@ -323,6 +340,12 @@ public class NullFeedValidationService(ILogger<NullFeedValidationService> logger
     {
         _logger.FeedValidationServiceNotAvailable();
         return Task.FromResult(new List<ServiceFeed>());
+    }
+
+    public Task<ServiceFeed?> GetFeedByIdAsync(string feedId, CancellationToken cancellationToken = default)
+    {
+        _logger.FeedValidationServiceNotAvailable();
+        return Task.FromResult<ServiceFeed?>(null);
     }
 
     public Task UpdateFeedStatusAsync(string feedId, bool isUp, bool isValid, string? error, double? responseTimeMs, int? validationErrorCount, CancellationToken cancellationToken = default)

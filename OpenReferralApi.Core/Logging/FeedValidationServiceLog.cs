@@ -36,5 +36,8 @@ namespace OpenReferralApi.Core.Logging
 
         [LoggerMessage(EventId = 17010, Level = LogLevel.Warning, Message = "Feed validation service is not available. MongoDB is not configured.")]
         public static partial void FeedValidationServiceNotAvailable(this ILogger logger);
+
+        [LoggerMessage(EventId = 17011, Level = LogLevel.Error, Message = "Failed to retrieve feed with ID {FeedId} from database")]
+        public static partial void FailedToRetrieveFeed(this ILogger logger, string feedId, Exception exception);
     }
 }

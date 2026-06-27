@@ -5330,4 +5330,51 @@ _openApiSpecificationService,
     }
 
     #endregion
+
+    [Test]
+    public void TestProfileVersionNormalizer()
+    {
+        var v1 = ProfileVersionNormalizer.NormalizeVersionNumber("HSDS-UK-1.0");
+        var v2 = ProfileVersionNormalizer.NormalizeVersionNumber("1.0");
+        var v3 = ProfileVersionNormalizer.NormalizeVersionNumber("HSDS-UK-3.0");
+        var v4 = ProfileVersionNormalizer.NormalizeVersionNumber("3.0");
+
+        Console.WriteLine($"v1: {v1}");
+        Console.WriteLine($"v2: {v2}");
+        Console.WriteLine($"v3: {v3}");
+        Console.WriteLine($"v4: {v4}");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(v1, Is.EqualTo("1.0"));
+            Assert.That(v2, Is.EqualTo("1.0"));
+            Assert.That(v3, Is.EqualTo("3.0"));
+            Assert.That(v4, Is.EqualTo("3.0"));
+        });
+    }
+
+    [Test]
+    public void TestTryResolveConfiguredProfileKeyFromVersion()
+    {
+        var options = new SpecificationOptions
+        {
+            Urls = new Dictionary<string, string>
+            {
+                ["HSDS-UK-3.0"] = "https://openreferraluk.org/specifications/3.0/openapi.json",
+                ["HSDS-UK-1.0"] = "https://openreferraluk.org/specifications/1.0/openapi.json"
+            }
+        };
+
+        var key1 = SchemaVersionHelper.TryResolveConfiguredProfileKeyFromVersion("HSDS-UK-1.0", options);
+        var key2 = SchemaVersionHelper.TryResolveConfiguredProfileKeyFromVersion("1.0", options);
+
+        Console.WriteLine($"key1: {key1}");
+        Console.WriteLine($"key2: {key2}");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(key1, Is.EqualTo("HSDS-UK-1.0"));
+            Assert.That(key2, Is.EqualTo("HSDS-UK-1.0"));
+        });
+    }
 }

@@ -58,15 +58,47 @@ internal sealed class FeedValidationController(
         }
         var results = await _feedValidationService.ValidateAndUpdateFeedsAsync(feeds, cancellationToken: cancellationToken).ConfigureAwait(false);
 
+        var upFeeds = 0;
+        var validFeeds = 0;
+        var downFeeds = 0;
+        var invalidFeeds = 0;
+        var responseTimeSum = 0.0;
+        var responseTimeCount = 0;
+
+        foreach (var r in results)
+        {
+            if (r.IsUp)
+            {
+                upFeeds++;
+                if (r.IsValid)
+                {
+                    validFeeds++;
+                }
+                else
+                {
+                    invalidFeeds++;
+                }
+            }
+            else
+            {
+                downFeeds++;
+            }
+
+            if (r.ResponseTimeMs.HasValue)
+            {
+                responseTimeSum += r.ResponseTimeMs.Value;
+                responseTimeCount++;
+            }
+        }
+
         var summary = new FeedValidationSummary
         {
             TotalFeeds = feeds.Count,
-            UpFeeds = results.Count(r => r.IsUp),
-            ValidFeeds = results.Count(r => r.IsValid),
-            DownFeeds = results.Count(r => !r.IsUp),
-            InvalidFeeds = results.Count(r => r.IsUp && !r.IsValid),
-            AverageResponseTimeMs = results.Where(r => r.ResponseTimeMs.HasValue)
-                .Average(r => r.ResponseTimeMs),
+            UpFeeds = upFeeds,
+            ValidFeeds = validFeeds,
+            DownFeeds = downFeeds,
+            InvalidFeeds = invalidFeeds,
+            AverageResponseTimeMs = responseTimeCount > 0 ? responseTimeSum / responseTimeCount : null,
             Results = results
         };
 
@@ -90,10 +122,9 @@ internal sealed class FeedValidationController(
         string feedId,
         CancellationToken cancellationToken)
     {
-        var feeds = await _feedValidationService.GetAllFeedsAsync(cancellationToken).ConfigureAwait(false);
-        var feed = feeds.FirstOrDefault(f => f.Id == feedId);
+        var feed = await _feedValidationService.GetFeedByIdAsync(feedId, cancellationToken).ConfigureAwait(false);
 
-        if (feed == null)
+        if (feed == null || !feed.IsActive)
         {
             return NotFound(new ApiErrorResponse
             {

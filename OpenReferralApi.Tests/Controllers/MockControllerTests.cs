@@ -20,7 +20,7 @@ public class MockControllerTests
     }
 
     [Test]
-    public async Task GetServiceMetadata_DefaultRoute_ReturnsOkResult()
+    public async Task GetServiceMetadata_DefaultRoute_ReturnsPhysicalFileResult()
     {
         // Arrange
         _controller.ControllerContext = new ControllerContext
@@ -32,11 +32,11 @@ public class MockControllerTests
         var result = await _controller.GetServiceMetadata();
 
         // Assert
-        Assert.That(result, Is.TypeOf<OkObjectResult>());
+        Assert.That(result, Is.TypeOf<PhysicalFileResult>());
     }
 
     [Test]
-    public async Task GetServices_DefaultRoute_ReturnsOkResult()
+    public async Task GetServices_DefaultRoute_ReturnsPhysicalFileResult()
     {
         // Arrange
         _controller.ControllerContext = new ControllerContext
@@ -48,11 +48,11 @@ public class MockControllerTests
         var result = await _controller.GetServices();
 
         // Assert
-        Assert.That(result, Is.TypeOf<OkObjectResult>());
+        Assert.That(result, Is.TypeOf<PhysicalFileResult>());
     }
 
     [Test]
-    public async Task GetServicesById_WithValidId_ReturnsOkResult()
+    public async Task GetServicesById_WithValidId_ReturnsPhysicalFileResult()
     {
         // Arrange
         _controller.ControllerContext = new ControllerContext
@@ -64,11 +64,11 @@ public class MockControllerTests
         var result = await _controller.GetServicesById();
 
         // Assert
-        Assert.That(result, Is.TypeOf<OkObjectResult>());
+        Assert.That(result, Is.TypeOf<PhysicalFileResult>());
     }
 
     [Test]
-    public async Task GetTaxonomies_DefaultRoute_ReturnsOkResult()
+    public async Task GetTaxonomies_DefaultRoute_ReturnsPhysicalFileResult()
     {
         // Arrange
         _controller.ControllerContext = new ControllerContext
@@ -80,11 +80,11 @@ public class MockControllerTests
         var result = await _controller.GetTaxonomies();
 
         // Assert
-        Assert.That(result, Is.TypeOf<OkObjectResult>());
+        Assert.That(result, Is.TypeOf<PhysicalFileResult>());
     }
 
     [Test]
-    public async Task GetServiceAtLocations_DefaultRoute_ReturnsOkResult()
+    public async Task GetServiceAtLocations_DefaultRoute_ReturnsPhysicalFileResult()
     {
         // Arrange
         _controller.ControllerContext = new ControllerContext
@@ -96,7 +96,7 @@ public class MockControllerTests
         var result = await _controller.GetServiceAtLocations();
 
         // Assert
-        Assert.That(result, Is.TypeOf<OkObjectResult>());
+        Assert.That(result, Is.TypeOf<PhysicalFileResult>());
     }
 
     [Test]

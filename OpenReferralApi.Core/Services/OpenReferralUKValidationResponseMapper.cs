@@ -1,3 +1,5 @@
+using OpenReferralApi.Core.Models.Validation;
+
 namespace OpenReferralApi.Core.Services;
 
 /// <summary>
@@ -12,7 +14,7 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
 {
     public OpenReferralUKValidationResponse MapToOpenReferralUKValidationResponse(OpenApiValidationResult openApiResult)
     {
-        var testSuites = new List<object>();
+        var testSuites = new List<TestSuiteInfo>();
 
         // Map endpoint tests to test groups - separate required and optional endpoints
         if (openApiResult.EndpointTests != null && openApiResult.EndpointTests.Count > 0)
@@ -50,31 +52,29 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
         // and optional-endpoint treatment rules.
         bool isValid = openApiResult?.IsValid ?? false;
 
-        object? specificationValidation = null;
+        SpecificationValidationResult? specificationValidation = null;
 
         if (openApiResult?.SpecificationValidation != null)
         {
-            var specErrors = new List<object>(openApiResult.SpecificationValidation.Errors.Count);
+            var specErrors = new List<ValidationMessage>(openApiResult.SpecificationValidation.Errors.Count);
             foreach (var error in openApiResult.SpecificationValidation.Errors)
             {
-                specErrors.Add(new
-                {
-                    name = error.ErrorCode,
-                    description = error.Severity,
-                    message = error.Message,
-                    errorIn = BuildErrorIn(error),
-                    errorAt = BuildErrorAt(error),
-                    recordId = error.RecordId
-                });
+                specErrors.Add(new ValidationMessage(
+                    Name: error.ErrorCode ?? string.Empty,
+                    Description: error.Severity ?? string.Empty,
+                    Message: error.Message ?? string.Empty,
+                    ErrorIn: BuildErrorIn(error),
+                    ErrorAt: BuildErrorAt(error),
+                    RecordId: error.RecordId
+                ));
             }
 
-            specificationValidation = new
-            {
-                isValid = openApiResult.SpecificationValidation.IsValid,
-                version = openApiResult.SpecificationValidation.Version,
-                url = openApiResult.SpecificationValidation.Url,
-                errors = specErrors
-            };
+            specificationValidation = new SpecificationValidationResult(
+                IsValid: openApiResult.SpecificationValidation.IsValid,
+                Version: openApiResult.SpecificationValidation.Version,
+                Url: openApiResult.SpecificationValidation.Url,
+                Errors: specErrors
+            );
         }
 
         return new OpenReferralUKValidationResponse
@@ -130,10 +130,10 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
             || string.Equals(errorCode, "SCHEMA_STRUCTURE_VIOLATION", StringComparison.Ordinal);
     }
 
-    private static object MapEndpointTests(List<EndpointTestResult> endpointTests, string baseUrl,
+    private static TestSuiteInfo MapEndpointTests(List<EndpointTestResult> endpointTests, string baseUrl,
         string name, string description, bool required)
     {
-        var tests = new List<object>(endpointTests.Count);
+        var tests = new List<EndpointTestInfo>(endpointTests.Count);
         var seenErrorPaths = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var endpoint in endpointTests)
@@ -141,31 +141,29 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
             seenErrorPaths.Clear(); // Reuse the same HashSet for every endpoint test
             var testToUse = endpoint.PrimaryTestResult;
 
-            tests.Add(new
-            {
-                name = endpoint.Name ?? string.Concat(endpoint.Method, " ", endpoint.Path),
-                endpoint = string.Concat(baseUrl, endpoint.Path),
-                description = endpoint.Summary ?? endpoint.OperationId ?? "Endpoint test",
-                id = testToUse?.TestedId,
-                success = endpoint.PrimaryTestResult?.ValidationResult?.IsValid ?? endpoint.TestResults.Any(tr => tr.ValidationResult != null && tr.ValidationResult.IsValid),
-                messages = MapEndpointMessages(endpoint, testToUse, seenErrorPaths)
-            });
+            tests.Add(new EndpointTestInfo(
+                Name: endpoint.Name ?? string.Concat(endpoint.Method, " ", endpoint.Path),
+                Endpoint: string.Concat(baseUrl, endpoint.Path),
+                Description: endpoint.Summary ?? endpoint.OperationId ?? "Endpoint test",
+                Id: testToUse?.TestedId,
+                Success: endpoint.PrimaryTestResult?.ValidationResult?.IsValid ?? endpoint.TestResults.Any(tr => tr.ValidationResult != null && tr.ValidationResult.IsValid),
+                Messages: MapEndpointMessages(endpoint, testToUse, seenErrorPaths)
+            ));
         }
 
-        return new
-        {
-            name,
-            description,
-            messageLevel = required ? "error" : "warning",
-            required,
-            success = endpointTests.All(e => e.Status == EndpointTestStatus.PassedValidation || e.Status == EndpointTestStatus.PassedWithWarnings),
-            tests
-        };
+        return new TestSuiteInfo(
+            Name: name,
+            Description: description,
+            MessageLevel: required ? "error" : "warning",
+            Required: required,
+            Success: endpointTests.All(e => e.Status == EndpointTestStatus.PassedValidation || e.Status == EndpointTestStatus.PassedWithWarnings),
+            Tests: tests
+        );
     }
 
-    private static List<object> MapEndpointMessages(EndpointTestResult endpoint, HttpTestResult? specificTest, HashSet<string> seenErrorPaths)
+    private static List<ValidationMessage> MapEndpointMessages(EndpointTestResult endpoint, HttpTestResult? specificTest, HashSet<string> seenErrorPaths)
     {
-        var messages = new List<object>();
+        var messages = new List<ValidationMessage>();
 
         var endpointErrors = endpoint.ValidationErrors;
 
@@ -173,17 +171,16 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
         {
             foreach (var validationError in endpointErrors)
             {
-                if (seenErrorPaths.Add(validationError.Path))
+                if (validationError.Path != null && seenErrorPaths.Add(validationError.Path))
                 {
-                    messages.Add(new
-                    {
-                        name = validationError.ErrorCode,
-                        description = validationError.Severity,
-                        message = validationError.Message,
-                        errorIn = validationError.Path,
-                        errorAt = "",
-                        recordId = validationError.RecordId
-                    });
+                    messages.Add(new ValidationMessage(
+                        Name: validationError.ErrorCode ?? string.Empty,
+                        Description: validationError.Severity ?? string.Empty,
+                        Message: validationError.Message ?? string.Empty,
+                        ErrorIn: validationError.Path,
+                        ErrorAt: "",
+                        RecordId: validationError.RecordId
+                    ));
                 }
             }
 
@@ -217,37 +214,36 @@ public class OpenReferralUKValidationResponseMapper : IOpenReferralUKValidationR
 
             if (avgResponseTime > 5000) // Slow response warning
             {
-                messages.Add(new
-                {
-                    name = "Performance",
-                    description = "Warning",
-                    message = $"Average response time is {avgResponseTime:F0}ms, which may be slow",
-                    errorIn = endpoint.Path,
-                    errorAt = ""
-                });
+                messages.Add(new ValidationMessage(
+                    Name: "Performance",
+                    Description: "Warning",
+                    Message: $"Average response time is {avgResponseTime:F0}ms, which may be slow",
+                    ErrorIn: endpoint.Path ?? string.Empty,
+                    ErrorAt: "",
+                    RecordId: null
+                ));
             }
         }
 
         return messages;
     }
 
-    private static void ExtractMessagesFromTestResult(HttpTestResult testResult, HashSet<string> seenErrorPaths, List<object> messages)
+    private static void ExtractMessagesFromTestResult(HttpTestResult testResult, HashSet<string> seenErrorPaths, List<ValidationMessage> messages)
     {
         if (testResult.ValidationResult?.Errors == null) return;
 
         foreach (var validationError in testResult.ValidationResult.Errors)
         {
-            if (seenErrorPaths.Add(validationError.Path))
+            if (validationError.Path != null && seenErrorPaths.Add(validationError.Path))
             {
-                messages.Add(new
-                {
-                    name = validationError.ErrorCode,
-                    description = validationError.Severity,
-                    message = validationError.Message,
-                    errorIn = validationError.Path,
-                    errorAt = "",
-                    recordId = validationError.RecordId
-                });
+                messages.Add(new ValidationMessage(
+                    Name: validationError.ErrorCode ?? string.Empty,
+                    Description: validationError.Severity ?? string.Empty,
+                    Message: validationError.Message ?? string.Empty,
+                    ErrorIn: validationError.Path,
+                    ErrorAt: "",
+                    RecordId: validationError.RecordId
+                ));
             }
         }
     }

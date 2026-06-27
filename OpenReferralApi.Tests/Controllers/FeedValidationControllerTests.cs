@@ -92,10 +92,14 @@ public class FeedValidationControllerTests
         Assert.That(result.Result, Is.TypeOf<OkObjectResult>());
         var okResult = result.Result as OkObjectResult;
         var summary = okResult?.Value as FeedValidationSummary;
-        Assert.That(summary?.TotalFeeds, Is.EqualTo(2));
-        Assert.That(summary?.UpFeeds, Is.EqualTo(2));
-        Assert.That(summary?.ValidFeeds, Is.EqualTo(1));
-        Assert.That(summary?.InvalidFeeds, Is.EqualTo(1));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(summary?.TotalFeeds, Is.EqualTo(2));
+            Assert.That(summary?.UpFeeds, Is.EqualTo(2));
+            Assert.That(summary?.ValidFeeds, Is.EqualTo(1));
+            Assert.That(summary?.InvalidFeeds, Is.EqualTo(1));
+        }
+
     }
 
     [Test]
@@ -113,8 +117,12 @@ public class FeedValidationControllerTests
         Assert.That(result.Result, Is.TypeOf<OkObjectResult>());
         var okResult = result.Result as OkObjectResult;
         var summary = okResult?.Value as FeedValidationSummary;
-        Assert.That(summary?.TotalFeeds, Is.EqualTo(0));
-        Assert.That(summary?.Message, Does.Contain("No feeds found"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(summary?.TotalFeeds, Is.Zero);
+            Assert.That(summary?.Message, Does.Contain("No feeds found"));
+        }
+
     }
 
     [Test]
@@ -135,7 +143,7 @@ public class FeedValidationControllerTests
     {
         // Arrange
         var feedId = "1";
-        var feed = new ServiceFeed { Id = feedId, UrlField = "https://example.com" };
+        var feed = new ServiceFeed { Id = feedId, UrlField = "https://example.com", ActiveField = true };
         var validationResult = new FeedValidationResult
         {
             FeedId = feedId,
@@ -145,8 +153,8 @@ public class FeedValidationControllerTests
         };
 
         _feedValidationServiceMock
-            .Setup(x => x.GetAllFeedsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([feed]);
+            .Setup(x => x.GetFeedByIdAsync(feedId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(feed);
 
         _feedValidationServiceMock
             .Setup(x => x.ValidateAndUpdateFeedAsync(feed, It.IsAny<CancellationToken>()))
@@ -159,8 +167,12 @@ public class FeedValidationControllerTests
         Assert.That(result.Result, Is.TypeOf<OkObjectResult>());
         var okResult = result.Result as OkObjectResult;
         var returnedResult = okResult?.Value as FeedValidationResult;
-        Assert.That(returnedResult?.FeedId, Is.EqualTo(feedId));
-        Assert.That(returnedResult?.IsValid, Is.True);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(returnedResult?.FeedId, Is.EqualTo(feedId));
+            Assert.That(returnedResult?.IsValid, Is.True);
+        }
+
 
         _feedValidationServiceMock.Verify(
             x => x.ValidateAndUpdateFeedAsync(feed, It.IsAny<CancellationToken>()),
@@ -179,8 +191,26 @@ public class FeedValidationControllerTests
         // Arrange
         var feedId = "nonexistent";
         _feedValidationServiceMock
-            .Setup(x => x.GetAllFeedsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+            .Setup(x => x.GetFeedByIdAsync(feedId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ServiceFeed?)null);
+
+        // Act
+        var result = await _controller.ValidateFeed(feedId, CancellationToken.None);
+
+        // Assert
+        Assert.That(result.Result, Is.TypeOf<NotFoundObjectResult>());
+    }
+
+    [Test]
+    public async Task ValidateFeed_WithInactiveFeed_ReturnsNotFound()
+    {
+        // Arrange
+        var feedId = "1";
+        var feed = new ServiceFeed { Id = feedId, UrlField = "https://example.com", ActiveField = false };
+
+        _feedValidationServiceMock
+            .Setup(x => x.GetFeedByIdAsync(feedId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(feed);
 
         // Act
         var result = await _controller.ValidateFeed(feedId, CancellationToken.None);
@@ -195,7 +225,7 @@ public class FeedValidationControllerTests
         // Arrange
         var feedId = "1";
         _feedValidationServiceMock
-            .Setup(x => x.GetAllFeedsAsync(It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetFeedByIdAsync(feedId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Validation error"));
 
         // Act & Assert - Exception should propagate to GlobalExceptionHandler
