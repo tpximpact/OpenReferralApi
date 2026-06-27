@@ -167,7 +167,6 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = OwnSchemaValidationMode.Strict }),
-            null,
             _remoteSchemaLoaderMock.Object);
 
         var result = await service.DiscoverFromBaseUrlAsync(null, "https://api.example.com");
@@ -204,7 +203,6 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = OwnSchemaValidationMode.Strict }),
-            null,
             _remoteSchemaLoaderMock.Object);
 
         var result = await service.DiscoverFromBaseUrlAsync(null, "https://api.example.com");
@@ -240,7 +238,6 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = OwnSchemaValidationMode.Strict }),
-            null,
             _remoteSchemaLoaderMock.Object);
 
         var result = await service.DiscoverFromBaseUrlAsync(null, "https://api.example.com");
@@ -352,7 +349,6 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = OwnSchemaValidationMode.Strict }),
-            null,
             _remoteSchemaLoaderMock.Object);
 
         var ex = Assert.Throws<ArgumentException>(() => service.GetExplicitProfile("3.1"));
@@ -396,7 +392,6 @@ public class ProfileDiscoveryServiceTests
                 }
             }),
             Options.Create(new OpenApiValidationServerOptions { OwnSchemaValidation = ownSchemaValidation }),
-            null,
             _remoteSchemaLoaderMock.Object);
     }
 

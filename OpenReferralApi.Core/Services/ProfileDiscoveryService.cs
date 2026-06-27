@@ -39,7 +39,6 @@ public partial class ProfileDiscoveryService(
     IHttpClientFactory httpClientFactory,
     IOptions<SpecificationOptions> specificationOptions,
     IOptions<OpenApiValidationServerOptions>? openApiValidationOptions = null,
-    ISchemaResolverService? schemaResolverService = null,
     IRemoteSchemaLoader? remoteSchemaLoader = null) : IProfileDiscoveryService
 {
     private readonly OpenApiValidationServerOptions _openApiValidationOptions = openApiValidationOptions?.Value ?? new OpenApiValidationServerOptions();
@@ -49,8 +48,6 @@ public partial class ProfileDiscoveryService(
     private readonly SpecificationOptions _specificationOptions = specificationOptions?.Value ?? throw new ArgumentNullException(nameof(specificationOptions));
 
     private readonly IRemoteSchemaLoader? _remoteSchemaLoader = remoteSchemaLoader;
-
-    private readonly object? _unusedResolver = schemaResolverService;
     private static readonly string[] HSDS_VERSION_candidateTokens =
     [
         "x-hsds-version",

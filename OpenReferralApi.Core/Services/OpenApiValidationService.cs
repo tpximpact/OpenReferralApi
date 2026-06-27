@@ -374,8 +374,6 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
             HsdsProfileSchema = resolvedHsdsProfileSpec,
             OwnSchemaSpec = ownSchema,
             FellBackToHsdsProfile = feedSpecFellBackToHsdsProfile,
-            OwnSchemaUrl = request.OwnSchemaUrl,
-            HasConfiguredDefaultProfile = bootstrap.UsedDefaultProfile,
             DataSourceRequestAuth = dataSourceRequestAuth,
             HsdsProfileReason = bootstrap.HsdsProfileReason,
             ProfileUri = profileUri
@@ -666,8 +664,6 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
         public JsonObject? HsdsProfileSchema { get; init; }
         public required JsonObject? OwnSchemaSpec { get; init; }
         public bool FellBackToHsdsProfile { get; init; }
-        public string? OwnSchemaUrl { get; init; }
-        public bool HasConfiguredDefaultProfile { get; init; }
         public DataSourceAuthentication? DataSourceRequestAuth { get; init; }
         public string? HsdsProfileReason { get; init; }
         public string? ProfileUri { get; init; }
