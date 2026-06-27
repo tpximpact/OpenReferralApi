@@ -344,7 +344,7 @@ public class JsonValidatorServiceTests
     {
         // Arrange
         _schemaResolverServiceMock
-            .Setup(service => service.CreateSchemaFromJsonAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(service => service.ResolveAsync(It.IsAny<JsonNode>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Schema parse failed"));
 
         // Act

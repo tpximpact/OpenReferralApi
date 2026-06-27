@@ -37,8 +37,26 @@ public interface ISchemaResolverService
     /// <param name="schema">The schema to resolve (as JsonNode).</param>
     /// <param name="baseUri">The base URI for resolving relative references.</param>
     /// <param name="auth">Optional authentication for fetching remote schemas.</param>
+    /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>The fully resolved schema as a JsonNode.</returns>
-    Task<JsonNode?> ResolveAsync(JsonNode schema, string? baseUri = null, DataSourceAuthentication? auth = null);
+    Task<JsonNode?> ResolveAsync(JsonNode schema, string? baseUri = null, DataSourceAuthentication? auth = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves all $ref references in the provided schema with a base URI context.
+    /// </summary>
+    /// <param name="sourceNode">The schema to resolve (as JsonNode).</param>
+    /// <param name="baseUri">The base URI for resolving relative references.</param>
+    /// <param name="cancellationToken">Optional cancellation token.</param>
+    /// <returns>The fully resolved schema as a JsonNode.</returns>
+    Task<JsonNode?> ResolveAsync(JsonNode sourceNode, Uri baseUri, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves all $ref references in the provided schema.
+    /// </summary>
+    /// <param name="sourceNode">The schema to resolve (as JsonNode).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The fully resolved schema as a JsonNode.</returns>
+    Task<JsonNode?> ResolveAsync(JsonNode sourceNode, CancellationToken cancellationToken);
 
     // Json.Schema based schema creation methods
     /// <summary>
@@ -241,7 +259,7 @@ public class SchemaResolverService : ISchemaResolverService
     /// <param name="baseUri">The base URI for resolving relative references.</param>
     /// <param name="auth">Optional authentication for fetching remote schemas.</param>
     /// <returns>The fully resolved schema as a JsonNode.</returns>
-    public async Task<JsonNode?> ResolveAsync(JsonNode schema, string? baseUri = null, DataSourceAuthentication? auth = null)
+    public async Task<JsonNode?> ResolveAsync(JsonNode schema, string? baseUri = null, DataSourceAuthentication? auth = null, CancellationToken cancellationToken = default)
     {
         // Configure authentication for the remote loader
         var validatedAuth = IsValidAuthentication(auth) ? auth : null;
@@ -251,9 +269,19 @@ public class SchemaResolverService : ISchemaResolverService
         _referenceResolver.Initialize(schema, baseUri);
 
         // Pre-fetch all external references recursively and register them in SchemaRegistry.Global
-        await PreFetchSchemaRefsAsync(schema, baseUri, validatedAuth, CancellationToken.None);
+        await PreFetchSchemaRefsAsync(schema, baseUri, validatedAuth, cancellationToken);
 
         return schema.DeepClone();
+    }
+
+    public async Task<JsonNode?> ResolveAsync(JsonNode sourceNode, Uri baseUri, CancellationToken cancellationToken = default)
+    {
+        return await ResolveAsync(sourceNode, baseUri.ToString(), null, cancellationToken);
+    }
+
+    public async Task<JsonNode?> ResolveAsync(JsonNode sourceNode, CancellationToken cancellationToken)
+    {
+        return await ResolveAsync(sourceNode, (string?)null, null, cancellationToken);
     }
 
     public IReadOnlyList<SchemaResolutionIssue> GetResolutionIssues()

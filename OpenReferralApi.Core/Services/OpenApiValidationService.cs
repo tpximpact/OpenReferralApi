@@ -1027,21 +1027,16 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
             cancellationToken,
             resolveReferences: false);
 
-        var unresolvedSpecContent = unresolvedSpec.ToString();
-        var resolvedSpecContent = await _schemaResolverService.ResolveAsync(unresolvedSpecContent, specUrl, auth);
-        if (string.IsNullOrWhiteSpace(resolvedSpecContent))
-        {
-            // Defensive fallback for misconfigured/mocked resolvers that return empty output.
-            resolvedSpecContent = unresolvedSpecContent;
-        }
+        var resolvedNode = await _schemaResolverService.ResolveAsync(unresolvedSpec, specUrl, auth, cancellationToken);
+        var resolvedSpecObject = (resolvedNode as JsonObject) ?? unresolvedSpec;
         CollectSchemaResolutionIssues(collectedIssues);
 
         if (_cacheOptions.Enabled)
         {
             PurgeExpiredCacheEntries();
-            var resolvedSpecObject = ParseJsonObject(resolvedSpecContent);
+            var resolvedSpecJson = resolvedSpecObject.ToJsonString();
             cache[cacheKey] = new CachedResolvedSpec(
-                resolvedSpecContent,
+                resolvedSpecJson,
                 resolvedSpecObject,
                 DateTime.UtcNow.Add(GetProfileSchemaCacheTtl()));
             LogLookupCheckpoint("cache-miss-direct");
@@ -1049,7 +1044,7 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
         }
 
         LogLookupCheckpoint("cache-disabled-direct");
-        return ParseJsonObject(resolvedSpecContent);
+        return resolvedSpecObject;
     }
 
     private TimeSpan GetProfileSchemaCacheTtl()

@@ -208,11 +208,17 @@ public class JsonValidatorService : IJsonValidatorService
         {
             _logger.StartingSchemaValidation();
 
-            var schemaJson = System.Text.Json.JsonSerializer.Serialize(schema);
-            _ = await _schemaResolverService.CreateSchemaFromJsonAsync(schemaJson, cancellationToken);
-            var resolvedSchemaJson = await _schemaResolverService.ResolveAsync(schemaJson);
-            var effectiveSchemaJson = string.IsNullOrWhiteSpace(resolvedSchemaJson) ? schemaJson : resolvedSchemaJson;
-            var schemaDetails = BuildSchemaDetails(effectiveSchemaJson);
+            var schemaNode = schema switch
+            {
+                System.Text.Json.Nodes.JsonNode node => node.DeepClone(),
+                System.Text.Json.JsonDocument doc => System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.Nodes.JsonNode>(doc, DefaultSerializerOptions),
+                System.Text.Json.JsonElement element => System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.Nodes.JsonNode>(element, DefaultSerializerOptions),
+                _ => System.Text.Json.JsonSerializer.SerializeToNode(schema, DefaultSerializerOptions)
+            } ?? throw new ArgumentException("Failed to serialize schema object to JsonNode.", nameof(schema));
+
+            var resolvedNode = await _schemaResolverService.ResolveAsync(schemaNode, cancellationToken);
+            var effectiveNode = resolvedNode ?? schemaNode;
+            var schemaDetails = BuildSchemaDetailsFromNode(effectiveNode);
 
             // Basic schema validation
             var schemaValidationErrors = new List<ValidationError>();
@@ -1314,17 +1320,14 @@ public class JsonValidatorService : IJsonValidatorService
 
         try
         {
-            var schemaJson = schemaObject switch
+            return schemaObject switch
             {
-                string schemaString => schemaString,
-                System.Text.Json.Nodes.JsonNode schemaNode => schemaNode.ToJsonString(),
-                System.Text.Json.JsonDocument schemaDocument => schemaDocument.RootElement.GetRawText(),
-                System.Text.Json.JsonElement schemaElement => schemaElement.GetRawText(),
-                _ => System.Text.Json.JsonSerializer.Serialize(schemaObject, DefaultSerializerOptions)
+                string schemaString => TryReadSchemaStringField(System.Text.Json.Nodes.JsonNode.Parse(schemaString), fieldName),
+                System.Text.Json.Nodes.JsonNode schemaNode => TryReadSchemaStringField(schemaNode, fieldName),
+                System.Text.Json.JsonDocument schemaDocument => TryGetJsonElementValue(schemaDocument.RootElement, fieldName),
+                System.Text.Json.JsonElement schemaElement => TryGetJsonElementValue(schemaElement, fieldName),
+                _ => TryReadSchemaStringField(System.Text.Json.JsonSerializer.SerializeToNode(schemaObject, DefaultSerializerOptions), fieldName)
             };
-
-            var schemaNodeText = System.Text.Json.Nodes.JsonNode.Parse(schemaJson);
-            return TryReadSchemaStringField(schemaNodeText, fieldName);
         }
         catch (Exception ex)
         {
@@ -1339,6 +1342,17 @@ public class JsonValidatorService : IJsonValidatorService
 
             return null;
         }
+    }
+
+    private static string? TryGetJsonElementValue(System.Text.Json.JsonElement element, string fieldName)
+    {
+        if (element.ValueKind == System.Text.Json.JsonValueKind.Object &&
+            element.TryGetProperty(fieldName, out var property) &&
+            property.ValueKind == System.Text.Json.JsonValueKind.String)
+        {
+            return property.GetString();
+        }
+        return null;
     }
 
     /// <summary>
