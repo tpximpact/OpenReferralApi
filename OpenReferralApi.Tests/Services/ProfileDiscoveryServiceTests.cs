@@ -73,7 +73,7 @@ public class ProfileDiscoveryServiceTests
         using (Assert.EnterMultipleScope())
         {
             Assert.That(result.HsdsProfileVersion, Is.EqualTo("HSDS-UK-3.0"));
-            Assert.That(result.OpenApiSchemaContent, Is.Null);
+            Assert.That(result.OpenApiSchema, Is.Null);
         }
 
     }
@@ -92,7 +92,7 @@ public class ProfileDiscoveryServiceTests
         using (Assert.EnterMultipleScope())
         {
             Assert.That(result.HsdsProfileVersion, Is.EqualTo("HSDS-UK-3.0"));
-            Assert.That(result.OpenApiSchemaContent, Does.Contain("openapi"));
+            Assert.That(result.OpenApiSchema?.ToString(), Does.Contain("openapi"));
             Assert.That(result.OpenApiSchemaUrl, Is.EqualTo("https://api.example.com/openapi.json"));
         }
 
@@ -112,7 +112,7 @@ public class ProfileDiscoveryServiceTests
         using (Assert.EnterMultipleScope())
         {
             Assert.That(result.HsdsProfileVersion, Is.EqualTo("HSDS-UK-3.0"));
-            Assert.That(result.OpenApiSchemaContent, Is.Null);
+            Assert.That(result.OpenApiSchema, Is.Null);
         }
 
     }
@@ -133,7 +133,7 @@ public class ProfileDiscoveryServiceTests
         using (Assert.EnterMultipleScope())
         {
             Assert.That(result.HsdsProfileVersion, Is.EqualTo("HSDS-UK-3.0"));
-            Assert.That(result.HsdsProfileSchemaContent, Is.EqualTo(expectedProfileSchema));
+            Assert.That(result.HsdsProfileSchema?.ToString(), Is.EqualTo(System.Text.Json.Nodes.JsonNode.Parse(expectedProfileSchema)?.ToString()));
         }
 
     }
@@ -266,7 +266,7 @@ public class ProfileDiscoveryServiceTests
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(result.OpenApiSchemaContent, Does.Contain("openapi"));
+            Assert.That(result.OpenApiSchema?.ToString(), Does.Contain("openapi"));
             Assert.That(result.OpenApiSchemaUrl, Is.EqualTo("https://api.example.com/api/v2/openapi-custom.json"));
         }
     }
@@ -309,7 +309,7 @@ public class ProfileDiscoveryServiceTests
             null,
             "https://api.example.com");
 
-        Assert.That(result.OpenApiSchemaContent, Does.Contain("openapi"));
+        Assert.That(result.OpenApiSchema?.ToString(), Does.Contain("openapi"));
     }
 
     [Test]
@@ -372,8 +372,8 @@ public class ProfileDiscoveryServiceTests
             Assert.That(result, Is.Not.Null);
             Assert.That(result.HsdsProfileVersion, Is.EqualTo("HSDS-UK-3.0"));
             Assert.That(result.HsdsProfileSchemaUrl, Is.EqualTo("https://hsds.example.org/3.0/openapi.json"));
-            Assert.That(result.HsdsProfileSchemaContent, Is.EqualTo(CachedHsdsSchema));
-            Assert.That(result.OpenApiSchemaContent, Is.Null);
+            Assert.That(result.HsdsProfileSchema?.ToString(), Is.EqualTo(System.Text.Json.Nodes.JsonNode.Parse(CachedHsdsSchema)?.ToString()));
+            Assert.That(result.OpenApiSchema, Is.Null);
             Assert.That(result.HsdsProfileReason, Is.EqualTo("Explicit profile 'HSDS-UK-3.0' provided in request."));
         }
     }

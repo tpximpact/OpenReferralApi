@@ -27,9 +27,9 @@ public sealed class ProfileDiscoveryResult
 {
     public string? HsdsProfileReason { get; init; }
     public string? HsdsProfileSchemaUrl { get; init; }
-    public string? OpenApiSchemaContent { get; init; }
+    public JsonObject? OpenApiSchema { get; init; }
     public string? OpenApiSchemaUrl { get; init; }
-    public string? HsdsProfileSchemaContent { get; init; }
+    public JsonObject? HsdsProfileSchema { get; init; }
     public string? HsdsProfileVersion { get; init; }
     public bool UsedDefaultProfile { get; init; }
 }
@@ -80,7 +80,7 @@ public partial class ProfileDiscoveryService(
         var needsSchema = _openApiValidationOptions.OwnSchemaValidation != OwnSchemaValidationMode.None;
 
         string? discoveredVersion = null;
-        string? discoveredSchema = null;
+        JsonObject? discoveredSchema = null;
         string? discoveredSchemaUrl = null;
         string? discoveryReason = null;
         string? candidateOpenApiSpecContent = null;
@@ -132,14 +132,15 @@ public partial class ProfileDiscoveryService(
                     {
                         if (LooksLikeOpenApiSpec(content))
                         {
-                            discoveredSchema = content;
+                            var json = EnsureJson(content);
+                            discoveredSchema = json != null ? JsonNode.Parse(json) as JsonObject : null;
                             discoveredSchemaUrl = discoveryUrl;
                         }
                         else
                         {
                             // Attempt scraping for indirect schema (UI/Config)
-                            var (indirectContent, indirectUrl) = await TryFetchIndirectSchemaAsync(client, content, normalizedBaseUrl, authentication, cancellationToken);
-                            discoveredSchema = indirectContent;
+                            var (indirectSchema, indirectUrl) = await TryFetchIndirectSchemaAsync(client, content, normalizedBaseUrl, authentication, cancellationToken);
+                            discoveredSchema = indirectSchema;
                             discoveredSchemaUrl = indirectUrl;
 
                             if (discoveredVersion == null && discoveredSchema != null)
@@ -188,8 +189,7 @@ public partial class ProfileDiscoveryService(
         // Last resort before default profile fallback: infer profile version from OpenAPI spec content.
         if (string.IsNullOrWhiteSpace(discoveredVersion))
         {
-            var fallbackSpecContent = discoveredSchema ?? candidateOpenApiSpecContent;
-            var (versionFromOpenApiSpec, fromOpenapiField) = TryExtractProfileVersionFromOpenApiSpec(fallbackSpecContent);
+            var (versionFromOpenApiSpec, fromOpenapiField) = TryExtractProfileVersionFromOpenApiSpec(discoveredSchema, candidateOpenApiSpecContent);
             if (!string.IsNullOrWhiteSpace(versionFromOpenApiSpec))
             {
                 discoveredVersion = MapProfileVersion(versionFromOpenApiSpec);
@@ -256,8 +256,8 @@ public partial class ProfileDiscoveryService(
             }
         }
 
-        var hsdsProfileSchemaContent = await GetHsdsProfileSchemaContentAsync(discoveredVersion, cancellationToken);
-        if (string.IsNullOrWhiteSpace(hsdsProfileSchemaContent))
+        var hsdsProfileSchema = await GetHsdsProfileSchemaAsync(discoveredVersion, cancellationToken);
+        if (hsdsProfileSchema == null)
         {
             throw ProfileValidationErrors.ProfileSchemaNotCached(discoveredVersion);
         }
@@ -274,9 +274,9 @@ public partial class ProfileDiscoveryService(
         {
             HsdsProfileVersion = discoveredVersion,
             HsdsProfileSchemaUrl = hsdsProfileSchemaUrl,
-            OpenApiSchemaContent = discoveredSchema,
+            OpenApiSchema = discoveredSchema,
             OpenApiSchemaUrl = discoveredSchemaUrl,
-            HsdsProfileSchemaContent = hsdsProfileSchemaContent,
+            HsdsProfileSchema = hsdsProfileSchema,
             HsdsProfileReason = discoveryReason,
             UsedDefaultProfile = usedDefaultProfile
         };
@@ -294,14 +294,14 @@ public partial class ProfileDiscoveryService(
             throw ProfileValidationErrors.DiscoveredUnsupported(profileVersion);
         }
 
-        string? hsdsProfileSchemaContent = null;
+        JsonObject? hsdsProfileSchema = null;
         if (_remoteSchemaLoader != null)
         {
             var node = _remoteSchemaLoader.LoadRemoteSchema(hsdsProfileSchemaUrl);
-            hsdsProfileSchemaContent = node?.ToJsonString();
+            hsdsProfileSchema = node as JsonObject;
         }
 
-        if (string.IsNullOrWhiteSpace(hsdsProfileSchemaContent))
+        if (hsdsProfileSchema == null)
         {
             throw ProfileValidationErrors.ProfileSchemaNotCached(profileVersion);
         }
@@ -310,15 +310,15 @@ public partial class ProfileDiscoveryService(
         {
             HsdsProfileVersion = profileVersion,
             HsdsProfileSchemaUrl = hsdsProfileSchemaUrl,
-            OpenApiSchemaContent = null,
+            OpenApiSchema = null,
             OpenApiSchemaUrl = null,
-            HsdsProfileSchemaContent = hsdsProfileSchemaContent,
+            HsdsProfileSchema = hsdsProfileSchema,
             HsdsProfileReason = $"Explicit profile '{profileVersion}' provided in request.",
             UsedDefaultProfile = false
         };
     }
 
-    private async Task<string?> GetHsdsProfileSchemaContentAsync(string? hsdsProfileVersion, CancellationToken cancellationToken)
+    private async Task<JsonObject?> GetHsdsProfileSchemaAsync(string? hsdsProfileVersion, CancellationToken cancellationToken)
     {
         if (_remoteSchemaLoader == null)
         {
@@ -346,7 +346,7 @@ public partial class ProfileDiscoveryService(
                 return null;
             }
 
-            return node.ToJsonString();
+            return node as JsonObject;
         }
         catch (Exception ex)
         {
@@ -429,28 +429,58 @@ public partial class ProfileDiscoveryService(
         return Constants.OpenApiYamlRegex.IsMatch(content);
     }
 
+    private static string? TryGetPathString(JsonNode? root, string path)
+    {
+        if (root == null) return null;
+        var current = root;
+        foreach (var segment in path.Split('.'))
+        {
+            if (current is JsonObject obj && obj.TryGetPropertyValue(segment, out var next) && next != null)
+            {
+                current = next;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        if (current is JsonValue val)
+        {
+            return val.ToString();
+        }
+
+        return null;
+    }
+
     private static string? TryExtractPotentialHsdsProfileVersion(string specContent)
     {
-        var jsonContent = EnsureJson(specContent);
-        if (string.IsNullOrWhiteSpace(jsonContent))
+        try
+        {
+            var json = EnsureJson(specContent);
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            var node = JsonNode.Parse(json);
+            return TryExtractPotentialHsdsProfileVersion(node);
+        }
+        catch
         {
             return null;
         }
+    }
 
+    private static string? TryExtractPotentialHsdsProfileVersion(JsonNode? root)
+    {
+        if (root == null) return null;
         try
         {
-            using var document = JsonDocument.Parse(jsonContent);
-            var root = document.RootElement;
-
             foreach (var path in HSDS_VERSION_candidateTokens)
             {
-                var value = root.TryGetPathString(path);
+                var value = TryGetPathString(root, path);
                 if (!string.IsNullOrWhiteSpace(value))
                 {
                     return value;
                 }
             }
-
             return null;
         }
         catch
@@ -459,30 +489,50 @@ public partial class ProfileDiscoveryService(
         }
     }
 
-    private static (string? version, bool fromOpenapiField) TryExtractProfileVersionFromOpenApiSpec(string? openApiSpecContent)
+    private static (string? version, bool fromOpenapiField) TryExtractProfileVersionFromOpenApiSpec(JsonObject? specObj, string? rawContent)
     {
-        var jsonContent = EnsureJson(openApiSpecContent ?? string.Empty);
-        if (string.IsNullOrWhiteSpace(jsonContent))
+        if (specObj != null)
+        {
+            return TryExtractProfileVersionFromOpenApiSpec(specObj);
+        }
+
+        if (string.IsNullOrWhiteSpace(rawContent))
         {
             return (null, false);
         }
 
         try
         {
-            using var document = JsonDocument.Parse(jsonContent);
-            var root = document.RootElement;
+            var json = EnsureJson(rawContent);
+            if (json == null) return (null, false);
+            var parsed = JsonNode.Parse(json);
+            return TryExtractProfileVersionFromOpenApiSpec(parsed);
+        }
+        catch
+        {
+            return (null, false);
+        }
+    }
 
+    private static (string? version, bool fromOpenapiField) TryExtractProfileVersionFromOpenApiSpec(JsonNode? root)
+    {
+        if (root == null)
+        {
+            return (null, false);
+        }
 
+        try
+        {
             foreach (var tokenPath in OpenApiCandidateTokens)
             {
-                var tokenValue = root.TryGetPathString(tokenPath);
+                var tokenValue = TryGetPathString(root, tokenPath);
                 if (!string.IsNullOrWhiteSpace(tokenValue))
                 {
                     return (tokenValue, false);
                 }
             }
 
-            var openapiValue = root.TryGetPathString("openapi");
+            var openapiValue = TryGetPathString(root, "openapi");
             if (!string.IsNullOrWhiteSpace(openapiValue))
             {
                 var parts = openapiValue.Split('.');
@@ -504,7 +554,7 @@ public partial class ProfileDiscoveryService(
         return (null, false);
     }
 
-    private async Task<(string? Content, string? ResolvedUrl)> TryFetchIndirectSchemaAsync(
+    private async Task<(JsonObject? Schema, string? ResolvedUrl)> TryFetchIndirectSchemaAsync(
         HttpClient client,
         string content,
         string baseUrl,
@@ -517,7 +567,7 @@ public partial class ProfileDiscoveryService(
         {
             // Try the first URL found in the config
             var result = await TryFetchDiscoveredSpecContentAsync(client, configUrls[0], authentication, cancellationToken);
-            if (result.Content != null) return result;
+            if (result.Schema != null) return result;
         }
 
         // 2. Check if the content is HTML (Swagger UI / Redoc)
@@ -530,7 +580,7 @@ public partial class ProfileDiscoveryService(
         return (null, null);
     }
 
-    private async Task<(string? Content, string? ResolvedUrl)> TryFetchDiscoveredSpecContentAsync(
+    private async Task<(JsonObject? Schema, string? ResolvedUrl)> TryFetchDiscoveredSpecContentAsync(
         HttpClient client,
         string specUrl,
         DataSourceAuthentication? authentication,
@@ -553,7 +603,9 @@ public partial class ProfileDiscoveryService(
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
             if (LooksLikeOpenApiSpec(content))
             {
-                return (content, specUrl);
+                var json = EnsureJson(content);
+                var specObj = json != null ? JsonNode.Parse(json) as JsonObject : null;
+                return (specObj, specUrl);
             }
 
             // If the response is not JSON or an OpenAPI spec, parse the HTML and test if it is another specification such as Swagger UI

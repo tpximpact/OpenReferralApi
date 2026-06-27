@@ -290,8 +290,8 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
                 cancellationToken);
         }
 
-        var ownSchema = TryParseJsonObject(bootstrap.OpenApiSchemaContent);
-        var resolvedHsdsProfileSpec = TryParseJsonObject(bootstrap.HsdsProfileSchemaContent);
+        var ownSchema = bootstrap.OpenApiSchema;
+        var resolvedHsdsProfileSpec = bootstrap.HsdsProfileSchema;
 
         if (ownSchema != null && !string.IsNullOrWhiteSpace(bootstrap.OpenApiSchemaUrl))
         {

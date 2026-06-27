@@ -76,8 +76,8 @@ public class OpenApiValidationServiceTests
                     {
                         HsdsProfileVersion = profileVersion,
                         HsdsProfileSchemaUrl = schemaUrl,
-                        HsdsProfileSchemaContent = schemaUrl == null ? null : CreateHsdsProfileSpecWithRequestBody(),
-                        OpenApiSchemaContent = null,
+                        HsdsProfileSchema = schemaUrl == null ? null : System.Text.Json.Nodes.JsonNode.Parse(CreateHsdsProfileSpecWithRequestBody())!.AsObject(),
+                        OpenApiSchema = null,
                         HsdsProfileReason = schemaUrl == null
                             ? "No version or openapi_url found in '/' response"
                             : $"Standard version [user: {profileVersion}] discovered from profile context"
@@ -221,8 +221,8 @@ public class OpenApiValidationServiceTests
             {
                 HsdsProfileVersion = "HSDS-UK-3.0",
                 HsdsProfileReason = "Standard version [user: HSDS-UK-3.0] discovered from base URL",
-                OpenApiSchemaContent = CreateOpenApi30Spec(),
-                HsdsProfileSchemaContent = CreateOpenApi30Spec()
+                OpenApiSchema = System.Text.Json.Nodes.JsonNode.Parse(CreateOpenApi30Spec())!.AsObject(),
+                HsdsProfileSchema = System.Text.Json.Nodes.JsonNode.Parse(CreateOpenApi30Spec())!.AsObject()
             });
 
         var service = new OpenApiValidationService(
@@ -556,8 +556,8 @@ public class OpenApiValidationServiceTests
         {
             HsdsProfileVersion = "HSDS-UK-3.0",
             HsdsProfileSchemaUrl = "https://openreferraluk.org/specifications/3.0/openapi.json",
-            HsdsProfileSchemaContent = CreateOpenApi30Spec(),
-            OpenApiSchemaContent = null,
+            HsdsProfileSchema = System.Text.Json.Nodes.JsonNode.Parse(CreateOpenApi30Spec())!.AsObject(),
+            OpenApiSchema = null,
             HsdsProfileReason = "Explicit profile 'HSDS-UK-3.0' provided in request."
         };
 
@@ -1286,7 +1286,7 @@ public class OpenApiValidationServiceTests
             {
                 HsdsProfileVersion = "HSDS-UK-1.0",
                 HsdsProfileSchemaUrl = defaultProfileSpecUrl,
-                HsdsProfileSchemaContent = CreateHsdsProfileSpec(),
+                HsdsProfileSchema = System.Text.Json.Nodes.JsonNode.Parse(CreateHsdsProfileSpec())!.AsObject(),
                 HsdsProfileReason = "Using configured default HSDS profile version: HSDS-UK-1.0",
                 UsedDefaultProfile = true
             });
@@ -1372,7 +1372,7 @@ public class OpenApiValidationServiceTests
             {
                 HsdsProfileVersion = "HSDS-UK-1.0",
                 HsdsProfileSchemaUrl = defaultProfileSpecUrl,
-                HsdsProfileSchemaContent = CreateHsdsProfileSpec(),
+                HsdsProfileSchema = System.Text.Json.Nodes.JsonNode.Parse(CreateHsdsProfileSpec())!.AsObject(),
                 HsdsProfileReason = "Using configured default HSDS profile version: HSDS-UK-1.0",
                 UsedDefaultProfile = true
             });
@@ -1482,7 +1482,7 @@ _openApiSpecificationService,
             .Setup(s => s.DiscoverFromBaseUrlAsync(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DataSourceAuthentication?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ProfileDiscoveryResult
             {
-                OpenApiSchemaContent = discoveredSchemaContent
+                OpenApiSchema = System.Text.Json.Nodes.JsonNode.Parse(discoveredSchemaContent)!.AsObject()
             });
 
         var httpClient = TestHttpClientFactory.CreateClient(new MockHttpMessageHandler((httpRequest, ct) =>
@@ -1718,7 +1718,7 @@ _openApiSpecificationService,
             {
                 HsdsProfileVersion = "HSDS-UK-3.0",
                 HsdsProfileSchemaUrl = hsdsSpecUrl,
-                HsdsProfileSchemaContent = CreateHsdsProfileSpec(),
+                HsdsProfileSchema = System.Text.Json.Nodes.JsonNode.Parse(CreateHsdsProfileSpec())!.AsObject(),
                 HsdsProfileReason = "Warning: The HSDS schema version was incorrectly defined in the 'openapi' field. Detected HSDS version HSDS-UK-3.0 from this field as a fallback. Please use an 'x-hsds-version' field in your OpenAPI spec to declare the HSDS version.",
                 UsedDefaultProfile = false
             });
