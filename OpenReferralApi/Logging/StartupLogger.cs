@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace OpenReferralApi.Logging
 {
     internal static partial class StartupLogger
@@ -6,7 +8,7 @@ namespace OpenReferralApi.Logging
         // high-performance implementation for you at compile-time.
         [LoggerMessage(
             Level = LogLevel.Information, 
-            Message = "OpenApiValidation settings at startup: {Settings}")]
-        public static partial void LogSettings(ILogger logger, object settings);
+            Message = "OpenApiValidation settings at startup.")]
+        public static partial void LogSettings(ILogger logger, [LogProperties] OpenReferralApi.Core.Models.Configuration.OpenApiValidationServerOptions settings);
     }
 }

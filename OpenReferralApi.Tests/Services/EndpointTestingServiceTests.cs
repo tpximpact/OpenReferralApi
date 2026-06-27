@@ -15,11 +15,32 @@ public class EndpointTestingServiceTests
   private Mock<IHsdsComplianceService> _hsdsComplianceServiceMock = null!;
   private HttpClient _httpClient = null!;
   private EndpointTestingService _service = null!;
+  private static readonly System.Threading.ThreadLocal<List<string>> _loggedMessages = new(() => []);
 
   [SetUp]
   public void Setup()
   {
     _loggerMock = new Mock<ILogger<EndpointTestingService>>();
+    _loggerMock.Setup(l => l.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
+    _loggedMessages.Value!.Clear();
+    _loggerMock.Setup(l => l.Log(
+        It.IsAny<LogLevel>(),
+        It.IsAny<EventId>(),
+        It.IsAny<It.IsAnyType>(),
+        It.IsAny<Exception?>(),
+        It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
+        .Callback(new InvocationAction(invocation =>
+        {
+            var formatter = invocation.Arguments[4] as Delegate;
+            if (formatter != null)
+            {
+                var message = formatter.DynamicInvoke(invocation.Arguments[2], invocation.Arguments[3]) as string;
+                if (message != null)
+                {
+                    _loggedMessages.Value!.Add(message);
+                }
+            }
+        }));
     _jsonValidatorServiceMock = new Mock<IJsonValidatorService>();
     _hsdsComplianceServiceMock = new Mock<IHsdsComplianceService>();
 
@@ -673,12 +694,7 @@ public class EndpointTestingServiceTests
 
   private static bool HasInformationLogContaining<T>(Mock<ILogger<T>> loggerMock, string expectedText)
   {
-    return loggerMock.Invocations.Any(invocation =>
-      invocation.Method.Name == "Log"
-      && invocation.Arguments.Count >= 3
-      && invocation.Arguments[0] is LogLevel logLevel
-      && logLevel == LogLevel.Information
-      && invocation.Arguments[2]?.ToString()?.Contains(expectedText, StringComparison.Ordinal) == true);
+    return _loggedMessages.Value!.Any(m => m.Contains(expectedText, StringComparison.Ordinal));
   }
 
   private static JsonObject CreateRequiredEndpointSpec()

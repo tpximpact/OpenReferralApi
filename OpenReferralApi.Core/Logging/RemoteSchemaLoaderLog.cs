@@ -39,5 +39,11 @@ namespace OpenReferralApi.Core.Logging
 
         [LoggerMessage(EventId = 14010, Level = LogLevel.Warning, Message = "Encountered json-schema.org draft URL not present in configured known schema list: {SchemaUrl}")]
         public static partial void UnknownJsonSchemaDraftUrl(this ILogger logger, string schemaUrl);
+
+        [LoggerMessage(EventId = 14012, Level = LogLevel.Debug, Message = "Schema for {Url} was registered concurrently in SchemaRegistry.Global.")]
+        public static partial void SchemaRegisteredConcurrently(this ILogger logger, string url);
+
+        [LoggerMessage(EventId = 14013, Level = LogLevel.Error, Message = "Connection failure fetching remote schema synchronously from {Url}")]
+        public static partial void ConnectionFailureFetchingRemoteSchemaSynchronously(this ILogger logger, Exception exception, string url);
     }
 }

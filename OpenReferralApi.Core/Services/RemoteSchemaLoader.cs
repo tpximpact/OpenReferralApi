@@ -258,10 +258,7 @@ public class RemoteSchemaLoader : IRemoteSchemaLoader
             // Double check SchemaRegistry.Global right before compiling to avoid duplicate key exceptions
             if (Json.Schema.SchemaRegistry.Global.Get(schemaUri) != null)
             {
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug("Schema for {Url} was registered concurrently in SchemaRegistry.Global.", resolvedUrl);
-                }
+                _logger.SchemaRegisteredConcurrently(resolvedUrl);
                 return jsonNode.DeepClone();
             }
 
@@ -528,7 +525,7 @@ public class RemoteSchemaLoader : IRemoteSchemaLoader
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Connection failure fetching remote schema synchronously from {Url}", TextSanitizer.SanitizeUrlForLogging(resolvedUrl));
+                _logger.ConnectionFailureFetchingRemoteSchemaSynchronously(ex, TextSanitizer.SanitizeUrlForLogging(resolvedUrl));
                 return null;
             }
 
@@ -564,10 +561,7 @@ public class RemoteSchemaLoader : IRemoteSchemaLoader
             // Double check SchemaRegistry.Global right before compiling to avoid duplicate key exceptions
             if (Json.Schema.SchemaRegistry.Global.Get(schemaUri) != null)
             {
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug("Schema for {Url} was registered concurrently in SchemaRegistry.Global.", resolvedUrl);
-                }
+                _logger.SchemaRegisteredConcurrently(resolvedUrl);
                 return jsonNode.DeepClone();
             }
 
