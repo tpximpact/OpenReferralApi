@@ -28,17 +28,13 @@ public partial class HsdsComplianceService(
     [GeneratedRegex(@"Standard version \[user:\s*(?<version>[^\]]+)\]", RegexOptions.IgnoreCase)]
     private static partial Regex ProfileReasonVersionRegex();
 
-    [GeneratedRegex(@"/specifications/(?<version>[^/]+)/openapi\.json", RegexOptions.IgnoreCase)]
-    private static partial Regex SchemaUrlVersionRegex();
-
     private static readonly HashSet<string> SupportedHttpMethods = new(StringComparer.OrdinalIgnoreCase)
     {
         "get", "post", "put", "delete", "patch", "head", "options", "trace"
     };
 
-    // In-memory lookup table for known HSDS baseline schemas by profile version.
     private readonly IJsonValidatorService _jsonValidatorService = jsonValidatorService;
-    private readonly Dictionary<string, string> _profileSchemaByVersion = BuildProfileSchemaLookup(specificationOptions?.Value);
+    private readonly SpecificationOptions? _specificationOptions = specificationOptions?.Value;
     private readonly OpenApiValidationServerOptions? _openApiValidationOptions = openApiValidationOptions?.Value;
 
     public string? ExtractClaimedProfileVersion(string? profileReason, string? schemaUrl)
@@ -56,53 +52,14 @@ public partial class HsdsComplianceService(
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(schemaUrl))
-        {
-            var urlMatch = SchemaUrlVersionRegex().Match(schemaUrl);
-            if (urlMatch.Success)
-            {
-                var extracted = urlMatch.Groups["version"].Value.Trim();
-                if (!string.IsNullOrWhiteSpace(extracted))
-                {
-                    return extracted;
-                }
-            }
-        }
-
-        return null;
+        return SchemaVersionHelper.TryExtractProfileVersionFromSchemaUrl(schemaUrl);
     }
 
     public bool TryGetKnownHsdsSchemaUrl(string? profileVersion, out string schemaUrl)
     {
-        schemaUrl = string.Empty;
-        if (string.IsNullOrWhiteSpace(profileVersion))
-        {
-            return false;
-        }
-
-        // Tier 1: exact match on the raw profile version string (case-insensitive)
-        if (_profileSchemaByVersion.TryGetValue(profileVersion.Trim(), out var exactMatch))
-        {
-            schemaUrl = exactMatch;
-            return true;
-        }
-
-        // Tier 2: numeric major.minor fallback — find the first configured key whose numeric part matches
-        var requestedNumeric = ProfileVersionNormalizer.ExtractMajorMinor(profileVersion);
-        if (!string.IsNullOrWhiteSpace(requestedNumeric))
-        {
-            foreach (var entry in _profileSchemaByVersion)
-            {
-                var keyNumeric = ProfileVersionNormalizer.ExtractMajorMinor(entry.Key);
-                if (string.Equals(keyNumeric, requestedNumeric, StringComparison.OrdinalIgnoreCase))
-                {
-                    schemaUrl = entry.Value;
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        var result = SchemaVersionHelper.TryGetSchemaUrlForProfileVersion(profileVersion, _specificationOptions, out var resolvedUrl);
+        schemaUrl = resolvedUrl ?? string.Empty;
+        return result;
     }
 
     public List<ValidationError> CompareFeedSpecAgainstHsdsProfile(JsonNode feedSpec, JsonNode hsdsSpec)
@@ -316,42 +273,7 @@ public partial class HsdsComplianceService(
             string.Equals(e.Severity, "Error", StringComparison.OrdinalIgnoreCase));
     }
 
-    private static Dictionary<string, string> BuildProfileSchemaLookup(SpecificationOptions? options)
-    {
-        var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        if (options?.Urls != null)
-        {
-            MergeMappings(lookup, options.Urls);
-        }
-
-        return lookup;
-    }
-
-    private static void MergeMappings(Dictionary<string, string> destination, IReadOnlyDictionary<string, string>? source)
-    {
-        if (source == null)
-        {
-            return;
-        }
-
-        foreach (var pair in source)
-        {
-            var rawKey = pair.Key?.Trim();
-            if (string.IsNullOrWhiteSpace(rawKey) || string.IsNullOrWhiteSpace(pair.Value))
-            {
-                continue;
-            }
-
-            var schemaUrl = pair.Value.Trim();
-            if (!Uri.IsWellFormedUriString(schemaUrl, UriKind.Absolute))
-            {
-                continue;
-            }
-
-            destination[rawKey] = schemaUrl;
-        }
-    }
 
     private int ResolveMaxValidationErrorsPerResponse()
     {

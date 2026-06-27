@@ -1056,7 +1056,7 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
 
     private string? ResolveMetadataProfileIdentifier(string? claimedProfileVersion, string? schemaUrl)
     {
-        var configuredProfileFromSchemaUrl = TryResolveConfiguredProfileKeyFromSchemaUrl(schemaUrl);
+        var configuredProfileFromSchemaUrl = SchemaVersionHelper.TryResolveConfiguredProfileKeyFromSchemaUrl(schemaUrl, _specificationOptions);
         if (!string.IsNullOrWhiteSpace(configuredProfileFromSchemaUrl))
         {
             return configuredProfileFromSchemaUrl;
@@ -1070,8 +1070,9 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
                 return claimedProfileVersion;
             }
 
-            var configuredFromVersion = TryResolveConfiguredProfileKeyFromVersion(
-                ProfileVersionNormalizer.ExtractMajorMinor(claimedProfileVersion) ?? claimedProfileVersion);
+            var configuredFromVersion = SchemaVersionHelper.TryResolveConfiguredProfileKeyFromVersion(
+                ProfileVersionNormalizer.ExtractMajorMinor(claimedProfileVersion) ?? claimedProfileVersion,
+                _specificationOptions);
             if (!string.IsNullOrWhiteSpace(configuredFromVersion))
             {
                 return configuredFromVersion;
@@ -1081,51 +1082,6 @@ public class OpenApiValidationService : OpenApiValidationServiceBase, IOpenApiVa
         }
 
         return claimedProfileVersion;
-    }
-
-    private string? TryResolveConfiguredProfileKeyFromSchemaUrl(string? schemaUrl)
-    {
-        if (string.IsNullOrWhiteSpace(schemaUrl) || _specificationOptions.Urls.Count == 0)
-        {
-            return null;
-        }
-
-        if (!Uri.TryCreate(schemaUrl, UriKind.Absolute, out var requestedUri))
-        {
-            return null;
-        }
-
-        var requestedAbsoluteUrl = requestedUri.AbsoluteUri.TrimEnd('/');
-
-        foreach (var configuredEntry in _specificationOptions.Urls)
-        {
-            if (string.IsNullOrWhiteSpace(configuredEntry.Value)
-                || !Uri.TryCreate(configuredEntry.Value, UriKind.Absolute, out var configuredUri))
-            {
-                continue;
-            }
-
-            if (string.Equals(configuredUri.AbsoluteUri.TrimEnd('/'), requestedAbsoluteUrl, StringComparison.OrdinalIgnoreCase))
-            {
-                return configuredEntry.Key;
-            }
-        }
-
-        return null;
-    }
-
-    private string? TryResolveConfiguredProfileKeyFromVersion(string versionNumber)
-    {
-        if (string.IsNullOrWhiteSpace(versionNumber) || _specificationOptions.Urls.Count == 0)
-        {
-            return null;
-        }
-
-        return _specificationOptions.Urls.Keys
-            .FirstOrDefault(key => string.Equals(
-                ProfileVersionNormalizer.NormalizeVersionNumber(key),
-                versionNumber,
-                StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsSpecFetchOrResolveFailure(Exception ex)

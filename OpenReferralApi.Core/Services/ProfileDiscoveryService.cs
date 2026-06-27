@@ -358,26 +358,9 @@ public partial class ProfileDiscoveryService(
 
     private bool TryGetSchemaUrlForProfileVersion(string hsdsProfileVersion, out string schemaUrl)
     {
-        schemaUrl = string.Empty;
-
-        if (_specificationOptions.Urls.TryGetValue(hsdsProfileVersion, out var directUrl)
-            && !string.IsNullOrWhiteSpace(directUrl))
-        {
-            schemaUrl = directUrl;
-            return true;
-        }
-
-        foreach (var mapping in _specificationOptions.Urls)
-        {
-            if (string.Equals(mapping.Key, hsdsProfileVersion, StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(mapping.Value))
-            {
-                schemaUrl = mapping.Value;
-                return true;
-            }
-        }
-
-        return false;
+        var result = SchemaVersionHelper.TryGetSchemaUrlForProfileVersion(hsdsProfileVersion, _specificationOptions, out var resolvedUrl);
+        schemaUrl = resolvedUrl ?? string.Empty;
+        return result;
     }
 
 
@@ -892,25 +875,9 @@ public partial class ProfileDiscoveryService(
         };
     }
 
-    [GeneratedRegex(@"/specifications/(?<version>[^/]+)/openapi\.json", RegexOptions.IgnoreCase)]
-    private static partial Regex SchemaUrlVersionRegex();
-
     private static string? TryExtractProfileVersionFromSchemaUrl(string? schemaUrl)
     {
-        if (string.IsNullOrWhiteSpace(schemaUrl))
-        {
-            return null;
-        }
-
-        var match = SchemaUrlVersionRegex().Match(schemaUrl);
-
-        if (!match.Success)
-        {
-            return null;
-        }
-
-        var extracted = match.Groups["version"].Value.Trim();
-        return string.IsNullOrWhiteSpace(extracted) ? null : extracted;
+        return SchemaVersionHelper.TryExtractProfileVersionFromSchemaUrl(schemaUrl);
     }
 
     private string MapProfileVersion(string version)
