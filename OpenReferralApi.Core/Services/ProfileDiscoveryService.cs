@@ -186,33 +186,6 @@ public partial class ProfileDiscoveryService(
             }
         }
 
-        // Last resort before default profile fallback: infer profile version from OpenAPI spec content.
-        if (string.IsNullOrWhiteSpace(discoveredVersion))
-        {
-            var (versionFromOpenApiSpec, fromOpenapiField) = TryExtractProfileVersionFromOpenApiSpec(discoveredSchema, candidateOpenApiSpecContent);
-            if (!string.IsNullOrWhiteSpace(versionFromOpenApiSpec))
-            {
-                discoveredVersion = MapProfileVersion(versionFromOpenApiSpec);
-
-                if (fromOpenapiField)
-                {
-                    discoveryReason = versionFromOpenApiSpec == discoveredVersion
-                        ? $"Warning: The HSDS schema version was incorrectly defined in the 'openapi' field. " +
-                          $"Detected HSDS version {versionFromOpenApiSpec} from this field as a fallback. " +
-                          "Please use an 'x-hsds-version' field in your OpenAPI spec to declare the HSDS version."
-                        : $"Warning: The HSDS schema version was incorrectly defined in the 'openapi' field. " +
-                          $"Detected HSDS version {discoveredVersion} (mapped from {versionFromOpenApiSpec}) from this field as a fallback. " +
-                          "Please use an 'x-hsds-version' field in your OpenAPI spec to declare the HSDS version.";
-                }
-                else
-                {
-                    discoveryReason = versionFromOpenApiSpec == discoveredVersion
-                        ? $"Standard version [user: {discoveredVersion}] read from OpenAPI spec"
-                        : $"Standard version [user: {discoveredVersion}] (mapped from {versionFromOpenApiSpec}) read from OpenAPI spec";
-                }
-            }
-        }
-
         // if we get to here with no profile version, use the default if one is configured.
         if (string.IsNullOrWhiteSpace(discoveredVersion))
         {
