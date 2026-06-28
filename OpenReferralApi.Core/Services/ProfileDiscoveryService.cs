@@ -256,12 +256,7 @@ public partial class ProfileDiscoveryService(
             }
         }
 
-        var hsdsProfileSchema = await GetHsdsProfileSchemaAsync(discoveredVersion, cancellationToken);
-        if (hsdsProfileSchema == null)
-        {
-            throw ProfileValidationErrors.ProfileSchemaNotCached(discoveredVersion);
-        }
-
+        var hsdsProfileSchema = await GetHsdsProfileSchemaAsync(discoveredVersion, cancellationToken) ?? throw ProfileValidationErrors.ProfileSchemaNotCached(discoveredVersion);
         discoveryReason ??= "Discovery completed with available information.";
         discoveredVersion ??= "unknown version";  // should never be null/empty here due to fallback logic, but just in case
 

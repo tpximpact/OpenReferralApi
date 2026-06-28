@@ -87,6 +87,10 @@ internal static partial class SchemaVersionHelper
         }
 
         var normalizedInput = ProfileVersionNormalizer.NormalizeVersionNumber(versionNumber);
+        if (string.IsNullOrWhiteSpace(normalizedInput))
+        {
+            return null;
+        }
 
         return options.Urls.Keys
             .FirstOrDefault(key => string.Equals(
