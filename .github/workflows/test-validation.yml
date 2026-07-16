@@ -7,7 +7,7 @@ on:
 
 env:
   DOTNET_VERSION: "10.0.x"
-  ACTIONS_NODE_JS_FORCED_VERSION: "node20" # Or just ignore the warning via:
+  ACTIONS_NODE_JS_FORCED_VERSION: "node22" # Or just ignore the warning via:
   ACTIONS_STEP_DEBUG: false
 
 jobs:
@@ -28,10 +28,10 @@ jobs:
           - "https://directory.southampton.gov.uk/api"
 
     steps:
-    - uses: actions/checkout@v6.0.2
+    - uses: actions/checkout@v7.0.0
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v5.2.0
+      uses: actions/setup-dotnet@v6.0.0
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         cache: true
@@ -88,7 +88,7 @@ jobs:
         echo "url_slug=$CLEAN_NAME" >> $GITHUB_OUTPUT
     
     - name: Upload API log artifact
-      uses: actions/upload-artifact@v7.0.0
+      uses: actions/upload-artifact@v7.0.1
       if: always()
       with:
         name: api-log-${{ steps.slug.outputs.url_slug }}
