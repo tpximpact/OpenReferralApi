@@ -133,7 +133,7 @@ jobs:
           restore-keys: trivy-db-fs-${{ runner.os }}-
 
       - name: Trivy Filesystem Scan
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: "fs"
           format: "sarif"
@@ -211,7 +211,7 @@ jobs:
           restore-keys: trivy-db-${{ runner.os }}-
 
       - name: Trivy Image Scan
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: "my-app:local"
           format: "sarif"
