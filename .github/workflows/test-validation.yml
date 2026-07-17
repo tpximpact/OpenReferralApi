@@ -1,0 +1,99 @@
+name: Build and Validate API
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [feature/hsds-validation-flow]
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  ACTIONS_NODE_JS_FORCED_VERSION: "node22" # Or just ignore the warning via:
+  ACTIONS_STEP_DEBUG: false
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        base-url: 
+          - "https://bristol.openplace.directory/o/OpenReferralService/v3"
+          - "https://api.familyinfo.buckinghamshire.gov.uk/api/v1"
+          - "https://api.porism.com/ServiceDirectoryServiceCQC"
+          - "http://dorset.localplacedirectory.org.uk/aggregator"
+          - "https://lgaapi.connecttosupport.org"
+          - "https://northlincs.openplace.directory/o/OpenReferralService/v3"
+          - "https://opensessions.io/api/rpde/OpenReferralFeed"
+          - "https://shropshire.openplace.directory/o/OpenReferralService/v3"
+          - "https://directory.southampton.gov.uk/api"
+
+    steps:
+    - uses: actions/checkout@v7.0.0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6.0.0
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        cache: true
+        cache-dependency-path: "**/packages.lock.json"
+
+    - name: Restore dependencies
+      run: dotnet restore --use-lock-file
+
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Run API in background
+      # Redirect stdout and stderr to api.log
+      run: |
+        dotnet run --project OpenReferralApi/OpenReferralApi.csproj --configuration Release --no-launch-profile > api.log 2>&1 &
+      env:
+        ASPNETCORE_URLS: "http://localhost:6969"
+
+    - name: Wait for API to be ready
+      run: |
+        timeout 60s bash -c 'until curl -s localhost:6969 > /dev/null; do sleep 2; done'
+      shell: bash
+
+    - name: Run Validation Request
+      run: |
+        # Added -i for response headers/body and -L to follow any redirect
+        curl -i -L -X 'POST' \
+          'http://localhost:6969/openreferral/validate' \
+          -H 'accept: application/json' \
+          -H 'Content-Type: application/json' \
+          -d '{
+              "baseUrl": "${{ matrix.base-url }}",
+              "options": {
+                "timeoutSeconds": 30,
+                "maxConcurrentRequests": 5,
+                "reportAdditionalFields": false,
+                "includeResponseBody": false,
+                "includeTestResults": true
+            }
+          }' | tee response.http 2>&1 || true
+
+    - name: Output API Logs
+      # This runs even if the curl command fails
+      if: always()
+      run: |
+        echo "--- API LOGS ---"
+        cat api.log
+
+    - name: Sanitize Artifact Name
+      id: slug
+      run: |
+        # Replace all non-alphanumeric characters with a hyphen
+        CLEAN_NAME=$(echo "${{ matrix.base-url }}" | sed 's/[^a-zA-Z0-9]/-/g')
+        echo "url_slug=$CLEAN_NAME" >> $GITHUB_OUTPUT
+    
+    - name: Upload API log artifact
+      uses: actions/upload-artifact@v7.0.1
+      if: always()
+      with:
+        name: api-log-${{ steps.slug.outputs.url_slug }}
+        path: |
+          api.log
+          response.http
+        if-no-files-found: warn 
+        retention-days: 5

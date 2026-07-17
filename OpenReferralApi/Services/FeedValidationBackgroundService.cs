@@ -1,178 +1,147 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Options;
-using OpenReferralApi.Core.Models;
+using OpenReferralApi.Core.Logging;
 using OpenReferralApi.Core.Services;
+using OpenReferralApi.Logging;
 
 namespace OpenReferralApi.Services;
 
 /// <summary>
 /// Background service that validates registered feeds every 24 hours at midnight
 /// </summary>
-public class FeedValidationBackgroundService : BackgroundService
+internal sealed class FeedValidationBackgroundService(
+    IServiceProvider serviceProvider,
+    IOptions<FeedValidationOptions> options,
+    ILogger<FeedValidationBackgroundService> logger) : BackgroundService
 {
-  private readonly IServiceProvider _serviceProvider;
-  private readonly ILogger<FeedValidationBackgroundService> _logger;
-  private readonly TimeSpan _validationInterval;
-  private readonly bool _runAtMidnight;
-  private readonly bool _enabled;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly ILogger<FeedValidationBackgroundService> _logger = logger;
+    private readonly TimeSpan _validationInterval = TimeSpan.FromHours(options.Value.IntervalHours);
+    private readonly bool _runAtMidnight = options.Value.RunAtMidnight;
+    private readonly bool _enabled = options.Value.Enabled;
 
-  public FeedValidationBackgroundService(
-      IServiceProvider serviceProvider,
-      IOptions<FeedValidationOptions> options,
-      ILogger<FeedValidationBackgroundService> logger)
-  {
-    _serviceProvider = serviceProvider;
-    _logger = logger;
-
-    // Read configuration from options
-    _enabled = options.Value.Enabled;
-    _validationInterval = TimeSpan.FromHours(options.Value.IntervalHours);
-    _runAtMidnight = options.Value.RunAtMidnight;
-  }
-
-  protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-  {
-    if (!_enabled)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-      _logger.LogInformation(
-          "Feed Validation Background Service is disabled. Set FeedValidation:Enabled=true to enable.");
-      return;
+        if (!_enabled)
+        {
+            _logger.ServiceDisabled();
+            return;
+        }
+
+        _logger.ServiceStarted(_validationInterval.TotalHours, _runAtMidnight);
+
+        // Wait until first scheduled run
+        await WaitForNextScheduledRunAsync(stoppingToken).ConfigureAwait(false);
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                _logger.ScheduledValidationStarted(DateTime.UtcNow);
+                await ValidateAllFeedsAsync(stoppingToken).ConfigureAwait(false);
+                stoppingToken.ThrowIfCancellationRequested();
+                _logger.ScheduledValidationCompleted(DateTime.UtcNow);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.ServiceStopping();
+                throw;
+            }
+            // Remove catch-all Exception handler to comply with analyzer
+            // If you want to log unexpected exceptions, consider rethrowing after logging
+
+            if (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            // Wait for next scheduled run
+            await WaitForNextScheduledRunAsync(stoppingToken).ConfigureAwait(false);
+        }
     }
 
-    _logger.LogInformation(
-        "Feed Validation Background Service started. Interval: {Interval} hours, RunAtMidnight: {RunAtMidnight}",
-        _validationInterval.TotalHours, _runAtMidnight);
-
-    // Wait until first scheduled run
-    await WaitForNextScheduledRunAsync(stoppingToken);
-
-    while (!stoppingToken.IsCancellationRequested)
+    private async Task WaitForNextScheduledRunAsync(CancellationToken cancellationToken)
     {
-      try
-      {
-        _logger.LogInformation("Starting scheduled feed validation run at {Time}", DateTime.UtcNow);
-        await ValidateAllFeedsAsync(stoppingToken);
-        _logger.LogInformation("Completed scheduled feed validation run at {Time}", DateTime.UtcNow);
-      }
-      catch (Exception ex)
-      {
-        _logger.LogError(ex, "Error during scheduled feed validation");
-      }
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
 
-      // Wait for next scheduled run
-      await WaitForNextScheduledRunAsync(stoppingToken);
-    }
-  }
+        TimeSpan delay;
 
-  private async Task WaitForNextScheduledRunAsync(CancellationToken cancellationToken)
-  {
-    TimeSpan delay;
+        if (_runAtMidnight)
+        {
+            // Calculate time until next midnight UTC
+            var now = DateTime.UtcNow;
+            var nextMidnight = now.Date.AddDays(1);
+            delay = nextMidnight - now;
 
-    if (_runAtMidnight)
-    {
-      // Calculate time until next midnight UTC
-      var now = DateTime.UtcNow;
-      var nextMidnight = now.Date.AddDays(1);
-      delay = nextMidnight - now;
+            _logger.NextValidationScheduledForMidnight(nextMidnight, delay.TotalHours);
+        }
+        else
+        {
+            // Use fixed interval
+            delay = _validationInterval;
+            _logger.NextValidationScheduled(delay.TotalHours);
+        }
 
-      _logger.LogInformation(
-          "Next validation scheduled for {NextRun} (in {Hours:F1} hours)",
-          nextMidnight, delay.TotalHours);
-    }
-    else
-    {
-      // Use fixed interval
-      delay = _validationInterval;
-      _logger.LogInformation(
-          "Next validation scheduled in {Hours:F1} hours",
-          delay.TotalHours);
-    }
-
-    try
-    {
-      await Task.Delay(delay, cancellationToken);
-    }
-    catch (TaskCanceledException)
-    {
-      _logger.LogInformation("Feed validation service is stopping");
-    }
-  }
-
-  private async Task ValidateAllFeedsAsync(CancellationToken cancellationToken)
-  {
-    var stopwatch = Stopwatch.StartNew();
-
-    using var scope = _serviceProvider.CreateScope();
-    var feedValidationService = scope.ServiceProvider.GetRequiredService<IFeedValidationService>();
-
-    try
-    {
-      // Get all registered feeds
-      var feeds = await feedValidationService.GetAllFeedsAsync(cancellationToken);
-
-      _logger.LogInformation("Found {FeedCount} registered feeds to validate", feeds.Count);
-
-      if (feeds.Count == 0)
-      {
-        _logger.LogWarning("No feeds found in database");
-        return;
-      }
-
-      // Use SemaphoreSlim to limit concurrent validations and prevent overwhelming the dyno
-      var maxConcurrency = 5; // Process 5 feeds at a time to maintain web server responsiveness
-      using var semaphore = new SemaphoreSlim(maxConcurrency);
-      
-      var tasks = feeds.Select(async feed =>
-      {
-        await semaphore.WaitAsync(cancellationToken);
         try
         {
-          var result = await feedValidationService.ValidateSingleFeedAsync(feed, cancellationToken);
-
-          await feedValidationService.UpdateFeedStatusAsync(
-                    feedId: result.FeedId,
-                    isUp: result.IsUp,
-                    isValid: result.IsValid,
-                    error: result.ErrorMessage,
-                    responseTimeMs: result.ResponseTimeMs,
-                    validationErrorCount: result.ValidationErrorCount,
-                    cancellationToken: cancellationToken);
-
-          return result;
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (TaskCanceledException)
         {
-          _logger.LogError(ex, "Failed to validate feed {FeedId}", feed.Id);
-          return null;
+            _logger.ServiceStopping();
         }
-        finally
-        {
-          semaphore.Release();
-        }
-      });
-
-      var results = await Task.WhenAll(tasks);
-
-      // Log summary
-      var successCount = results.Count(r => r?.IsUp == true);
-      var validCount = results.Count(r => r?.IsValid == true);
-      var failedCount = results.Count(r => r?.IsUp == false);
-
-      stopwatch.Stop();
-
-      _logger.LogInformation(
-          "Feed validation summary: Total={Total}, Up={Up}, Valid={Valid}, Down={Down}, Duration={Duration}s",
-          feeds.Count, successCount, validCount, failedCount, stopwatch.Elapsed.TotalSeconds);
     }
-    catch (Exception ex)
+
+    private async Task ValidateAllFeedsAsync(CancellationToken cancellationToken)
     {
-      _logger.LogError(ex, "Error validating feeds");
-    }
-  }
+        cancellationToken.ThrowIfCancellationRequested();
 
-  public override async Task StopAsync(CancellationToken cancellationToken)
-  {
-    _logger.LogInformation("Feed Validation Background Service is stopping");
-    await base.StopAsync(cancellationToken);
-  }
+        var stopwatch = Stopwatch.StartNew();
+
+        using var scope = _serviceProvider.CreateScope();
+        var feedValidationService = scope.ServiceProvider.GetRequiredService<IFeedValidationService>();
+
+        try
+        {
+            // Get all registered feeds
+            var feeds = await feedValidationService.GetAllFeedsAsync(cancellationToken).ConfigureAwait(false);
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            _logger.FoundFeedsToValidate(feeds.Count);
+
+            if (feeds.Count == 0)
+            {
+                _logger.NoFeedsFound();
+                return;
+            }
+            var results = await feedValidationService.ValidateAndUpdateFeedsAsync(feeds, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Log summary
+            var successCount = results.Count(r => r.IsUp);
+            var validCount = results.Count(r => r.IsValid);
+            var failedCount = results.Count(r => !r.IsUp);
+
+            stopwatch.Stop();
+
+            _logger.FeedValidationSummary(feeds.Count, successCount, validCount, failedCount, stopwatch.Elapsed.TotalSeconds);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.ServiceStopping();
+            throw;
+        }
+        // Remove catch-all Exception handler to comply with analyzer
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.BackgroundServiceStopping();
+        await base.StopAsync(cancellationToken).ConfigureAwait(false);
+    }
 }

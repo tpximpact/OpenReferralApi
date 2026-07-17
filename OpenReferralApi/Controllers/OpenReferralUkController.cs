@@ -1,31 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using OpenReferralApi.Core.Models;
+using OpenReferralApi.Core.Helpers;
 using OpenReferralApi.Core.Services;
+using OpenReferralApi.Logging;
 
 namespace OpenReferralApi.Controllers;
 
 [ApiController]
+[ApiExplorerSettings(IgnoreApi = true)]
 [Route("openreferraluk")]
 [Route("api/openapi")] // Legacy route for backward compatibility, will be removed in future versions (once openreferraluk website is updated to point to new route)
 [Produces("application/json")]
 [EnableRateLimiting("fixed")]
-[ApiExplorerSettings(GroupName = "v1")]
-public class OpenReferralUkController : BaseOpenApiController
+internal sealed class OpenReferralUkController(
+    IOpenApiValidationService openApiValidationService,
+    ILogger<OpenReferralUkController> logger,
+    IOpenReferralUKValidationResponseMapper mapper) : BaseOpenApiController
 {
-    private readonly IOpenApiValidationService _openApiValidationService;
-    private readonly ILogger<OpenReferralUkController> _logger;
-    private readonly IOpenReferralUKValidationResponseMapper _mapper;
-
-    public OpenReferralUkController(
-        IOpenApiValidationService openApiValidationService,
-        ILogger<OpenReferralUkController> logger,
-        IOpenReferralUKValidationResponseMapper mapper)
-    {
-        _openApiValidationService = openApiValidationService;
-        _logger = logger;
-        _mapper = mapper;
-    }
+    private readonly IOpenApiValidationService _openApiValidationService = openApiValidationService;
+    private readonly ILogger<OpenReferralUkController> _logger = logger;
+    private readonly IOpenReferralUKValidationResponseMapper _mapper = mapper;
 
     /// <summary>
     /// Validates an OpenAPI specification and tests all defined endpoints, returning Open Referral UK formatted results
@@ -40,15 +34,17 @@ public class OpenReferralUkController : BaseOpenApiController
     [HttpPost("validate")]
     [ProducesResponseType(typeof(OpenReferralUKValidationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OpenReferralUKValidationResponse>> ValidateAsync(
         [FromBody] OpenApiValidationRequest request,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation(
-            "Received OpenAPI validation request (Open Referral UK format) for BaseUrl: {BaseUrl}",
-            SchemaResolverService.SanitizeUrlForLogging(request.BaseUrl ?? string.Empty));
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            var sanitizedBaseUrl = TextSanitizer.SanitizeUrlForLogging(request.BaseUrl ?? string.Empty);
+            OpenReferralUkControllerLog.ReceivedValidationRequest(_logger, sanitizedBaseUrl);
+        }
 
         var validationError = ValidateRequestAndReturnErrorIfInvalid(request);
         if (validationError != null)
@@ -56,11 +52,13 @@ public class OpenReferralUkController : BaseOpenApiController
             return validationError;
         }
 
-        var result = await _openApiValidationService.ValidateOpenApiSpecificationAsync(request, cancellationToken);
-        
-        _logger.LogInformation(
-            "Validation completed (Open Referral UK format) for BaseUrl: {BaseUrl}",
-            SchemaResolverService.SanitizeUrlForLogging(request.BaseUrl ?? string.Empty));
+        var result = await _openApiValidationService.ValidateOpenApiSpecificationAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            var sanitizedBaseUrl = TextSanitizer.SanitizeUrlForLogging(request.BaseUrl ?? string.Empty);
+            OpenReferralUkControllerLog.ValidationCompleted(_logger, sanitizedBaseUrl);
+        }
 
         var mappedResult = _mapper.MapToOpenReferralUKValidationResponse(result);
         return Ok(mappedResult);

@@ -13,29 +13,36 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="2.1.0" />
         <PackageReference Include="AspNetCore.HealthChecks.MongoDb" Version="9.0.0" />
         <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
         <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="9.0.0" />
         <PackageReference Include="FluentResults" Version="4.0.0" />
         <PackageReference Include="GitHubJwt" Version="0.0.6" />
         <PackageReference Include="JsonSchema.Net" Version="9.2.2" />
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
-        <PackageReference Include="MongoDB.Driver" Version="3.7.0" />
-        <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
+        <PackageReference Include="JsonSchema.Net.OpenApi" Version="5.0.1" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.8.0" />
+        <PackageReference Include="MongoDB.Driver" Version="3.10.0" />
         <PackageReference Include="Octokit" Version="14.0.0" />
-        <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.16.0" />
-        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
-        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
+        <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.17.0" />
+        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
+        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
         <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.16.0" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.2" />
         <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+        <PackageReference Include="SharpCompress" Version="1.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\OpenReferralApi.Core\OpenReferralApi.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="..\OpenReferralApi.Tests\OpenReferralApi.Tests.csproj" />
     </ItemGroup>
 
 </Project>

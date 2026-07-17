@@ -1,28 +1,28 @@
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
-using OpenReferralApi.Core.Models;
+using OpenReferralApi.Core.Helpers;
+using OpenReferralApi.Core.Logging;
 
 namespace OpenReferralApi.Core.Services;
 
 /// <summary>
-/// Internal helper class for resolving JSON Schema $ref references.
+/// Helper class for resolving individual JSON Schema $ref references on-the-fly.
 /// Handles both external and internal reference resolution with circular reference detection.
+/// Used during custom schema traversal (e.g. additional fields validation).
 /// </summary>
-internal class ReferenceResolver
+public class ReferenceResolver(
+    ILogger logger,
+    IRemoteSchemaLoader remoteSchemaLoader)
 {
-    private readonly ILogger _logger;
-    private readonly RemoteSchemaLoader _remoteSchemaLoader;
-    private readonly Dictionary<string, JsonNode?> _refCache = new();
+    private const string CircularReferenceErrorCode = "CIRCULAR_SCHEMA_REFERENCE";
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IRemoteSchemaLoader _remoteSchemaLoader = remoteSchemaLoader ?? throw new ArgumentNullException(nameof(remoteSchemaLoader));
+    private readonly Dictionary<string, JsonNode?> _refCache = [];
+    private readonly List<SchemaResolutionIssue> _resolutionIssues = [];
     private JsonNode? _rootDocument;
     private string? _baseUri;
 
-    public ReferenceResolver(
-        ILogger logger,
-        RemoteSchemaLoader remoteSchemaLoader)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _remoteSchemaLoader = remoteSchemaLoader ?? throw new ArgumentNullException(nameof(remoteSchemaLoader));
-    }
+    public IReadOnlyList<SchemaResolutionIssue> ResolutionIssues => _resolutionIssues;
 
     /// <summary>
     /// Initializes the resolver for a new resolution session.
@@ -30,327 +30,173 @@ internal class ReferenceResolver
     public void Initialize(JsonNode? rootDocument, string? baseUri)
     {
         _refCache.Clear();
+        _resolutionIssues.Clear();
         _rootDocument = rootDocument;
         _baseUri = baseUri;
     }
 
     /// <summary>
-    /// Resolves all $ref references in the provided JSON node recursively.
+    /// Resolves a reference string (internal pointer, anchor, or external URL) on-the-fly to its corresponding JsonNode.
     /// </summary>
-    public async Task<JsonNode?> ResolveAllRefsAsync(JsonNode? obj, HashSet<string> visitedRefs)
+    public async Task<JsonNode?> ResolveNodeRefAsync(string refString, JsonNode? rootDocument = null, HashSet<string>? visited = null)
     {
-        if (obj == null)
+        visited ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        rootDocument ??= _rootDocument;
+
+        if (string.IsNullOrWhiteSpace(refString))
         {
             return null;
         }
 
-        if (obj is JsonValue)
+        // Check for cyclic reference recursion
+        if (visited.Contains(refString))
         {
-            return obj.DeepClone();
-        }
-
-        if (obj is JsonArray jsonArray)
-        {
-            var resultArray = new JsonArray();
-            foreach (var item in jsonArray)
+            _logger.CyclicReferenceDetectedDuringLookup(refString);
+            _resolutionIssues.Add(new SchemaResolutionIssue
             {
-                var resolved = await ResolveAllRefsAsync(item, visitedRefs);
-                resultArray.Add(resolved);
-            }
-            return resultArray;
+                ErrorCode = CircularReferenceErrorCode,
+                Message = "Circular schema reference detected during dynamic traversal.",
+                Reference = refString
+            });
+            return null;
         }
+        visited.Add(refString);
 
-        if (obj is JsonObject jsonObject)
+        try
         {
-            // If this object has a $ref, resolve it
-            if (jsonObject.TryGetPropertyValue("$ref", out var refNode) &&
-                refNode is JsonValue refValue)
+            if (IsInternalRef(refString))
             {
-                var refString = refValue.GetValue<string>();
-                JsonNode? resolved;
-
-                if (IsExternalSchemaRef(refString))
-                {
-                    // Resolve external URL reference
-                    resolved = await ResolveRefAsync(refString, visitedRefs);
-                }
-                else if (IsInternalRef(refString))
-                {
-                    // Resolve internal JSON pointer reference
-                    resolved = await ResolveInternalRefAsync(refString, visitedRefs);
-                    
-                    // If internal reference resolution failed (returned null), keep the original $ref
-                    // This prevents null values from being inserted into schema structures like allOf arrays
-                    // where Newtonsoft.Json.Schema cannot handle them
-                    if (resolved == null)
-                    {
-                        _logger.LogDebug("Could not resolve internal reference {Ref}, keeping as-is", refString);
-                        return obj.DeepClone();
-                    }
-                }
-                else if (IsLocalSchemaRef(refString))
-                {
-                    // Resolve local file or relative path reference
-                    resolved = await ResolveRefAsync(refString, visitedRefs);
-                }
-                else
-                {
-                    // Keep the reference as-is if we can't identify it
-                    return obj.DeepClone();
-                }
-
-                // Merge other properties if they exist (besides $ref)
-                var otherProps = jsonObject.Where(kvp => kvp.Key != "$ref").ToList();
-
-                if (otherProps.Any() && resolved is JsonObject resolvedObject)
-                {
-                    var merged = new JsonObject();
-
-                    // Add resolved properties first
-                    foreach (var kvp in resolvedObject)
-                    {
-                        merged[kvp.Key] = await ResolveAllRefsAsync(kvp.Value, visitedRefs);
-                    }
-
-                    // Add/override with other properties
-                    foreach (var kvp in otherProps)
-                    {
-                        merged[kvp.Key] = await ResolveAllRefsAsync(kvp.Value, visitedRefs);
-                    }
-
-                    return merged;
-                }
-
-                return resolved;
+                return await ResolveInternalRefNodeAsync(refString, rootDocument, visited);
             }
 
-            // Otherwise, recursively resolve all properties
-            var result = new JsonObject();
-            foreach (var kvp in jsonObject)
+            if (IsExternalSchemaRef(refString) || IsLocalSchemaRef(refString))
             {
-                result[kvp.Key] = await ResolveAllRefsAsync(kvp.Value, visitedRefs);
+                var parts = refString.Split('#');
+                var schemaUrl = parts[0];
+                var fragment = parts.Length > 1 ? $"#{parts[1]}" : string.Empty;
+
+                var schemaLocation = ResolveSchemaLocation(schemaUrl);
+                var schema = await LoadSchemaAsync(schemaLocation);
+
+                if (schema == null)
+                {
+                    return null;
+                }
+
+                if (!string.IsNullOrEmpty(fragment))
+                {
+                    return await ResolveInternalRefNodeAsync(fragment, schema, visited);
+                }
+
+                // If no fragment, check if the root itself is a reference
+                if (schema is JsonObject obj && obj.TryGetPropertyValue("$ref", out var nestedRef) && nestedRef is JsonValue nv)
+                {
+                    var nestedRefStr = nv.GetValue<string>();
+                    return await ResolveNodeRefAsync(nestedRefStr, schema, visited);
+                }
+
+                return schema;
             }
 
-            // Flatten resolved allOf properties to make composite fields discoverable.
-            MergeAllOfIntoObject(result);
-
-            return result;
+            return null;
         }
-
-        return obj;
+        finally
+        {
+            visited.Remove(refString);
+        }
     }
 
-    /// <summary>
-    /// Resolves an internal JSON pointer reference (e.g., #/definitions/Person).
-    /// </summary>
-    private async Task<JsonNode?> ResolveInternalRefAsync(string refPointer, HashSet<string> visitedRefs)
+    private async Task<JsonNode?> ResolveInternalRefNodeAsync(string refPointer, JsonNode? doc, HashSet<string> visited)
     {
-        if (_rootDocument == null)
+        if (doc == null)
         {
-            _logger.LogWarning("Cannot resolve internal reference without root document: {Ref}", refPointer);
             return null;
         }
 
         if (refPointer == "#")
         {
-            return await ResolveAllRefsAsync(_rootDocument, visitedRefs);
+            return doc;
         }
 
-        // Check for circular references
-        if (visitedRefs.Contains(refPointer))
+        if (refPointer.StartsWith("#/", StringComparison.Ordinal))
         {
-            _logger.LogDebug("Circular reference detected: {Ref}", refPointer);
-            return new JsonObject { ["$ref"] = refPointer };
-        }
+            var pointer = refPointer.TrimStart('#', '/');
+            var parts = pointer.Split('/');
 
-        visitedRefs.Add(refPointer);
-
-        // Check cache first
-        if (_refCache.TryGetValue(refPointer, out var cached))
-        {
-            return cached?.DeepClone();
-        }
-
-        try
-        {
-            JsonNode? current;
-
-            // JSON Pointer (RFC 6901)
-            if (refPointer.StartsWith("#/", StringComparison.Ordinal))
+            JsonNode? current = doc;
+            foreach (var part in parts)
             {
-                var pointer = refPointer.TrimStart('#', '/');
-                var parts = pointer.Split('/');
-
-                current = _rootDocument;
-                foreach (var part in parts)
+                if (string.IsNullOrEmpty(part))
                 {
-                    if (string.IsNullOrEmpty(part))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    var unescapedPart = UnescapeJsonPointer(part);
+                var unescapedPart = UnescapeJsonPointer(part);
 
-                    if (current is JsonObject jsonObj)
+                if (current is JsonObject jsonObj)
+                {
+                    if (!jsonObj.TryGetPropertyValue(unescapedPart, out current) || current == null)
                     {
-                        if (!jsonObj.TryGetPropertyValue(unescapedPart, out current) || current == null)
-                        {
-                            _logger.LogWarning("Failed to resolve internal reference path: {Ref} at part: {Part}", refPointer, unescapedPart);
-                            return null;
-                        }
-                    }
-                    else if (current is JsonArray jsonArr)
-                    {
-                        if (int.TryParse(unescapedPart, out var index) && index >= 0 && index < jsonArr.Count)
-                        {
-                            current = jsonArr[index];
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Invalid array index in reference: {Ref} at part: {Part}", refPointer, unescapedPart);
-                            return null;
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Cannot navigate through non-object/non-array in reference: {Ref}", refPointer);
                         return null;
                     }
                 }
-            }
-            else
-            {
-                // Anchor fragment (e.g. #meta). Supports $anchor and $dynamicAnchor.
-                var anchorName = refPointer.TrimStart('#');
-                if (string.IsNullOrWhiteSpace(anchorName))
+                else if (current is JsonArray jsonArr)
+                {
+                    if (int.TryParse(unescapedPart, out var index) && index >= 0 && index < jsonArr.Count)
+                    {
+                        current = jsonArr[index];
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+                else
                 {
                     return null;
                 }
-
-                current = FindAnchorNode(_rootDocument, anchorName);
-                if (current == null)
-                {
-                    _logger.LogWarning("Failed to resolve internal anchor reference: {Ref}", refPointer);
-                    return null;
-                }
             }
 
-            // Recursively resolve the referenced schema
-            var resolved = await ResolveAllRefsAsync(current, visitedRefs);
-
-            // Cache the resolved value
-            _refCache[refPointer] = resolved;
-
-            return resolved?.DeepClone();
-        }
-        finally
-        {
-            visitedRefs.Remove(refPointer);
-        }
-    }
-
-    /// <summary>
-    /// Resolves an external URL reference (e.g., https://example.com/schema.json#/definitions/Person).
-    /// </summary>
-    private async Task<JsonNode?> ResolveRefAsync(string refUrl, HashSet<string> visitedRefs)
-    {
-        // Split URL and fragment
-        var parts = refUrl.Split('#');
-        var schemaUrl = parts[0];
-        var fragment = parts.Length > 1 ? $"#{parts[1]}" : string.Empty;
-
-        var schemaLocation = ResolveSchemaLocation(schemaUrl);
-        var resolvedRefKey = string.IsNullOrEmpty(fragment)
-            ? schemaLocation
-            : $"{schemaLocation}{fragment}";
-
-        // Check for circular references
-        if (visitedRefs.Contains(resolvedRefKey))
-        {
-            _logger.LogDebug("Circular reference detected: {Ref}", SchemaResolverService.SanitizeStringForLogging(resolvedRefKey));
-            return new JsonObject { ["$ref"] = refUrl };
-        }
-
-        visitedRefs.Add(resolvedRefKey);
-
-        try
-        {
-            // Check cache first
-            if (_refCache.TryGetValue(resolvedRefKey, out var cached))
+            // If the resolved node itself has a $ref, resolve that nested reference
+            if (current is JsonObject resolvedObj && resolvedObj.TryGetPropertyValue("$ref", out var nestedRef) && nestedRef is JsonValue nv)
             {
-                return cached?.DeepClone();
+                var nestedRefStr = nv.GetValue<string>();
+                return await ResolveNodeRefAsync(nestedRefStr, doc, visited);
             }
 
-            var schema = await LoadSchemaAsync(schemaLocation);
-
-            if (schema == null)
+            return current;
+        }
+        else
+        {
+            // Anchor fragment (e.g. #meta). Supports $anchor and $dynamicAnchor.
+            var anchorName = refPointer.TrimStart('#');
+            if (string.IsNullOrWhiteSpace(anchorName))
             {
-                _logger.LogWarning("Failed to load schema: {Location}", SchemaResolverService.SanitizeStringForLogging(schemaLocation));
                 return null;
             }
 
-            JsonNode? resolved;
-
-            // If there's a fragment, resolve it within the loaded schema
-            if (!string.IsNullOrEmpty(fragment))
+            var current = FindAnchorNode(doc, anchorName);
+            if (current == null)
             {
-                var previousRoot = _rootDocument;
-                var previousBaseUri = _baseUri;
-
-                try
-                {
-                    _rootDocument = schema;
-                    _baseUri = schemaLocation;
-                    resolved = await ResolveInternalRefAsync(fragment, visitedRefs);
-                }
-                finally
-                {
-                    _rootDocument = previousRoot;
-                    _baseUri = previousBaseUri;
-                }
-            }
-            else
-            {
-                // Recursively resolve references within the loaded schema
-                var previousRoot = _rootDocument;
-                var previousBaseUri = _baseUri;
-
-                try
-                {
-                    _rootDocument = schema;
-                    _baseUri = schemaLocation;
-                    resolved = await ResolveAllRefsAsync(schema, visitedRefs);
-                }
-                finally
-                {
-                    _rootDocument = previousRoot;
-                    _baseUri = previousBaseUri;
-                }
+                return null;
             }
 
-            // Cache the resolved value
-            _refCache[resolvedRefKey] = resolved;
+            if (current is JsonObject resolvedObj && resolvedObj.TryGetPropertyValue("$ref", out var nestedRef) && nestedRef is JsonValue nv)
+            {
+                var nestedRefStr = nv.GetValue<string>();
+                return await ResolveNodeRefAsync(nestedRefStr, doc, visited);
+            }
 
-            return resolved?.DeepClone();
-        }
-        finally
-        {
-            visitedRefs.Remove(resolvedRefKey);
+            return current;
         }
     }
 
-    /// <summary>
-    /// Checks if a reference string points to an external schema URL.
-    /// </summary>
     private static bool IsExternalSchemaRef(string refString)
     {
         return refString.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                refString.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// Checks if a reference string points to a local schema file path.
-    /// </summary>
     private static bool IsLocalSchemaRef(string refString)
     {
         if (string.IsNullOrWhiteSpace(refString))
@@ -373,17 +219,11 @@ internal class ReferenceResolver
                !schemaPart.Contains("://", StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Checks if a reference string is an internal JSON pointer.
-    /// </summary>
     private static bool IsInternalRef(string refString)
     {
-        return refString.StartsWith("#", StringComparison.Ordinal);
+        return refString.StartsWith('#');
     }
 
-    /// <summary>
-    /// Finds a node by JSON Schema anchor name ($anchor or $dynamicAnchor).
-    /// </summary>
     private static JsonNode? FindAnchorNode(JsonNode? node, string anchorName)
     {
         if (node == null)
@@ -434,9 +274,6 @@ internal class ReferenceResolver
         return string.Equals(anchorValue.GetValue<string>(), anchorName, StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Resolves a schema location against the current base URI/path.
-    /// </summary>
     private string ResolveSchemaLocation(string schemaRef)
     {
         if (string.IsNullOrWhiteSpace(schemaRef))
@@ -475,9 +312,6 @@ internal class ReferenceResolver
         return Path.GetFullPath(Path.Combine(basePath, schemaRef));
     }
 
-    /// <summary>
-    /// Loads a schema from HTTP(S) or a local file path.
-    /// </summary>
     private async Task<JsonNode?> LoadSchemaAsync(string schemaLocation)
     {
         if (Uri.TryCreate(schemaLocation, UriKind.Absolute, out var schemaUri) &&
@@ -495,7 +329,7 @@ internal class ReferenceResolver
 
         if (!File.Exists(localPath))
         {
-            _logger.LogWarning("Schema file not found: {Path}", SchemaResolverService.SanitizeStringForLogging(localPath));
+            _logger.SchemaFileNotFound(localPath);
             return null;
         }
 
@@ -506,95 +340,13 @@ internal class ReferenceResolver
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load local schema file: {Path}", SchemaResolverService.SanitizeStringForLogging(localPath));
+            _logger.FailedToLoadLocalSchemaFile(ex, localPath);
             throw;
         }
     }
 
-    /// <summary>
-    /// Unescapes a JSON pointer token according to RFC 6901.
-    /// </summary>
     private static string UnescapeJsonPointer(string token)
     {
         return token.Replace("~1", "/").Replace("~0", "~");
-    }
-
-    /// <summary>
-    /// Merges allOf properties into the target object to make composite fields discoverable.
-    /// </summary>
-    private static void MergeAllOfIntoObject(JsonObject target)
-    {
-        if (!target.TryGetPropertyValue("allOf", out var allOfNode) || allOfNode is not JsonArray allOfArray)
-        {
-            return;
-        }
-
-        JsonObject? targetProperties = null;
-        if (target.TryGetPropertyValue("properties", out var propsNode) && propsNode is JsonObject propsObject)
-        {
-            targetProperties = propsObject;
-        }
-
-        JsonArray? targetRequired = null;
-        if (target.TryGetPropertyValue("required", out var requiredNode) && requiredNode is JsonArray requiredArray)
-        {
-            targetRequired = requiredArray;
-        }
-
-        foreach (var item in allOfArray)
-        {
-            if (item is not JsonObject itemObject)
-            {
-                continue;
-            }
-
-            if (itemObject.TryGetPropertyValue("properties", out var itemPropsNode) && itemPropsNode is JsonObject itemProps)
-            {
-                targetProperties ??= new JsonObject();
-
-                foreach (var kvp in itemProps)
-                {
-                    if (!targetProperties.ContainsKey(kvp.Key))
-                    {
-                        targetProperties[kvp.Key] = kvp.Value?.DeepClone();
-                    }
-                }
-            }
-
-            if (itemObject.TryGetPropertyValue("required", out var itemRequiredNode) && itemRequiredNode is JsonArray itemRequired)
-            {
-                targetRequired ??= new JsonArray();
-
-                foreach (var requiredItem in itemRequired)
-                {
-                    if (requiredItem is not JsonValue requiredValue)
-                    {
-                        continue;
-                    }
-
-                    var requiredName = requiredValue.GetValue<string>();
-                    if (!targetRequired.Any(existing => existing?.GetValue<string>() == requiredName))
-                    {
-                        targetRequired.Add(requiredName);
-                    }
-                }
-            }
-
-            if (!target.TryGetPropertyValue("type", out _) &&
-                itemObject.TryGetPropertyValue("type", out var itemTypeNode))
-            {
-                target["type"] = itemTypeNode?.DeepClone();
-            }
-        }
-
-        if (targetProperties != null)
-        {
-            target["properties"] = targetProperties;
-        }
-
-        if (targetRequired != null)
-        {
-            target["required"] = targetRequired;
-        }
     }
 }

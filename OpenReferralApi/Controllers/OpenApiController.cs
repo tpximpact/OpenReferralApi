@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using OpenReferralApi.Core.Models;
+using OpenReferralApi.Core.Helpers;
 using OpenReferralApi.Core.Services;
+using OpenReferralApi.Logging;
 
 namespace OpenReferralApi.Controllers;
 
@@ -9,19 +10,12 @@ namespace OpenReferralApi.Controllers;
 [Route("openreferral")]
 [Produces("application/json")]
 [EnableRateLimiting("fixed")]
-[ApiExplorerSettings(GroupName = "v1")]
-public class OpenReferralController : BaseOpenApiController
+internal sealed class OpenReferralController(
+    IOpenApiValidationService openApiValidationService,
+    ILogger<OpenReferralController> logger) : BaseOpenApiController
 {
-    private readonly IOpenApiValidationService _openApiValidationService;
-    private readonly ILogger<OpenReferralController> _logger;
-
-    public OpenReferralController(
-        IOpenApiValidationService openApiValidationService,
-        ILogger<OpenReferralController> logger)
-    {
-        _openApiValidationService = openApiValidationService;
-        _logger = logger;
-    }
+    private readonly IOpenApiValidationService _openApiValidationService = openApiValidationService;
+    private readonly ILogger<OpenReferralController> _logger = logger;
 
     /// <summary>
     /// Validates an OpenAPI specification and tests all defined endpoints, returning raw results
@@ -36,15 +30,17 @@ public class OpenReferralController : BaseOpenApiController
     [HttpPost("validate")]
     [ProducesResponseType(typeof(OpenApiValidationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OpenApiValidationResult>> ValidateAsync(
         [FromBody] OpenApiValidationRequest request,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation(
-            "Received OpenAPI validation request for BaseUrl: {BaseUrl}",
-            SchemaResolverService.SanitizeUrlForLogging(request.BaseUrl ?? string.Empty));
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            var sanitizedBaseUrl = TextSanitizer.SanitizeUrlForLogging(request.BaseUrl ?? string.Empty);
+            OpenApiControllerLog.ReceivedValidationRequest(_logger, sanitizedBaseUrl);
+        }
 
         var validationError = ValidateRequestAndReturnErrorIfInvalid(request);
         if (validationError != null)
@@ -52,11 +48,13 @@ public class OpenReferralController : BaseOpenApiController
             return validationError;
         }
 
-        var result = await _openApiValidationService.ValidateOpenApiSpecificationAsync(request, cancellationToken);
-        
-        _logger.LogInformation(
-            "Validation completed for BaseUrl: {BaseUrl}",
-            SchemaResolverService.SanitizeUrlForLogging(request.BaseUrl ?? string.Empty));
+        var result = await _openApiValidationService.ValidateOpenApiSpecificationAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            var sanitizedBaseUrl = TextSanitizer.SanitizeUrlForLogging(request.BaseUrl ?? string.Empty);
+            OpenApiControllerLog.ValidationCompleted(_logger, sanitizedBaseUrl);
+        }
 
         return Ok(result);
     }

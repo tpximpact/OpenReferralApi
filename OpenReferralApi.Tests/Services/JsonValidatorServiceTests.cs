@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Moq;
-using Newtonsoft.Json.Schema;
-using OpenReferralApi.Core.Models;
+using Json.Schema;
 using OpenReferralApi.Core.Services;
+using System.Text.Json.Nodes;
 
 namespace OpenReferralApi.Tests.Services;
 
@@ -33,10 +33,10 @@ public class JsonValidatorServiceTests
 
         _requestProcessingServiceMock
             .Setup(service => service.ExecuteWithRetryAsync(
-                It.IsAny<Func<CancellationToken, Task<JSchema>>>(),
+                It.IsAny<Func<CancellationToken, Task<JsonSchema>>>(),
                 It.IsAny<ValidationOptions?>(),
                 It.IsAny<CancellationToken>()))
-            .Returns((Func<CancellationToken, Task<JSchema>> func, ValidationOptions? options, CancellationToken ct) => func(ct));
+            .Returns((Func<CancellationToken, Task<JsonSchema>> func, ValidationOptions? options, CancellationToken ct) => func(ct));
 
         _requestProcessingServiceMock
             .Setup(service => service.ExecuteWithRetryAsync(
@@ -46,23 +46,30 @@ public class JsonValidatorServiceTests
             .Returns((Func<CancellationToken, Task<object>> func, ValidationOptions? options, CancellationToken ct) => func(ct));
 
         _requestProcessingServiceMock
+            .Setup(service => service.ExecuteWithRetryAsync(
+                It.IsAny<Func<CancellationToken, Task<System.Text.Json.JsonDocument>>>(),
+                It.IsAny<ValidationOptions?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns((Func<CancellationToken, Task<System.Text.Json.JsonDocument>> func, ValidationOptions? options, CancellationToken ct) => func(ct));
+
+        _requestProcessingServiceMock
             .Setup(service => service.CreateTimeoutToken(It.IsAny<ValidationOptions?>(), It.IsAny<CancellationToken>()))
             .Returns((ValidationOptions? options, CancellationToken ct) => CancellationTokenSource.CreateLinkedTokenSource(ct));
 
         _schemaResolverServiceMock
-            .Setup(service => service.CreateSchemaFromJsonAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DataSourceAuthentication>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string schemaJson, string documentUri, DataSourceAuthentication auth, CancellationToken ct) => JSchema.Parse(schemaJson));
+            .Setup(service => service.CreateSchemaFromJsonAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<DataSourceAuthentication?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string schemaJson, string? documentUri, DataSourceAuthentication? auth, CancellationToken ct) => JsonSchema.FromText(schemaJson));
 
         _schemaResolverServiceMock
             .Setup(service => service.CreateSchemaFromJsonAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string schemaJson, CancellationToken ct) => JSchema.Parse(schemaJson));
+            .ReturnsAsync((string schemaJson, CancellationToken ct) => JsonSchema.FromText(schemaJson));
 
         var mockHandler = new MockHttpMessageHandler("{}", "{}");
-        _httpClient = new HttpClient(mockHandler);
+        _httpClient = TestHttpClientFactory.CreateClient(mockHandler);
 
         _service = new JsonValidatorService(
             _loggerMock.Object,
-            _httpClient,
+            CreateFactory(_httpClient),
             _pathParsingServiceMock.Object,
             _requestProcessingServiceMock.Object,
             _schemaResolverServiceMock.Object);
@@ -97,11 +104,14 @@ public class JsonValidatorServiceTests
         var result = await _service.ValidateAsync(request);
 
         // Assert
-        Assert.That(result.IsValid, Is.True);
-        Assert.That(result.Errors, Is.Empty);
-        Assert.That(result.Metadata, Is.Not.Null);
-        Assert.That(result.Metadata!.SchemaTitle, Is.EqualTo("Person"));
-        Assert.That(result.Metadata.DataSource, Is.EqualTo("direct"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.True);
+            Assert.That(result.Errors, Is.Empty);
+            Assert.That(result.Metadata, Is.Not.Null);
+            Assert.That(result.Metadata!.SchemaTitle, Is.EqualTo("Person"));
+            Assert.That(result.Metadata.DataSource, Is.EqualTo("direct"));
+        }
     }
 
     [Test]
@@ -125,9 +135,12 @@ public class JsonValidatorServiceTests
         var result = await _service.ValidateAsync(request);
 
         // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors, Is.Not.Empty);
-        Assert.That(result.Errors, Has.Some.Matches<OpenReferralApi.Core.Models.ValidationError>(e => e.ErrorCode == "VALIDATION_ERROR"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.False);
+            Assert.That(result.Errors, Is.Not.Empty);
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(e => e.ErrorCode == "MISSING_REQUIRED_PROPERTY"));
+        }
     }
 
     [Test]
@@ -141,12 +154,17 @@ public class JsonValidatorServiceTests
             required = new[] { "name" }
         };
 
+
         var dataUrl = "https://example.com/data.json";
         _pathParsingServiceMock
             .Setup(service => service.ValidateAndParseDataUrlAsync(dataUrl, It.IsAny<ValidationOptions?>()))
             .ReturnsAsync(new Uri(dataUrl));
 
-        SetupHttpMock("{}", "{\"name\":\"Ada\"}");
+        var schemaJson = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}";
+        var dataJson = "{\"name\":\"Ada\"}";
+
+        // SetupHttpMock expects the dataUrl as the third argument for the data fetch
+        SetupHttpMock(schemaJson, dataJson);
 
         var request = new ValidationRequest
         {
@@ -158,10 +176,13 @@ public class JsonValidatorServiceTests
         var result = await _service.ValidateAsync(request);
 
         // Assert
-        Assert.That(result.IsValid, Is.True);
-        Assert.That(result.Errors, Is.Empty);
-        Assert.That(result.Metadata, Is.Not.Null);
-        Assert.That(result.Metadata!.DataSource, Is.EqualTo(dataUrl));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.True);
+            Assert.That(result.Errors, Is.Empty);
+            Assert.That(result.Metadata, Is.Not.Null);
+            Assert.That(result.Metadata!.DataSource, Is.EqualTo(dataUrl));
+        }
     }
 
     [Test]
@@ -180,8 +201,59 @@ public class JsonValidatorServiceTests
         var result = await _service.ValidateWithSchemaUriAsync(new { name = "Ada" }, schemaUri);
 
         // Assert
-        Assert.That(result.IsValid, Is.True);
-        Assert.That(result.Errors, Is.Empty);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.True);
+            Assert.That(result.Errors, Is.Empty);
+        }
+    }
+
+    [Test]
+    public async Task ValidateWithSchemaUriAsync_ChecksCacheBeforeRequestingExternalSchema()
+    {
+        // Arrange
+        var schemaUri = $"https://example.com/{Guid.NewGuid():N}/schema.json";
+        _pathParsingServiceMock
+            .Setup(service => service.ValidateAndParseSchemaUriAsync(schemaUri, It.IsAny<ValidationOptions?>()))
+            .ReturnsAsync(new Uri(schemaUri));
+
+        var schemaJson = @"{""type"":""object"",""properties"":{ ""name"": {""type"":""string""}},""required"": [""name""] }";
+        var schemaRequestCount = 0;
+
+        var countingHandler = new CountingHttpMessageHandler(request =>
+        {
+            var requestUri = request.RequestUri?.ToString() ?? string.Empty;
+            if (string.Equals(requestUri, schemaUri, StringComparison.OrdinalIgnoreCase))
+            {
+                schemaRequestCount++;
+            }
+
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(schemaJson)
+            };
+        });
+
+        _httpClient?.Dispose();
+        _httpClient = TestHttpClientFactory.CreateClient(countingHandler);
+        _service = new JsonValidatorService(
+            _loggerMock.Object,
+            CreateFactory(_httpClient),
+            _pathParsingServiceMock.Object,
+            _requestProcessingServiceMock.Object,
+            _schemaResolverServiceMock.Object);
+
+        // Act
+        var firstResult = await _service.ValidateWithSchemaUriAsync(new { name = "Ada" }, schemaUri);
+        var secondResult = await _service.ValidateWithSchemaUriAsync(new { name = "Ada" }, schemaUri);
+
+        // Assert
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(firstResult.IsValid, Is.True);
+            Assert.That(secondResult.IsValid, Is.True);
+            Assert.That(schemaRequestCount, Is.EqualTo(1));
+        }
     }
 
     [Test]
@@ -194,8 +266,11 @@ public class JsonValidatorServiceTests
         var result = await _service.ValidateSchemaAsync(schema);
 
         // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors, Has.Exactly(1).Matches<OpenReferralApi.Core.Models.ValidationError>(error => error.ErrorCode == "MISSING_TYPE"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.False);
+            Assert.That(result.Errors, Has.Exactly(1).Matches<Core.Models.Validation.ValidationError>(error => error.ErrorCode == "MISSING_TYPE"));
+        }
     }
 
     [Test]
@@ -269,15 +344,18 @@ public class JsonValidatorServiceTests
     {
         // Arrange
         _schemaResolverServiceMock
-            .Setup(service => service.CreateSchemaFromJsonAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(service => service.ResolveAsync(It.IsAny<JsonNode>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Schema parse failed"));
 
         // Act
         var result = await _service.ValidateSchemaAsync(new { type = "object" });
 
         // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors, Has.Exactly(1).Matches<OpenReferralApi.Core.Models.ValidationError>(error => error.ErrorCode == "SCHEMA_VALIDATION_ERROR"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.False);
+            Assert.That(result.Errors, Has.Exactly(1).Matches<Core.Models.Validation.ValidationError>(error => error.ErrorCode == "SCHEMA_VALIDATION_ERROR"));
+        }
     }
 
     [Test]
@@ -320,15 +398,60 @@ public class JsonValidatorServiceTests
         var result = await _service.ValidateAsync(request);
 
         // Assert
-        Assert.That(result.IsValid, Is.True, "Data should be valid even with additional fields");
-        Assert.That(result.Errors, Has.Some.Matches<OpenReferralApi.Core.Models.ValidationError>(
-            e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "email"),
-            "Should report 'email' as an additional field");
-        Assert.That(result.Errors, Has.Some.Matches<OpenReferralApi.Core.Models.ValidationError>(
-            e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "address"),
-            "Should report 'address' as an additional field");
-        Assert.That(result.Errors.Where(e => e.ErrorCode == "ADDITIONAL_FIELD").All(e => e.Severity == "Info"),
-            "Additional field warnings should have 'Info' severity");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.True, "Data should be valid even with additional fields");
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "email"),
+                "Should report 'email' as an additional field");
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "address"),
+                "Should report 'address' as an additional field");
+            Assert.That(result.Errors.Where(e => e.ErrorCode == "ADDITIONAL_FIELD").All(e => e.Severity == "Info"),
+                "Additional field warnings should have 'Info' severity");
+        }
+    }
+
+    [Test]
+    public async Task ValidateAsync_WhenSchemaForbidsAdditionalProperties_TagsExtraFieldsAsAdditionalField()
+    {
+        // Arrange — schema explicitly disallows additional properties
+        var schema = new
+        {
+            type = "object",
+            properties = new
+            {
+                name = new { type = "string" }
+            },
+            required = new[] { "name" },
+            additionalProperties = false
+        };
+
+        var request = new ValidationRequest
+        {
+            JsonData = new
+            {
+                name = "Ada Lovelace",
+                email = "ada@example.com"  // Not in schema, schema forbids it
+            },
+            Schema = schema,
+            Options = new ValidationOptions()
+        };
+
+        // Act
+        var result = await _service.ValidateAsync(request);
+
+        // Assert — extra field should be ADDITIONAL_FIELD (not VALIDATION_ERROR) so that
+        // OwnSchemaValidation mode can control its severity
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "ADDITIONAL_FIELD"),
+                "Extra field from additionalProperties:false schema should be tagged ADDITIONAL_FIELD");
+            Assert.That(result.Errors, Has.None.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "VALIDATION_ERROR" && e.Path.Contains("email")),
+                "Extra field should not be reported as a generic VALIDATION_ERROR");
+        }
     }
 
     [Test]
@@ -364,10 +487,13 @@ public class JsonValidatorServiceTests
         var result = await _service.ValidateAsync(request);
 
         // Assert
-        Assert.That(result.IsValid, Is.True);
-        Assert.That(result.Errors, Has.None.Matches<OpenReferralApi.Core.Models.ValidationError>(
-            e => e.ErrorCode == "ADDITIONAL_FIELD"),
-            "Should not report additional fields when option is disabled");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.True);
+            Assert.That(result.Errors, Has.None.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "ADDITIONAL_FIELD"),
+                "Should not report additional fields when option is disabled");
+        }
     }
 
     [Test]
@@ -415,10 +541,13 @@ public class JsonValidatorServiceTests
         var result = await _service.ValidateAsync(request);
 
         // Assert
-        Assert.That(result.IsValid, Is.True);
-        Assert.That(result.Errors, Has.Some.Matches<OpenReferralApi.Core.Models.ValidationError>(
-            e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "address.postcode"),
-            "Should report nested additional fields");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.True);
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "address.postcode"),
+                "Should report nested additional fields");
+        }
     }
 
     [Test]
@@ -468,19 +597,22 @@ public class JsonValidatorServiceTests
         var result = await _service.ValidateAsync(request);
 
         // Assert
-        Assert.That(result.IsValid, Is.True);
-        Assert.That(result.Errors, Has.Some.Matches<OpenReferralApi.Core.Models.ValidationError>(
-            e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "users.age"),
-            "Should report additional fields in array items");
-        Assert.That(result.Errors, Has.Some.Matches<OpenReferralApi.Core.Models.ValidationError>(
-            e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "users.role"),
-            "Should report additional fields in array items");
-        Assert.That(result.Errors, Has.Some.Matches<OpenReferralApi.Core.Models.ValidationError>(
-            e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Message == "Field 'users.age' is not defined in the schema"),
-            "Should normalize array indices in additional-field message for users.age");
-        Assert.That(result.Errors, Has.Some.Matches<OpenReferralApi.Core.Models.ValidationError>(
-            e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Message == "Field 'users.role' is not defined in the schema"),
-            "Should normalize array indices in additional-field message for users.role");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.True);
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "users[].age"),
+                "Should report additional fields in array items");
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "users[].role"),
+                "Should report additional fields in array items");
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Message == "Field 'users[].age' is not defined in the schema"),
+                "Should normalize array indices in additional-field message for users.age");
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Message == "Field 'users[].role' is not defined in the schema"),
+                "Should normalize array indices in additional-field message for users.role");
+        }
     }
 
     [Test]
@@ -530,9 +662,12 @@ public class JsonValidatorServiceTests
 
         // Assert
         var additionalField = result.Errors.Single(e => e.ErrorCode == "ADDITIONAL_FIELD");
-        Assert.That(additionalField.Path, Is.EqualTo("service_at_locations.regular_schedule"));
-        Assert.That(additionalField.Message, Is.EqualTo("Field 'service_at_locations.regular_schedule' is not defined in the schema"));
-        Assert.That(additionalField.Message.Contains("[0]"), Is.False, "Message should not include array indices");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(additionalField.Path, Is.EqualTo("service_at_locations[].regular_schedule"));
+            Assert.That(additionalField.Message, Is.EqualTo("Field 'service_at_locations[].regular_schedule' is not defined in the schema"));
+            Assert.That(additionalField.Message, Does.Not.Contain("[0]"), "Message should not include array indices");
+        }
     }
 
     [Test]
@@ -583,41 +718,308 @@ public class JsonValidatorServiceTests
 
         // Assert
         var ageWarnings = result.Errors
-            .Where(e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "users.age")
+            .Where(e => e.ErrorCode == "ADDITIONAL_FIELD" && e.Path == "users[].age")
             .ToList();
 
-        Assert.That(ageWarnings.Count, Is.EqualTo(1), "Expected one deduplicated warning for users.age");
-        Assert.That(ageWarnings[0].Message, Is.EqualTo("Field 'users.age' is not defined in the schema"));
-        Assert.That(ageWarnings[0].Message.Contains("["), Is.False, "Deduplicated message should be normalized");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(ageWarnings, Has.Count.EqualTo(1), "Expected one deduplicated warning for users[].age");
+            Assert.That(ageWarnings[0].Message, Is.EqualTo("Field 'users[].age' is not defined in the schema"));
+            Assert.That(ageWarnings[0].Message, Does.Not.Contain("[0]"), "Deduplicated message should not include concrete indexes");
+        }
+    }
+
+    [Test]
+    public async Task ValidateAsync_WithCircularUserJson_ReturnsSpecificStructureViolationError()
+    {
+        // Arrange
+        var schema = new
+        {
+            type = "object",
+            additionalProperties = true
+        };
+
+        var cyclic = new Dictionary<string, object?>();
+        cyclic["self"] = cyclic;
+
+        var request = new ValidationRequest
+        {
+            JsonData = cyclic,
+            Schema = schema
+        };
+
+        // Act
+        var result = await _service.ValidateAsync(request);
+
+        // Assert
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.False);
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "JSON_STRUCTURE_VIOLATION"));
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "JSON_STRUCTURE_VIOLATION" && e.Path.Contains("$.self", StringComparison.Ordinal)));
+        }
+    }
+
+    [Test]
+    public async Task ValidateAsync_WithJsonNodePayload_DoesNotTriggerCycleStructureViolation()
+    {
+        // Arrange
+        var schema = new
+        {
+            type = "object",
+            properties = new
+            {
+                data = new
+                {
+                    type = "array",
+                    items = new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            id = new { type = "string" }
+                        }
+                    }
+                }
+            }
+        };
+
+        var jsonNodePayload = JsonNode.Parse("""
+        {
+          "data": [
+            { "id": "abc" }
+          ]
+        }
+        """);
+
+        var request = new ValidationRequest
+        {
+            JsonData = jsonNodePayload,
+            Schema = schema
+        };
+
+        // Act
+        var result = await _service.ValidateAsync(request);
+
+        // Assert
+        Assert.That(result.Errors.Any(e => e.ErrorCode == "JSON_STRUCTURE_VIOLATION"), Is.False);
+    }
+
+    [Test]
+    public async Task ValidateAsync_WithTooDeepUserJsonString_ReturnsSpecificStructureViolationError()
+    {
+        // Arrange
+        var schema = new
+        {
+            type = "object",
+            additionalProperties = true
+        };
+
+        var deepJson = BuildDeepJson(70);
+
+        var request = new ValidationRequest
+        {
+            JsonData = deepJson,
+            Schema = schema
+        };
+
+        // Act
+        var result = await _service.ValidateAsync(request);
+
+        // Assert
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.False);
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "JSON_STRUCTURE_VIOLATION"));
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.Message.Contains("maximum depth of 64", StringComparison.OrdinalIgnoreCase)));
+        }
+    }
+
+    [Test]
+    public async Task ValidateAsync_WithCircularUserSchema_ReturnsSpecificStructureViolationErrorWithPath()
+    {
+        // Arrange
+        var circularSchema = new Dictionary<string, object?>
+        {
+            ["type"] = "object"
+        };
+        circularSchema["self"] = circularSchema;
+
+        var request = new ValidationRequest
+        {
+            JsonData = new { name = "Ada" },
+            Schema = circularSchema
+        };
+
+        // Act
+        var result = await _service.ValidateAsync(request);
+
+        // Assert
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.False);
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "SCHEMA_STRUCTURE_VIOLATION"));
+            Assert.That(result.Errors, Has.Some.Matches<Core.Models.Validation.ValidationError>(
+                e => e.ErrorCode == "SCHEMA_STRUCTURE_VIOLATION" && e.Path.Contains("$.self", StringComparison.Ordinal)));
+        }
+    }
+
+    [Test]
+    public async Task ValidateAsync_WithFormatMismatch_IncludesFailedValueInErrorMessage()
+    {
+        // Arrange
+        var schema = new
+        {
+            type = "object",
+            properties = new
+            {
+                url = new { type = "string", format = "uri" }
+            }
+        };
+
+        var request = new ValidationRequest
+        {
+            JsonData = new { url = "not-a-valid-uri" },
+            Schema = schema
+        };
+
+        // Act
+        var result = await _service.ValidateAsync(request);
+
+        // Assert
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.False);
+            var formatError = result.Errors.FirstOrDefault(e => e.Path == "url");
+            Assert.That(formatError, Is.Not.Null);
+            Assert.That(formatError!.Message, Contains.Substring("does not match format"));
+            Assert.That(formatError.Message, Contains.Substring("(failed value: \"not-a-valid-uri\")"));
+        }
+    }
+
+    [Test]
+    public async Task ValidateAsync_WithRecordValidationFailure_ExtractsRecordId()
+    {
+        // Arrange
+        var schema = new
+        {
+            type = "object",
+            properties = new
+            {
+                content = new
+                {
+                    type = "array",
+                    items = new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            id = new { type = "string" },
+                            name = new { type = "string", minLength = 5 }
+                        },
+                        required = new[] { "id", "name" }
+                    }
+                }
+            }
+        };
+
+        var request = new ValidationRequest
+        {
+            JsonData = new
+            {
+                content = new[]
+                {
+                    new { id = "service-abc", name = "OkName" },
+                    new { id = "service-def", name = "Bad" } // name too short
+                }
+            },
+            Schema = schema
+        };
+
+        // Act
+        var result = await _service.ValidateAsync(request);
+
+        // Assert
+        Console.WriteLine($"IsValid: {result.IsValid}");
+        foreach (var err in result.Errors)
+        {
+            Console.WriteLine($"Path: '{err.Path}', ErrorCode: '{err.ErrorCode}', Message: '{err.Message}', RecordId: '{err.RecordId}'");
+        }
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.IsValid, Is.False);
+            var validationError = result.Errors.FirstOrDefault(e => e.Path == "content[1].name");
+            Assert.That(validationError, Is.Not.Null);
+            if (validationError != null)
+            {
+                Assert.That(validationError.RecordId, Is.EqualTo("service-def"));
+            }
+
+            // Also verify ValidationErrorNormalizer propagates the RecordId
+            var normalizedErrors = ValidationErrorNormalizer.NormalizeAndDeduplicateByPath(result.Errors);
+            var normalizedError = normalizedErrors.FirstOrDefault(e => e.Path == "content[].name");
+            Assert.That(normalizedError, Is.Not.Null);
+            if (normalizedError != null)
+            {
+                Assert.That(normalizedError.RecordId, Is.EqualTo("service-def"));
+            }
+        }
+    }
+
+    private static string BuildDeepJson(int depth)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var i = 0; i < depth; i++)
+        {
+            sb.Append("{\"a\":");
+        }
+
+        sb.Append("\"value\"");
+
+        for (var i = 0; i < depth; i++)
+        {
+            sb.Append('}');
+        }
+
+        return sb.ToString();
     }
 
     private void SetupHttpMock(string schemaJson, string dataJson)
     {
         var mockHandler = new MockHttpMessageHandler(schemaJson, dataJson);
         _httpClient?.Dispose();
-        _httpClient = new HttpClient(mockHandler);
+        _httpClient = TestHttpClientFactory.CreateClient(mockHandler);
         _service = new JsonValidatorService(
             _loggerMock.Object,
-            _httpClient,
+            CreateFactory(_httpClient),
             _pathParsingServiceMock.Object,
             _requestProcessingServiceMock.Object,
             _schemaResolverServiceMock.Object);
     }
 
-    private sealed class MockHttpMessageHandler : HttpMessageHandler
+    private static IHttpClientFactory CreateFactory(HttpClient httpClient)
     {
-        private readonly string _schemaJson;
-        private readonly string _dataJson;
+        var mock = new Mock<IHttpClientFactory>();
+        mock.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
+        return mock.Object;
+    }
 
-        public MockHttpMessageHandler(string schemaJson, string dataJson)
-        {
-            _schemaJson = schemaJson;
-            _dataJson = dataJson;
-        }
+    private sealed class MockHttpMessageHandler(string schemaJson, string dataJson) : HttpMessageHandler
+    {
+        private readonly string _schemaJson = schemaJson;
+        private readonly string _dataJson = dataJson;
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var requestUri = request.RequestUri?.ToString() ?? string.Empty;
+            // Debug: Output the requested URI for troubleshooting
+            System.Diagnostics.Debug.WriteLine($"MockHttpMessageHandler received request: {requestUri}");
             var responseBody = requestUri.Contains("schema", StringComparison.OrdinalIgnoreCase)
                 ? _schemaJson
                 : _dataJson;
@@ -626,6 +1028,16 @@ public class JsonValidatorServiceTests
             {
                 Content = new StringContent(responseBody)
             });
+        }
+    }
+
+    private sealed class CountingHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler) : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler = handler;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_handler(request));
         }
     }
 }

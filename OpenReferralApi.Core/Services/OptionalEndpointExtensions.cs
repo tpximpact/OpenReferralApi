@@ -1,5 +1,4 @@
-using Newtonsoft.Json.Linq;
-using OpenReferralApi.Core.Models;
+using System.Text.Json.Nodes;
 
 namespace OpenReferralApi.Core.Services;
 
@@ -8,14 +7,16 @@ namespace OpenReferralApi.Core.Services;
 /// </summary>
 public static class OptionalEndpointExtensions
 {
+    private static readonly string[] HttpMethods = ["get", "post", "put", "delete", "patch", "head", "options", "trace"];
+
     /// <summary>
     /// Determines if an endpoint is marked as optional in the OpenAPI specification
     /// </summary>
     /// <param name="pathItem">The path item object from the OpenAPI spec</param>
     /// <returns>True if the endpoint is optional, false if required</returns>
-    public static bool IsOptionalEndpoint(this JToken pathItem)
+    public static bool IsOptionalEndpoint(this JsonNode? pathItem)
     {
-        if (pathItem is JObject pathObject)
+        if (pathItem is JsonObject pathObject)
         {
             return HasOptionalTag(pathObject);
         }
@@ -29,26 +30,22 @@ public static class OptionalEndpointExtensions
     /// </summary>
     /// <param name="pathObject">The path item or operation object from the OpenAPI spec</param>
     /// <returns>True if the operation has the "Optional" tag</returns>
-    private static bool HasOptionalTag(JObject pathObject)
+    private static bool HasOptionalTag(JsonObject pathObject)
     {
         // Check if this is an operation object with tags
-        var tags = pathObject["tags"];
-        if (tags is JArray tagsArray)
+        if (pathObject["tags"] is JsonArray tagsArray)
         {
-            return tagsArray.Any(tag => tag.ToString().Equals("Optional", StringComparison.OrdinalIgnoreCase));
+            return tagsArray.Any(tag => string.Equals(tag?.ToString(), "Optional", StringComparison.OrdinalIgnoreCase));
         }
 
         // If this is a path item, check all operations within it
-        var httpMethods = new[] { "get", "post", "put", "delete", "patch", "head", "options", "trace" };
-        foreach (var method in httpMethods)
+        foreach (var method in HttpMethods)
         {
-            var operation = pathObject[method];
-            if (operation is JObject operationObject)
+            if (pathObject[method] is JsonObject operationObject)
             {
-                var operationTags = operationObject["tags"];
-                if (operationTags is JArray operationTagsArray)
+                if (operationObject["tags"] is JsonArray operationTagsArray)
                 {
-                    if (operationTagsArray.Any(tag => tag.ToString().Equals("Optional", StringComparison.OrdinalIgnoreCase)))
+                    if (operationTagsArray.Any(tag => string.Equals(tag?.ToString(), "Optional", StringComparison.OrdinalIgnoreCase)))
                     {
                         return true;
                     }
@@ -64,12 +61,12 @@ public static class OptionalEndpointExtensions
     /// </summary>
     /// <param name="pathItem">The path item object from the OpenAPI spec</param>
     /// <returns>The category name or null if not specified</returns>
-    public static string? GetOptionalEndpointCategory(this JToken pathItem)
+    public static string? GetOptionalEndpointCategory(this JsonNode? pathItem)
     {
-        if (pathItem is JObject pathObject)
+        if (pathItem is JsonObject pathObject)
         {
             var tags = GetEndpointTags(pathObject);
-            if (tags != null && tags.Any())
+            if (tags != null && tags.Count > 0)
             {
                 // Return the first tag as the category, excluding "Optional" 
                 var categoryTag = tags.FirstOrDefault(tag =>
@@ -95,35 +92,31 @@ public static class OptionalEndpointExtensions
     /// </summary>
     /// <param name="pathObject">The path item or operation object from the OpenAPI spec</param>
     /// <returns>List of tags or null if none found</returns>
-    private static List<string>? GetEndpointTags(JObject pathObject)
+    private static List<string>? GetEndpointTags(JsonObject pathObject)
     {
         // Check if this is an operation object with tags
-        var tags = pathObject["tags"];
-        if (tags is JArray tagsArray)
+        if (pathObject["tags"] is JsonArray tagsArray)
         {
-            return tagsArray.Select(tag => tag.ToString()).ToList();
+            return [.. tagsArray.Select(tag => tag?.ToString() ?? string.Empty)];
         }
 
         // If this is a path item, get tags from all operations within it
         var allTags = new HashSet<string>();
-        var httpMethods = new[] { "get", "post", "put", "delete", "patch", "head", "options", "trace" };
-        foreach (var method in httpMethods)
+        foreach (var method in HttpMethods)
         {
-            var operation = pathObject[method];
-            if (operation is JObject operationObject)
+            if (pathObject[method] is JsonObject operationObject)
             {
-                var operationTags = operationObject["tags"];
-                if (operationTags is JArray operationTagsArray)
+                if (operationObject["tags"] is JsonArray operationTagsArray)
                 {
                     foreach (var tag in operationTagsArray)
                     {
-                        allTags.Add(tag.ToString());
+                        _ = allTags.Add(tag?.ToString() ?? string.Empty);
                     }
                 }
             }
         }
 
-        return allTags.Count > 0 ? allTags.ToList() : null;
+        return allTags.Count > 0 ? [.. allTags] : null;
     }
 
     /// <summary>
@@ -147,56 +140,4 @@ public static class OptionalEndpointExtensions
         };
     }
 
-    /// <summary>
-    /// Validates that the response conforms to the specification for optional endpoints
-    /// </summary>
-    /// <param name="statusCode">HTTP response status code</param>
-    /// <param name="pathItem">The path item from the OpenAPI spec</param>
-    /// <returns>Validation result with specific handling for optional endpoints</returns>
-    public static OptionalEndpointValidationResult ValidateOptionalEndpointResponse(
-        int statusCode,
-        JToken pathItem)
-    {
-        var result = new OptionalEndpointValidationResult
-        {
-            IsOptional = pathItem.IsOptionalEndpoint(),
-            StatusCode = statusCode,
-            Category = pathItem.GetOptionalEndpointCategory()
-        };
-
-        if (result.IsOptional)
-        {
-            // For optional endpoints, check if non-implementation is acceptable
-            if (IsAcceptableOptionalEndpointResponse(statusCode, true))
-            {
-                result.ValidationStatus = OptionalEndpointStatus.NotImplemented;
-                result.Message = $"Optional endpoint not implemented (HTTP {statusCode}) - this is acceptable";
-                result.IsValid = true;
-            }
-            else if (statusCode >= 200 && statusCode < 300)
-            {
-                result.ValidationStatus = OptionalEndpointStatus.Implemented;
-                result.Message = "Optional endpoint is implemented and should conform to specification";
-                result.IsValid = true; // Will need further schema validation
-                result.RequiresSchemaValidation = true;
-            }
-            else
-            {
-                result.ValidationStatus = OptionalEndpointStatus.Error;
-                result.Message = $"Optional endpoint returned error status {statusCode}";
-                result.IsValid = false;
-            }
-        }
-        else
-        {
-            // Required endpoint - standard validation applies
-            result.ValidationStatus = OptionalEndpointStatus.Required;
-            result.IsValid = statusCode >= 200 && statusCode < 300;
-            result.RequiresSchemaValidation = result.IsValid;
-            result.Message = result.IsValid ? "Required endpoint responded successfully" : $"Required endpoint failed with status {statusCode}";
-        }
-
-        return result;
-    }
 }
-

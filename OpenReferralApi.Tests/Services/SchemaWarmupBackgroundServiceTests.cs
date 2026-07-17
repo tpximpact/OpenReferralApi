@@ -2,9 +2,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
 using OpenReferralApi.Services;
+using System.Reflection;
 
 namespace OpenReferralApi.Tests.Services;
 
@@ -19,18 +19,21 @@ public class SchemaWarmupBackgroundServiceTests
         var statusTracker = new SchemaWarmupStatusTracker();
         var logger = new Mock<ILogger<SchemaWarmupBackgroundService>>();
 
-        var service = new TestableSchemaWarmupBackgroundService(
+        var service = CreateService(
             serviceProvider,
-            Options.Create(new SchemaWarmupOptions { Enabled = false }),
+            Options.Create(new SpecificationOptions { WarmupEnabled = false }),
             Options.Create(new CacheOptions { Enabled = true }),
             statusTracker,
             logger.Object);
 
-        await service.RunOnce(CancellationToken.None);
+        await RunOnce(service, CancellationToken.None);
 
         var snapshot = statusTracker.GetSnapshot();
-        Assert.That(snapshot.State, Is.EqualTo("skipped"));
-        Assert.That(snapshot.SkipReason, Is.EqualTo("disabled"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(snapshot.State, Is.EqualTo("skipped"));
+            Assert.That(snapshot.SkipReason, Is.EqualTo("disabled"));
+        }
         resolverMock.Verify(r => r.ResolveAsync(It.IsAny<string>(), It.IsAny<string>(), null), Times.Never);
     }
 
@@ -42,22 +45,28 @@ public class SchemaWarmupBackgroundServiceTests
         var statusTracker = new SchemaWarmupStatusTracker();
         var logger = new Mock<ILogger<SchemaWarmupBackgroundService>>();
 
-        var service = new TestableSchemaWarmupBackgroundService(
+        var service = CreateService(
             serviceProvider,
-            Options.Create(new SchemaWarmupOptions
+            Options.Create(new SpecificationOptions
             {
-                Enabled = true,
-                Urls = new List<string> { "https://example.com/schema.json" }
+                WarmupEnabled = true,
+                Urls = new Dictionary<string, string>
+                {
+                    ["HSDS-UK-TEST"] = "https://example.com/schema.json"
+                }
             }),
             Options.Create(new CacheOptions { Enabled = false }),
             statusTracker,
             logger.Object);
 
-        await service.RunOnce(CancellationToken.None);
+        await RunOnce(service, CancellationToken.None);
 
         var snapshot = statusTracker.GetSnapshot();
-        Assert.That(snapshot.State, Is.EqualTo("skipped"));
-        Assert.That(snapshot.SkipReason, Is.EqualTo("cache-disabled"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(snapshot.State, Is.EqualTo("skipped"));
+            Assert.That(snapshot.SkipReason, Is.EqualTo("cache-disabled"));
+        }
         resolverMock.Verify(r => r.ResolveAsync(It.IsAny<string>(), It.IsAny<string>(), null), Times.Never);
     }
 
@@ -84,27 +93,34 @@ public class SchemaWarmupBackgroundServiceTests
         var statusTracker = new SchemaWarmupStatusTracker();
         var logger = new Mock<ILogger<SchemaWarmupBackgroundService>>();
 
-        var service = new TestableSchemaWarmupBackgroundService(
+        var service = CreateService(
             serviceProvider,
-            Options.Create(new SchemaWarmupOptions
+            Options.Create(new SpecificationOptions
             {
-                Enabled = true,
-                StartupDelaySeconds = 0,
-                Urls = new List<string> { successUrl, failUrl }
+                WarmupEnabled = true,
+                WarmupStartupDelaySeconds = 0,
+                Urls = new Dictionary<string, string>
+                {
+                    ["HSDS-UK-SUCCESS"] = successUrl,
+                    ["HSDS-UK-FAIL"] = failUrl
+                }
             }),
             Options.Create(new CacheOptions { Enabled = true }),
             statusTracker,
             logger.Object);
 
-        await service.RunOnce(CancellationToken.None);
+        await RunOnce(service, CancellationToken.None);
 
         var snapshot = statusTracker.GetSnapshot();
-        Assert.That(snapshot.State, Is.EqualTo("completed-with-errors"));
-        Assert.That(snapshot.ConfiguredUrlCount, Is.EqualTo(2));
-        Assert.That(snapshot.AttemptedCount, Is.EqualTo(2));
-        Assert.That(snapshot.SucceededCount, Is.EqualTo(1));
-        Assert.That(snapshot.FailedCount, Is.EqualTo(1));
-        Assert.That(snapshot.LastFailureUrl, Is.EqualTo(failUrl));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(snapshot.State, Is.EqualTo("completed-with-errors"));
+            Assert.That(snapshot.ConfiguredUrlCount, Is.EqualTo(2));
+            Assert.That(snapshot.AttemptedCount, Is.EqualTo(2));
+            Assert.That(snapshot.SucceededCount, Is.EqualTo(1));
+            Assert.That(snapshot.FailedCount, Is.EqualTo(1));
+            Assert.That(snapshot.LastFailureUrl, Is.EqualTo(failUrl));
+        }
     }
 
     [Test]
@@ -121,30 +137,33 @@ public class SchemaWarmupBackgroundServiceTests
 
         var canonicalUrl = "https://example.com/schema.json";
 
-        var service = new TestableSchemaWarmupBackgroundService(
+        var service = CreateService(
             serviceProvider,
-            Options.Create(new SchemaWarmupOptions
+            Options.Create(new SpecificationOptions
             {
-                Enabled = true,
-                StartupDelaySeconds = 0,
-                Urls = new List<string>
+                WarmupEnabled = true,
+                WarmupStartupDelaySeconds = 0,
+                Urls = new Dictionary<string, string>
                 {
-                    canonicalUrl,
-                    $" {canonicalUrl} ",
-                    "HTTPS://EXAMPLE.COM/SCHEMA.JSON"
+                    ["HSDS-UK-PRIMARY"] = canonicalUrl,
+                    ["HSDS-UK-TRIMMED"] = $" {canonicalUrl} ",
+                    ["HSDS-UK-UPPER"] = "HTTPS://EXAMPLE.COM/SCHEMA.JSON"
                 }
             }),
             Options.Create(new CacheOptions { Enabled = true }),
             statusTracker,
             logger.Object);
 
-        await service.RunOnce(CancellationToken.None);
+        await RunOnce(service, CancellationToken.None);
 
         var snapshot = statusTracker.GetSnapshot();
-        Assert.That(snapshot.State, Is.EqualTo("completed"));
-        Assert.That(snapshot.ConfiguredUrlCount, Is.EqualTo(1));
-        Assert.That(snapshot.AttemptedCount, Is.EqualTo(1));
-        Assert.That(snapshot.SucceededCount, Is.EqualTo(1));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(snapshot.State, Is.EqualTo("completed"));
+            Assert.That(snapshot.ConfiguredUrlCount, Is.EqualTo(1));
+            Assert.That(snapshot.AttemptedCount, Is.EqualTo(1));
+            Assert.That(snapshot.SucceededCount, Is.EqualTo(1));
+        }
 
         resolverMock.Verify(r => r.ResolveAsync(It.IsAny<string>(), It.IsAny<string>(), null), Times.Once);
     }
@@ -161,13 +180,16 @@ public class SchemaWarmupBackgroundServiceTests
         var statusTracker = new SchemaWarmupStatusTracker();
         var logger = new Mock<ILogger<SchemaWarmupBackgroundService>>();
 
-        var service = new TestableSchemaWarmupBackgroundService(
+        var service = CreateService(
             serviceProvider,
-            Options.Create(new SchemaWarmupOptions
+            Options.Create(new SpecificationOptions
             {
-                Enabled = true,
-                StartupDelaySeconds = 0,
-                Urls = new List<string> { "https://example.com/schema.json" }
+                WarmupEnabled = true,
+                WarmupStartupDelaySeconds = 0,
+                Urls = new Dictionary<string, string>
+                {
+                    ["HSDS-UK-TEST"] = "https://example.com/schema.json"
+                }
             }),
             Options.Create(new CacheOptions { Enabled = true }),
             statusTracker,
@@ -176,12 +198,15 @@ public class SchemaWarmupBackgroundServiceTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        await service.RunOnce(cts.Token);
+        await RunOnce(service, cts.Token);
 
         var snapshot = statusTracker.GetSnapshot();
-        Assert.That(snapshot.State, Is.EqualTo("cancelled"));
-        Assert.That(snapshot.ConfiguredUrlCount, Is.EqualTo(1));
-        Assert.That(snapshot.AttemptedCount, Is.EqualTo(0));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(snapshot.State, Is.EqualTo("cancelled"));
+            Assert.That(snapshot.ConfiguredUrlCount, Is.EqualTo(1));
+            Assert.That(snapshot.AttemptedCount, Is.Zero);
+        }
 
         resolverMock.Verify(r => r.ResolveAsync(It.IsAny<string>(), It.IsAny<string>(), null), Times.Never);
     }
@@ -189,25 +214,32 @@ public class SchemaWarmupBackgroundServiceTests
     private static ServiceProvider BuildServiceProvider(ISchemaResolverService resolver)
     {
         var services = new ServiceCollection();
-        services.AddScoped<ISchemaResolverService>(_ => resolver);
+        services.AddScoped(_ => resolver);
         return services.BuildServiceProvider();
     }
 
-    private sealed class TestableSchemaWarmupBackgroundService : SchemaWarmupBackgroundService
+    private static SchemaWarmupBackgroundService CreateService(
+        IServiceProvider serviceProvider,
+        IOptions<SpecificationOptions> options,
+        IOptions<CacheOptions> cacheOptions,
+        ISchemaWarmupStatusTracker statusTracker,
+        ILogger<SchemaWarmupBackgroundService> logger,
+        ISchemaWarmupExecutor? executor = null)
     {
-        public TestableSchemaWarmupBackgroundService(
-            IServiceProvider serviceProvider,
-            IOptions<SchemaWarmupOptions> options,
-            IOptions<CacheOptions> cacheOptions,
-            ISchemaWarmupStatusTracker statusTracker,
-            ILogger<SchemaWarmupBackgroundService> logger)
-            : base(serviceProvider, options, cacheOptions, statusTracker, logger)
-        {
-        }
+        return new SchemaWarmupBackgroundService(serviceProvider, options, cacheOptions, statusTracker, logger, executor);
+    }
 
-        public Task RunOnce(CancellationToken cancellationToken)
-        {
-            return ExecuteAsync(cancellationToken);
-        }
+    private static Task RunOnce(SchemaWarmupBackgroundService service, CancellationToken cancellationToken)
+    {
+        var method = typeof(SchemaWarmupBackgroundService).GetMethod(
+            "ExecuteAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+
+        Assert.That(method, Is.Not.Null, "ExecuteAsync method not found via reflection.");
+
+        var result = method!.Invoke(service, [cancellationToken]) as Task;
+        Assert.That(result, Is.Not.Null, "ExecuteAsync did not return a Task.");
+
+        return result!;
     }
 }

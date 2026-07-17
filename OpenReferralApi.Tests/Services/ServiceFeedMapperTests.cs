@@ -1,5 +1,4 @@
 using MongoDB.Bson;
-using OpenReferralApi.Core.Models;
 
 namespace OpenReferralApi.Tests.Services;
 
@@ -17,27 +16,33 @@ public class ServiceFeedMapperTests
 
         var withoutServiceUrl = new ServiceFeed
         {
-            Service = new BsonDocument(),
+            Service = [],
             UrlField = "https://from-url-field.example"
         };
 
-        Assert.That(ServiceFeedMapper.GetUrl(withServiceUrl), Is.EqualTo("https://from-service.example"));
-        Assert.That(ServiceFeedMapper.GetUrl(withoutServiceUrl), Is.EqualTo("https://from-url-field.example"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(ServiceFeedMapper.GetUrl(withServiceUrl), Is.EqualTo("https://from-service.example"));
+            Assert.That(ServiceFeedMapper.GetUrl(withoutServiceUrl), Is.EqualTo("https://from-url-field.example"));
+        }
     }
 
     [Test]
     public void GetBoolean_HandlesBoolStringAndNestedValue()
     {
-        Assert.That(ServiceFeedMapper.GetBoolean(new BsonBoolean(true)), Is.True);
-        Assert.That(ServiceFeedMapper.GetBoolean(new BsonString("true")), Is.True);
-        Assert.That(ServiceFeedMapper.GetBoolean(new BsonString("TRUE")), Is.True);
-        Assert.That(ServiceFeedMapper.GetBoolean(new BsonString("false")), Is.False);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(ServiceFeedMapper.GetBoolean(new BsonBoolean(true)), Is.True);
+            Assert.That(ServiceFeedMapper.GetBoolean(new BsonString("true")), Is.True);
+            Assert.That(ServiceFeedMapper.GetBoolean(new BsonString("TRUE")), Is.True);
+            Assert.That(ServiceFeedMapper.GetBoolean(new BsonString("false")), Is.False);
 
-        var nested = new BsonDocument { { "value", "true" } };
-        Assert.That(ServiceFeedMapper.GetBoolean(nested), Is.True);
+            var nested = new BsonDocument { { "value", "true" } };
+            Assert.That(ServiceFeedMapper.GetBoolean(nested), Is.True);
 
-        var nestedFalse = new BsonDocument { { "value", false } };
-        Assert.That(ServiceFeedMapper.GetBoolean(nestedFalse), Is.False);
+            var nestedFalse = new BsonDocument { { "value", false } };
+            Assert.That(ServiceFeedMapper.GetBoolean(nestedFalse), Is.False);
+        }
     }
 
     [Test]
@@ -51,8 +56,11 @@ public class ServiceFeedMapperTests
             { "url", "/developers/dashboard/1" }
         };
 
-        Assert.That(ServiceFeedMapper.GetLastTestedTime(scalar), Is.Not.Null);
-        Assert.That(ServiceFeedMapper.GetLastTestedTime(nested), Is.Not.Null);
-        Assert.That(ServiceFeedMapper.GetTestResultsUrl(nested), Is.EqualTo("/developers/dashboard/1"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(ServiceFeedMapper.GetLastTestedTime(scalar), Is.Not.Null);
+            Assert.That(ServiceFeedMapper.GetLastTestedTime(nested), Is.Not.Null);
+            Assert.That(ServiceFeedMapper.GetTestResultsUrl(nested), Is.EqualTo("/developers/dashboard/1"));
+        }
     }
 }

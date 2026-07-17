@@ -1,9 +1,7 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
 using OpenReferralApi.HealthChecks;
 

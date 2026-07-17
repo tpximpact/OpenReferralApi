@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using OpenReferralApi.Controllers;
-using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
 
 namespace OpenReferralApi.Tests.Controllers;
@@ -32,17 +31,14 @@ public class OpenApiControllerTests
         var request = new OpenApiValidationRequest
         {
             BaseUrl = "https://api.example.com",
-            OpenApiSchema = new OpenApiSchema
-            {
-                Url = "https://api.example.com/openapi.json"
-            }
+            OwnSchemaUrl = "https://api.example.com/openapi.json"
         };
 
         var validationResult = new OpenApiValidationResult
         {
             IsValid = true
         };
-        
+
         _validationServiceMock
             .Setup(x => x.ValidateOpenApiSpecificationAsync(It.IsAny<OpenApiValidationRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(validationResult);
@@ -62,17 +58,14 @@ public class OpenApiControllerTests
         var request = new OpenApiValidationRequest
         {
             BaseUrl = "https://api.example.com",
-            OpenApiSchema = new OpenApiSchema
-            {
-                Url = "https://api.example.com/openapi.json"
-            }
+            OwnSchemaUrl = "https://api.example.com/openapi.json"
         };
 
         var expectedNotification = "Unable to get or resolve the OpenAPI specification from https://api.example.com/openapi.json. 404";
         var validationResult = new OpenApiValidationResult
         {
             IsValid = false,
-            Notifications = new List<string> { expectedNotification }
+            Notifications = [expectedNotification]
         };
 
         _validationServiceMock
@@ -98,8 +91,7 @@ public class OpenApiControllerTests
         // Arrange
         var request = new OpenApiValidationRequest
         {
-            BaseUrl = null,
-            OpenApiSchema = null
+            BaseUrl = null
         };
 
         // Act

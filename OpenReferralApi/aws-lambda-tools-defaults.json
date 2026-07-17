@@ -1,0 +1,12 @@
+{
+  "Information": [ "This file is used to store default values for the dotnet lambda commands." ],
+  "profile": "default",
+  "region": "eu-west-1",
+  "configuration": "Release",
+  "framework": "net10.0",
+  "function-runtime": "dotnet10",
+  "function-memory-size": 2048,
+  "function-timeout": 60,
+  "function-handler": "OpenReferralApi",
+  "function-name": "OpenReferralApi"
+}

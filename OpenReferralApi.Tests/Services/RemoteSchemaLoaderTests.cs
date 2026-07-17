@@ -2,9 +2,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using OpenReferralApi.Core.Models;
 using OpenReferralApi.Core.Services;
-using System.Text.Json.Nodes;
 
 namespace OpenReferralApi.Tests.Services;
 
@@ -12,14 +10,14 @@ namespace OpenReferralApi.Tests.Services;
 public class RemoteSchemaLoaderTests
 {
     private Mock<ILogger<SchemaResolverService>> _loggerMock;
-    private IMemoryCache _memoryCache;
+    private MemoryCache _memoryCache;
     private IOptions<CacheOptions> _cacheOptions;
 
     [SetUp]
     public void Setup()
     {
         _loggerMock = new Mock<ILogger<SchemaResolverService>>();
-        
+
         // Create real MemoryCache for testing
         _memoryCache = new MemoryCache(new MemoryCacheOptions
         {
@@ -62,8 +60,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         var auth = new DataSourceAuthentication
         {
@@ -81,10 +79,13 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
-        Assert.That(capturedRequest!.Headers.Contains("X-Valid-Header"), Is.True, "Valid header should be applied");
-        Assert.That(capturedRequest.Headers.Contains("X-Another-Valid"), Is.True, "Another valid header should be applied");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+            Assert.That(capturedRequest!.Headers.Contains("X-Valid-Header"), Is.True, "Valid header should be applied");
+            Assert.That(capturedRequest.Headers.Contains("X-Another-Valid"), Is.True, "Another valid header should be applied");
+        }
         // HttpHeaders.Contains() throws FormatException for invalid header names, so we can't check directly
         // The important thing is the valid headers were added successfully, meaning invalid one was skipped
     }
@@ -107,8 +108,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         var auth = new DataSourceAuthentication
         {
@@ -124,8 +125,11 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+        }
         // HttpHeaders.Contains() throws FormatException for invalid header names, so we can't check directly
         // The important thing is the request succeeded, meaning the invalid header was skipped
     }
@@ -148,8 +152,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         var auth = new DataSourceAuthentication
         {
@@ -166,9 +170,12 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
-        Assert.That(capturedRequest!.Headers.Contains("X-Valid-Header"), Is.True);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+            Assert.That(capturedRequest!.Headers.Contains("X-Valid-Header"), Is.True);
+        }
         // HttpHeaders.Contains() throws FormatException for invalid header names, so we can't check directly
         // The important thing is the valid header was added successfully
     }
@@ -191,8 +198,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         IAuthenticationConfig auth = new TestAuthenticationConfig
         {
@@ -210,10 +217,13 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
-        Assert.That(capturedRequest!.Headers.Contains("X-Test-Key"), Is.True);
-        Assert.That(capturedRequest.Headers.Contains("X-From-Interface"), Is.True);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+            Assert.That(capturedRequest!.Headers.Contains("X-Test-Key"), Is.True);
+            Assert.That(capturedRequest.Headers.Contains("X-From-Interface"), Is.True);
+        }
     }
 
     private sealed class TestAuthenticationConfig : IAuthenticationConfig
@@ -222,7 +232,7 @@ public class RemoteSchemaLoaderTests
         public string ApiKeyHeader { get; set; } = "X-API-Key";
         public string? BearerToken { get; set; }
         public BasicAuthentication? BasicAuth { get; set; }
-        public Dictionary<string, string>? CustomHeaders { get; set; } = new();
+        public Dictionary<string, string>? CustomHeaders { get; set; } = [];
     }
 
     [Test]
@@ -243,8 +253,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         var auth = new DataSourceAuthentication
         {
@@ -258,8 +268,11 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+        }
         // HttpHeaders.Contains() throws FormatException for invalid header names, so we can't check directly
         // The important thing is the request succeeded without adding the invalid header
     }
@@ -281,15 +294,18 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         // Act & Assert
         var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
             await loader.LoadRemoteSchemaAsync("file:///etc/passwd"));
-        
-        Assert.That(ex!.Message, Does.Contain("Invalid schema URL"));
-        Assert.That(ex.Message, Does.Contain("HTTP and HTTPS"));
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(ex!.Message, Does.Contain("Invalid schema URL"));
+            Assert.That(ex.Message, Does.Contain("HTTP and HTTPS"));
+        }
     }
 
     [Test]
@@ -305,13 +321,13 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         // Act & Assert
         var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
             await loader.LoadRemoteSchemaAsync("ftp://malicious.com/schema.json"));
-        
+
         Assert.That(ex!.Message, Does.Contain("Invalid schema URL"));
     }
 
@@ -328,13 +344,13 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         // Act & Assert
         var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
             await loader.LoadRemoteSchemaAsync("data:text/plain,{\"type\":\"object\"}"));
-        
+
         Assert.That(ex!.Message, Does.Contain("Invalid schema URL"));
     }
 
@@ -354,8 +370,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         // Act
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
@@ -380,8 +396,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         // Act
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
@@ -412,8 +428,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         var auth = new DataSourceAuthentication
         {
@@ -427,9 +443,12 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
-        Assert.That(capturedRequest!.Headers.Authorization, Is.Null, "No authorization header should be added");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+            Assert.That(capturedRequest!.Headers.Authorization, Is.Null, "No authorization header should be added");
+        }
         // Don't check header count as HttpClient may add default headers like User-Agent
     }
 
@@ -451,8 +470,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         var auth = new DataSourceAuthentication
         {
@@ -469,9 +488,12 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
-        Assert.That(capturedRequest!.Headers.Authorization, Is.Null, "BasicAuth with empty password should be skipped");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+            Assert.That(capturedRequest!.Headers.Authorization, Is.Null, "BasicAuth with empty password should be skipped");
+        }
     }
 
     [Test]
@@ -492,8 +514,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         var auth = new DataSourceAuthentication
         {
@@ -510,9 +532,12 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
-        Assert.That(capturedRequest!.Headers.Authorization, Is.Null, "BasicAuth with null password should be skipped");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+            Assert.That(capturedRequest!.Headers.Authorization, Is.Null, "BasicAuth with null password should be skipped");
+        }
     }
 
     [Test]
@@ -533,8 +558,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         var auth = new DataSourceAuthentication
         {
@@ -551,10 +576,13 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
-        Assert.That(capturedRequest!.Headers.Authorization, Is.Not.Null);
-        Assert.That(capturedRequest.Headers.Authorization!.Scheme, Is.EqualTo("Basic"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+            Assert.That(capturedRequest!.Headers.Authorization, Is.Not.Null);
+            Assert.That(capturedRequest.Headers.Authorization!.Scheme, Is.EqualTo("Basic"));
+        }
     }
 
     [Test]
@@ -575,8 +603,8 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, _cacheOptions);
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
 
         var auth = new DataSourceAuthentication();  // Empty auth object
 
@@ -586,9 +614,12 @@ public class RemoteSchemaLoaderTests
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(capturedRequest, Is.Not.Null);
-        Assert.That(capturedRequest!.Headers.Authorization, Is.Null);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(capturedRequest, Is.Not.Null);
+            Assert.That(capturedRequest!.Headers.Authorization, Is.Null);
+        }
     }
 
     #endregion
@@ -611,27 +642,29 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        
+
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
         var cacheOptions = Options.Create(new CacheOptions
         {
             Enabled = true,
             ExpirationMinutes = 60,
             UseSlidingExpiration = false
         });
-
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, cacheOptions);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, cacheOptions);
 
         // Act
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        
-        var cacheKey = $"schema:{schemaUrl}";
-        var cached = _memoryCache.TryGetValue<string>(cacheKey, out var cachedContent);
-        Assert.That(cached, Is.True, "Schema should be cached");
-        Assert.That(cachedContent, Is.EqualTo(schemaJson));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+
+            var cacheKey = $"schema:{schemaUrl}";
+            var cached = _memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema);
+            Assert.That(cached, Is.True, "Schema should be cached");
+            Assert.That(cachedSchema?.RawJson, Is.EqualTo(schemaJson));
+        }
     }
 
     [Test]
@@ -650,8 +683,7 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-        
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
         var cacheOptions = Options.Create(new CacheOptions
         {
             Enabled = true,
@@ -659,18 +691,20 @@ public class RemoteSchemaLoaderTests
             UseSlidingExpiration = true,
             SlidingExpirationMinutes = 60
         });
-
-        var loader = new RemoteSchemaLoader(httpClient, _loggerMock.Object, _memoryCache, cacheOptions);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, cacheOptions);
 
         // Act
         var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
-        
-        var cacheKey = $"schema:{schemaUrl}";
-        var cached = _memoryCache.TryGetValue<string>(cacheKey, out var cachedContent);
-        Assert.That(cached, Is.True, "Schema should be cached with sliding expiration");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+
+            var cacheKey = $"schema:{schemaUrl}";
+            var cached = _memoryCache.TryGetValue<CachedSchema>(cacheKey, out var cachedSchema);
+            Assert.That(cached, Is.True, "Schema should be cached with sliding expiration");
+        }
     }
 
     [Test]
@@ -690,38 +724,103 @@ public class RemoteSchemaLoaderTests
             };
         });
 
-        using var httpClient = new HttpClient(handler);
-
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
         var cacheOptions = Options.Create(new CacheOptions
         {
             Enabled = true,
             ExpirationMinutes = 60,
             UseSlidingExpiration = false
         });
-
         var loader = new RemoteSchemaLoader(
-            httpClient,
+            httpClientFactory,
             _loggerMock.Object,
             _memoryCache,
             cacheOptions,
-            localSpecificationBaseUrl: null,
-            knownJsonSchemaUrls: new[] { canonicalUrl });
+            knownJsonSchemaUrls: [canonicalUrl]);
 
         // Act
         var result = await loader.LoadRemoteSchemaAsync(requestedUrl);
 
         // Assert
-        Assert.That(result, Is.Not.Null);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
 
-        var canonicalCacheKey = $"schema:{canonicalUrl}";
-        var rawCacheKey = $"schema:{requestedUrl}";
+            var canonicalCacheKey = $"schema:{canonicalUrl}";
+            var rawCacheKey = $"schema:{requestedUrl}";
 
-        var hasCanonicalEntry = _memoryCache.TryGetValue<string>(canonicalCacheKey, out var canonicalContent);
-        var hasRawEntry = _memoryCache.TryGetValue<string>(rawCacheKey, out _);
+            var hasCanonicalEntry = _memoryCache.TryGetValue<CachedSchema>(canonicalCacheKey, out var cachedSchema);
+            var hasRawEntry = _memoryCache.TryGetValue<CachedSchema>(rawCacheKey, out _);
 
-        Assert.That(hasCanonicalEntry, Is.True, "Known schema URL should be cached using canonical normalized URL");
-        Assert.That(canonicalContent, Is.EqualTo(schemaJson));
-        Assert.That(hasRawEntry, Is.False, "Raw URL with query/fragment should not be used as cache key");
+            Assert.That(hasCanonicalEntry, Is.True, "Known schema URL should be cached using canonical normalized URL");
+            Assert.That(cachedSchema?.RawJson, Is.EqualTo(schemaJson));
+            Assert.That(hasRawEntry, Is.False, "Raw URL with query/fragment should not be used as cache key");
+        }
+    }
+
+    #endregion
+
+    #region Connection Resiliency Tests
+
+    [Test]
+    public async Task LoadRemoteSchemaAsync_WhenHttpRequestExceptionThrown_LogsWarningAndReturnsNull()
+    {
+        // Arrange
+        var schemaUrl = "https://example.com/schema.json";
+        var handler = new MockHttpMessageHandler(request =>
+        {
+            throw new HttpRequestException("DNS resolution failed");
+        });
+
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
+
+        // Act
+        var result = await loader.LoadRemoteSchemaAsync(schemaUrl);
+
+        // Assert
+        Assert.That(result, Is.Null);
+    }
+
+    [Test]
+    public async Task LoadRemoteSchemaAsync_WhenOperationCanceledExceptionThrownDueToTimeout_LogsWarningAndReturnsNull()
+    {
+        // Arrange
+        var schemaUrl = "https://example.com/schema.json";
+        var handler = new MockHttpMessageHandler(request =>
+        {
+            throw new OperationCanceledException("The operation was canceled.");
+        });
+
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
+
+        // Act
+        var result = await loader.LoadRemoteSchemaAsync(schemaUrl, CancellationToken.None);
+
+        // Assert
+        Assert.That(result, Is.Null);
+    }
+
+    [Test]
+    public void LoadRemoteSchemaAsync_WhenOperationCanceledExceptionThrownDueToUserCancellation_PropagatesException()
+    {
+        // Arrange
+        var schemaUrl = "https://example.com/schema.json";
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var handler = new MockHttpMessageHandler(request =>
+        {
+            throw new OperationCanceledException(cts.Token);
+        });
+
+        var httpClientFactory = TestHttpClientFactory.CreateFactory(handler);
+        var loader = new RemoteSchemaLoader(httpClientFactory, _loggerMock.Object, _memoryCache, _cacheOptions);
+
+        // Act & Assert
+        Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            await loader.LoadRemoteSchemaAsync(schemaUrl, cts.Token));
     }
 
     #endregion
@@ -729,14 +828,9 @@ public class RemoteSchemaLoaderTests
     /// <summary>
     /// Mock HTTP message handler for testing
     /// </summary>
-    private class MockHttpMessageHandler : HttpMessageHandler
+    private class MockHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handler) : HttpMessageHandler
     {
-        private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> _handler;
-
-        public MockHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handler)
-        {
-            _handler = handler;
-        }
+        private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> _handler = handler;
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

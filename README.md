@@ -44,8 +44,8 @@ This solution is built as a modern, cloud-native application with the following 
 - **Language**: C# 13+ with nullable reference types enabled
 - **API Documentation**: Swagger/OpenAPI with XML documentation comments
 - **Database**: MongoDB (optional) for storing service registrations and validation history
-- **Validation Engine**: 
-  - JSON Schema validation using Newtonsoft.Json.Schema (v4.0.1) and JsonSchema.Net (v8.0.5)
+- **Validation Engine**:
+  - JSON Schema validation using JsonSchema.Net with System.Text.Json node processing
   - OpenAPI specification parsing and validation
   - Automated endpoint discovery and testing
   - Response schema validation against HSDS-UK standards
@@ -62,9 +62,9 @@ This solution is built as a modern, cloud-native application with the following 
 ### Core Services
 
 - **OpenApiValidationService**: Orchestrates OpenAPI spec validation and endpoint testing
-- **OpenApiDiscoveryService**: Discovers and parses OpenAPI specifications from URLs
+- **ProfileDiscoveryService**: Discovers and parses OpenAPI specifications from URLs
 - **JsonValidatorService**: Validates JSON responses against HSDS-UK schemas
-- **SchemaResolverService**: Resolves JSON Schema definitions and creates JSchema objects
+- **SchemaResolverService**: Resolves JSON Schema definitions and pre-resolves `$ref` references for runtime validation
 - **RequestProcessingService**: HTTP client management with caching and timeout handling
 - **PathParsingService**: URL and path parameter parsing utilities
 - **OpenApiToValidationResponseMapper**: Maps validation results to response formats
@@ -73,6 +73,7 @@ This solution is built as a modern, cloud-native application with the following 
 ### Deployment
 
 - **Containerization**: Multi-stage Docker builds with Linux-based images
+- **Serverless**: AWS Lambda hosting enabled via `Amazon.Lambda.AspNetCoreServer.Hosting` and HTTP API event source
 - **Cloud Platform**: Heroku-ready with dynamic port configuration
 - **Orchestration**: Kubernetes-compatible health check endpoints
 - **CORS**: Configurable cross-origin resource sharing for frontend integration
@@ -91,29 +92,229 @@ For detailed information about specific components, see:
 ### API Documentation
 
 When running locally in development mode, interactive API documentation is available at:
+
 - **Swagger UI**: `http://localhost:6969/` (or your configured port)
-- **OpenAPI Spec**: `http://localhost:6969/swagger/v1/swagger.json`
+- **OpenAPI Spec**: `http://localhost:6969/swagger/v3/swagger.json`
 
 ### Quick Start
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/openReferralUK/oruk-validator.git
    cd OpenReferralApi
    ```
 
 2. **Run with Docker**:
+
    ```bash
    docker-compose up
    ```
 
 3. **Or run with .NET CLI**:
+
    ```bash
    dotnet restore
    dotnet run --project OpenReferralApi/OpenReferralApi.csproj
    ```
 
 4. **Access Swagger UI**: Open `http://localhost:6969` in your browser
+
+## Configuration
+
+The application loads configuration in this order:
+
+1. `appsettings.json`
+2. `appsettings.{Environment}.json`
+3. Environment variables prefixed with `ORUK_API_`
+4. JSON patch environment variables for complex dictionary/list values:
+   - `ORUK_API_Specification__UrlsJson`
+   - `ORUK_API_SchemaResolution__KnownUrlsJson`
+
+Example for JSON patch environment variables:
+
+```bash
+export ORUK_API_Specification__UrlsJson='{"HSDS-UK-3.0":"https://openreferraluk.org/specifications/3.0/openapi.json"}'
+export ORUK_API_SchemaResolution__KnownUrlsJson='["https://json-schema.org/draft/2020-12/schema"]'
+```
+
+### Configuration Sections
+
+#### `Specification`
+
+- `WarmupEnabled` (bool): pre-fetch schemas at startup.
+- `WarmupStartupDelaySeconds` (int): delay before warmup starts.
+- `Urls` (object): map of profile key to OpenAPI URL.
+- `DefaultProfileVersion` (string|null): fallback profile key.
+
+#### `OpenApiValidation` (server-side)
+
+- `OwnSchemaValidation`: `None` | `AllowAdditionalProperties` | `Strict`.
+- `HsdsValidationMode`: `Fast` | `Full`.
+- `AllowUserSuppliedAuth` (bool): allow/reject request `dataSourceAuth`.
+- `ValidateSpecification` (bool): enable OpenAPI structure/profile comparison checks.
+- `TestEndpoints` (bool): enable live endpoint testing.
+- `TestOptionalEndpoints` (bool): test optional endpoints.
+- `TreatOptionalEndpointsAsWarnings` (bool): downgrade optional endpoint failures.
+- `MaxRetainedResponseBodyCharacters` (int): output/body retention cap.
+- `MaxValidationErrorsPerResponse` (int): cap validation errors retained per response.
+
+#### `Cache`
+
+- `Enabled` (bool): enable in-memory schema cache.
+- `ExpirationMinutes` (int): absolute expiration.
+- `MaxSizeMB` (int): memory cap.
+- `UseSlidingExpiration` (bool): enable sliding expiration.
+- `SlidingExpirationMinutes` (int): sliding window.
+
+#### `SchemaResolution`
+
+- `WarnOnUnknownJsonSchemaDraft` (bool): warn on unknown json-schema.org draft URL.
+- `KnownJsonSchemaUrls` (array): canonical draft/meta-schema URLs used in normalization.
+
+#### `Database`
+
+- `ConnectionString` (string): MongoDB connection; if empty, Mongo-backed services are disabled.
+- `DatabaseName` (string)
+- `ServicesCollection` (string)
+
+#### `FeedValidation`
+
+- `Enabled` (bool): enable periodic feed revalidation job.
+- `IntervalHours` (number): schedule interval.
+- `RunAtMidnight` (bool): align runs to midnight when enabled.
+
+#### `Security`
+
+- `AllowedCorsOrigins` (array): list of allowed origins (`"*"` permits all).
+- `ValidateSslCertificates` (bool): controls outbound HTTPS certificate validation.
+
+#### `RateLimiting`
+
+- `PermitLimit` (int): requests per fixed window.
+- `Window` (int): window length in seconds.
+- `QueueLimit` (int): queued requests allowed.
+
+#### `OpenTelemetry`
+
+- `Enabled` (bool): enable tracing/metrics.
+- `OtlpEndpoint` (string|null): OTLP endpoint; in Development with no endpoint, console exporter is used.
+
+#### `Swagger`
+
+- `DocName` (string)
+- `Version` (string)
+- `Title` (string)
+- `Description` (string)
+- `OpenApiSpecVersion` (string, for example `OpenApi3_1_0`)
+
+#### Other standard sections
+
+- `Serilog`: sink and level configuration.
+- `AllowedHosts`: ASP.NET Core host filtering.
+
+### Request-level Validation Options
+
+Clients can set validation request options in payload `options`:
+
+- `timeoutSeconds` (default 30)
+- `maxConcurrentRequests` (default 5)
+- `includeResponseBody` (default false)
+- `includeTestResults` (default true)
+- `reportAdditionalFields` (default false)
+
+Server `OpenApiValidation` settings still apply and are not overridable by client payloads.
+
+## Deploying To AWS Lambda
+
+This project is Lambda-ready and uses `AddAWSLambdaHosting(LambdaEventSource.HttpApi)`.
+
+### Prerequisites
+
+1. AWS CLI configured (`aws configure`) with permissions for Lambda, CloudWatch Logs, and API Gateway.
+2. .NET 10 SDK installed.
+3. Amazon Lambda .NET tooling installed:
+
+```bash
+dotnet tool install -g Amazon.Lambda.Tools
+```
+
+### Deploy The Function
+
+From repository root:
+
+```bash
+dotnet lambda deploy-function OpenReferralApi \
+  --project-location OpenReferralApi \
+  --region eu-west-2 \
+  --configuration Release \
+  --framework net10.0 \
+  --function-runtime dotnet10 \
+  --function-memory-size 2048 \
+  --function-timeout 60
+```
+
+You can also run `dotnet lambda deploy-function` from `OpenReferralApi/` and it will use `aws-lambda-tools-defaults.json`.
+
+### Configure Environment Variables
+
+Set runtime settings as Lambda environment variables:
+
+```bash
+aws lambda update-function-configuration \
+  --function-name OpenReferralApi \
+  --environment "Variables={ASPNETCORE_ENVIRONMENT=Production,ORUK_API_OpenApiValidation__AllowUserSuppliedAuth=false,ORUK_API_FeedValidation__Enabled=false}"
+```
+
+For larger settings such as profile URL maps, prefer `ORUK_API_Specification__UrlsJson`.
+
+### Attach API Gateway HTTP API
+
+1. Create an API Gateway HTTP API.
+2. Add Lambda integration targeting `OpenReferralApi` function.
+3. Add route `ANY /{proxy+}` (or explicit routes as needed).
+4. Deploy a stage and use that invoke URL.
+
+After deployment, open the API base URL and verify:
+
+- `/`
+- `/health-check/live`
+- `/health-check/ready`
+- `/swagger/v3/swagger.json`
+
+### AWS Lambda Reference Architecture
+
+```text
+Client (Web/App/CLI)
+  |
+  v
+Amazon API Gateway (HTTP API)
+  |
+  v
+AWS Lambda: OpenReferralApi (.NET 10)
+  - ASP.NET Core pipeline
+  - Validation services
+  - Swagger endpoint
+  - Health endpoints
+  |
+  +------------------------------+
+  |                              |
+  v                              v
+External ORUK/HSDS Spec URLs      CloudWatch Logs/Metrics
+(schema/profile discovery)         (runtime observability)
+  |
+  v
+Optional MongoDB (if Database:ConnectionString is set)
+  - feed registry
+  - feed validation history
+```
+
+Request path summary:
+
+1. Client sends request to API Gateway route.
+2. API Gateway forwards request to Lambda using HTTP API proxy integration.
+3. Lambda executes ASP.NET Core middleware/controllers and returns the response.
+4. Lambda writes logs/metrics to CloudWatch; validation may call remote OpenAPI/schema URLs and optional MongoDB.
 
 ## Current API Routes
 
@@ -133,14 +334,13 @@ When running locally in development mode, interactive API documentation is avail
 
 - `GET /health-check` all registered checks
 - `GET /health-check/ready` readiness checks
-- `GET /health-check/overall` deployment/readiness checks
 - `GET /health-check/live` liveness check including `schemaWarmup` status snapshot
 
 ## Authentication
 
 The OpenReferral API validation service supports multiple authentication methods for testing protected API endpoints. Authentication can be configured when making validation requests to ensure the validator can access secured endpoints.
 
-Only one authentication method is permitted per authentication object. For `openApiSchema.authentication` and `dataSourceAuth`, provide exactly one of: `apiKey` (+ optional `apiKeyHeader`), `bearerToken`, `basicAuth`, or `customHeaders`.
+Only one authentication method is permitted per authentication object. For `dataSourceAuth`, provide exactly one of: `apiKey` (+ optional `apiKeyHeader`), `bearerToken`, `basicAuth`, or `customHeaders`.
 
 ### Authentication Types
 
@@ -150,9 +350,7 @@ Use API keys passed via HTTP headers (default header: `X-API-Key`):
 
 ```json
 {
-  "openApiSchema": {
-    "url": "https://api.example.com/openapi.json"
-  },
+  "ownSchemaUrl": "https://api.example.com/openapi.json",
   "baseUrl": "https://api.example.com",
   "dataSourceAuth": {
     "apiKey": "your-api-key-here",
@@ -169,9 +367,7 @@ Use bearer tokens for OAuth 2.0 or JWT-based authentication:
 
 ```json
 {
-  "openApiSchema": {
-    "url": "https://api.example.com/openapi.json"
-  },
+  "ownSchemaUrl": "https://api.example.com/openapi.json",
   "baseUrl": "https://api.example.com",
   "dataSourceAuth": {
     "bearerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -181,15 +377,89 @@ Use bearer tokens for OAuth 2.0 or JWT-based authentication:
 
 This adds an `Authorization: Bearer <token>` header to all endpoint requests.
 
-#### Basic Authentication
+## Profile OpenAPI Mapping
+
+Profile OpenAPI lookup uses the configured `Specification:Urls` dictionary, merged over the built-in defaults. The same dictionary also drives schema warmup, so resolution and cache priming stay aligned.
+
+Example:
+
+```json
+"Specification": {
+  "WarmupEnabled": true,
+  "WarmupStartupDelaySeconds": 5,
+  "Urls": {
+    "HSDS-UK-3.0": "https://openreferraluk.org/specifications/3.0/openapi.json",
+    "HSDS-UK-3.1": "https://openreferraluk.org/specifications/3.1/openapi.json"
+  }
+}
+```
+
+ASP.NET Core binds this dictionary from the configuration path `Specification:Urls:<profile-name>`.
+
+With this application's `ORUK_API_` environment-variable prefix, the raw environment variable shape is:
+
+```text
+ORUK_API_SPECIFICATION__URLS__HSDS-UK-3.0=https://openreferraluk.org/specifications/3.0/openapi.json
+ORUK_API_SPECIFICATION__URLS__HSDS-UK-3.1=https://openreferraluk.org/specifications/3.1/openapi.json
+```
+
+On macOS/Linux shells, names containing `-` or `.` are not valid shell identifiers, so `export ORUK_API_SPECIFICATION__URLS__HSDS-UK-3.0=...` will not work.
+
+For Unix-hosted deployments, prefer one of these options:
+
+- Put the mapping in `appsettings.{Environment}.json` or another JSON configuration source.
+- Use a hosting platform or secret store UI that supports raw environment names with dots.
+- Keep the built-in defaults and only use config overrides for non-versioned keys that are shell-safe.
+
+Validation behavior:
+
+- If no OpenAPI spec is found on the data service, the validator resolves the profile version and validates the data service against the mapped profile OpenAPI.
+- If the data service provides its own OpenAPI spec, the validator validates the data service against that spec, validates the spec structure against the official OpenAPI schema, and compares the data-service spec against the mapped profile OpenAPI.
+- Missing required endpoints/properties are failures; additional endpoints/properties are informational findings.
+- Circular schema references are reported in schema/endpoint validation findings and are not repeated in `notifications`.
+
+### Server-side OpenAPI validation controls
+
+All `OpenApiValidation` settings are configured on the server and are **not overridable by client request payloads**:
+
+- **`OwnSchemaValidation`**: Controls how the validation engine treats data feed OpenAPI specs:
+  - `None` (default): Validates endpoint responses against the resolved HSDS profile schema
+  - `AllowAdditionalProperties`: Keeps feed-schema validation but downgrades own-schema `ADDITIONAL_FIELD` findings to warnings
+  - `Strict`: Treats additional properties as errors
+
+- **`HsdsValidationMode`**: Controls the depth of HSDS specification compliance checking:
+  - `Fast` (default): Validates feed spec against HSDS profile, tests live endpoints
+  - `Full`: Also re-validates live endpoint responses against HSDS profile schemas
+
+- **`ValidateSpecification`**: Enables/disables OpenAPI structural validation and HSDS profile comparison
+  - `false` (default): Skips structural validation
+  - `true`: Validates OpenAPI spec structure against official OpenAPI schema and compares against HSDS profile
+  - Environment variable: `ORUK_API_OPENAPIVALIDATION__VALIDATESPECIFICATION`
+
+- **`AllowUserSuppliedAuth`**: Controls whether client-supplied authentication credentials are accepted
+  - `false` (default): Client `dataSourceAuth` requests are rejected
+  - `true`: Clients can provide API keys, bearer tokens, basic auth, or custom headers
+  - Enable only if you trust clients to supply credentials appropriately
+
+- **`TestEndpoints`**: Enables/disables live endpoint testing
+  - `true` (default): API validation includes automated endpoint tests
+  - `false`: Skips endpoint testing, validation focuses on spec structure only
+
+- **`TestOptionalEndpoints`**: Controls whether optional endpoints are tested
+  - `true` (default): Tests all endpoints, including those marked optional in HSDS spec
+  - `false`: Skips testing of optional endpoints
+
+- **`TreatOptionalEndpointsAsWarnings`**: Controls severity of missing optional endpoints
+  - `true` (default): Missing optional endpoints are reported as warnings
+  - `false`: Missing optional endpoints are reported as errors
+
+### Basic Authentication
 
 Use HTTP Basic Authentication with username and password:
 
 ```json
 {
-  "openApiSchema": {
-    "url": "https://api.example.com/openapi.json"
-  },
+  "ownSchemaUrl": "https://api.example.com/openapi.json",
   "baseUrl": "https://api.example.com",
   "dataSourceAuth": {
     "basicAuth": {
@@ -208,9 +478,7 @@ Add any custom HTTP headers required by your API:
 
 ```json
 {
-  "openApiSchema": {
-    "url": "https://api.example.com/openapi.json"
-  },
+  "ownSchemaUrl": "https://api.example.com/openapi.json",
   "baseUrl": "https://api.example.com",
   "dataSourceAuth": {
     "customHeaders": {
@@ -239,16 +507,12 @@ Custom headers must be used as the only configured method in the auth object.
 curl -X POST http://localhost:6969/openreferraluk/validate \
   -H "Content-Type: application/json" \
   -d '{
-    "openApiSchema": {
-      "url": "https://api.example.com/openapi.json"
-    },
+    "ownSchemaUrl": "https://api.example.com/openapi.json",
     "baseUrl": "https://api.example.com",
     "dataSourceAuth": {
       "bearerToken": "your-jwt-token-here"
     },
     "options": {
-      "testEndpoints": true,
-      "validateSpecification": true,
       "timeoutSeconds": 30,
       "maxConcurrentRequests": 5
     }
@@ -284,10 +548,12 @@ See [legacy documentation and design decisions](docs/legacy-documentation-and-de
 The Human Services Data Specification UK (HSDS-UK) schema, standard documentation, and associated materials are licensed under the **Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0)**.
 
 This allows you to:
+
 - **Share**: Copy and redistribute the material in any medium or format
 - **Adapt**: Remix, transform, and build upon the material for any purpose, even commercially
 
 Under the following terms:
+
 - **Attribution**: You must give appropriate credit, provide a link to the license, and indicate if changes were made
 - **ShareAlike**: If you remix, transform, or build upon the material, you must distribute your contributions under the same license
 
