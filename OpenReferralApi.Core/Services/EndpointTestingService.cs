@@ -834,18 +834,22 @@ public partial class EndpointTestingService(
             TimeSpan dnsLookup = TimeSpan.Zero, tcpConnection = TimeSpan.Zero, tlsHandshake = TimeSpan.Zero;
             var sendStart = Stopwatch.StartNew();
             var httpClient = _httpClientFactory.CreateClient(nameof(EndpointTestingService));
-            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-            var timeToHeaders = sendStart.Elapsed;
-
-            // Stream response content to avoid materialising a full string on every request.
-            // On the retain path (Full / IncludeResponseBody) we still need the string;
-            // on the fast path we stream directly into a JsonDocument with no string allocation.
+            
             byte[]? responseBody = null;
             JsonDocument? parsedResponseJson = null;
-            var contentReadCanceled = false;
-            var contentTransferStopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var requestCanceled = false;
+            var contentTransferStopwatch = new System.Diagnostics.Stopwatch();
+            var timeToHeaders = TimeSpan.Zero;
+
             try
             {
+                using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                timeToHeaders = sendStart.Elapsed;
+
+                // Stream response content to avoid materialising a full string on every request.
+                // On the retain path (Full / IncludeResponseBody) we still need the string;
+                // on the fast path we stream directly into a JsonDocument with no string allocation.
+                contentTransferStopwatch.Start();
                 if (ShouldRetainResponseBodies(options))
                 {
                     responseBody = await response.Content.ReadAsByteArrayAsync(cts.Token);
@@ -857,20 +861,35 @@ public partial class EndpointTestingService(
                     parsedResponseJson = await TryParseJsonDocumentFromStreamAsync(contentStream, cts.Token);
                 }
                 contentTransferStopwatch.Stop();
+
+                // Stop the overall timers
+                sendStart.Stop();
+
+                // Populate basic result fields
+                testResult.ResponseTime = timeToHeaders + contentTransferStopwatch.Elapsed;
+                testResult.ResponseStatusCode = (int)response.StatusCode;
+                testResult.IsSuccessStatusCode = response.IsSuccessStatusCode;
+                if (parsedResponseJson != null)
+                {
+                    parsedResponseJsonByResult[testResult] = parsedResponseJson;
+                }
+                testResult.ResponseBody = responseBody;
             }
             catch (OperationCanceledException)
             {
-                contentReadCanceled = true;
+                requestCanceled = true;
                 contentTransferStopwatch.Stop();
             }
 
-            if (contentReadCanceled)
+            if (requestCanceled)
             {
                 sendStart.Stop();
-                testResult.ResponseTime = timeToHeaders + contentTransferStopwatch.Elapsed;
+                testResult.ResponseTime = timeToHeaders == TimeSpan.Zero ? sendStart.Elapsed : timeToHeaders + contentTransferStopwatch.Elapsed;
                 testResult.ResponseStatusCode = 408;
                 testResult.IsSuccessStatusCode = false;
-                testResult.ErrorMessage = "Response body read timed out or was canceled before completion.";
+                testResult.ErrorMessage = timeToHeaders == TimeSpan.Zero 
+                    ? "Request timed out or was canceled while waiting for headers." 
+                    : "Response body read timed out or was canceled before completion.";
                 testResult.PerformanceMetrics = new EndpointPerformanceMetrics
                 {
                     DnsLookup = dnsLookup,
@@ -882,19 +901,6 @@ public partial class EndpointTestingService(
 
                 return testResult;
             }
-
-            // Stop the overall timers
-            sendStart.Stop();
-
-            // Populate basic result fields
-            testResult.ResponseTime = timeToHeaders + contentTransferStopwatch.Elapsed;
-            testResult.ResponseStatusCode = (int)response.StatusCode;
-            testResult.IsSuccessStatusCode = response.IsSuccessStatusCode;
-            if (parsedResponseJson != null)
-            {
-                parsedResponseJsonByResult[testResult] = parsedResponseJson;
-            }
-            testResult.ResponseBody = responseBody;
 
             // Populate performance metrics (include best-effort DNS/TCP/TLS measurements if available)
             testResult.PerformanceMetrics = new EndpointPerformanceMetrics
